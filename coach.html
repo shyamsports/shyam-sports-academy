@@ -493,36 +493,101 @@ function updateSummary() {
   document.getElementById("progressBar").style.width = progress + "%";
 }
 
+/* Copies the message and opens WhatsApp in the tab prepared by the button click. */
+async function copyAndOpenWhatsApp(message, whatsappWindow, statusElement, successText) {
+  let copied = false;
+
+  try {
+    await navigator.clipboard.writeText(message);
+    copied = true;
+  } catch (error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = message;
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      copied = document.execCommand("copy");
+    } catch (copyError) {
+      copied = false;
+    }
+
+    textArea.remove();
+  }
+
+  const whatsappURL = "https://wa.me/?text=" + encodeURIComponent(message);
+
+  if (whatsappWindow && !whatsappWindow.closed) {
+    whatsappWindow.location.href = whatsappURL;
+  } else {
+    statusElement.textContent =
+      (copied ? "Message copied. " : "Copy failed. ") +
+      "Please allow pop-ups to open WhatsApp automatically.";
+    return;
+  }
+
+  statusElement.textContent = copied
+    ? successText + " Message copied and WhatsApp opened. Please select the parent group and press Send."
+    : "WhatsApp opened. Please copy the message manually and send it.";
+}
+
 function markArrival() {
   const status = document.getElementById("gpsStatus");
+  const arrivalButton = document.getElementById("arrivalBtn");
 
   if (!navigator.geolocation) {
     status.textContent = "GPS is not supported by this browser.";
     return;
   }
 
+  // Open a blank tab immediately from the button click.
+  const whatsappWindow = window.open("about:blank", "_blank");
+
   status.textContent = "Checking your location...";
+  arrivalButton.disabled = true;
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       arrivalDone = true;
-      document.getElementById("arrivalBtn").textContent = "✓ Arrival Checked";
-      document.getElementById("arrivalBtn").disabled = true;
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const mapLink = "https://www.google.com/maps?q=" + latitude + "," + longitude;
+
+      const message =
+        "Hello Parents! The coach has arrived at your location for today's Skating Class.\n\n" +
+        "Coach Location: " + mapLink + "\n\n" +
+        "Please send your children with their skates, water bottle and required equipment.\n\n" +
+        "Thank you!\nShyam Sports Academy";
+
+      arrivalButton.textContent = "✓ Arrival Checked";
+      arrivalButton.disabled = true;
       document.getElementById("completeBtn").disabled = false;
-      status.textContent =
-        "Location detected. Latitude: " +
-        position.coords.latitude.toFixed(5) +
-        ", Longitude: " +
-        position.coords.longitude.toFixed(5) +
-        ". Preview only; not saved.";
+
       updateSummary();
+
+      await copyAndOpenWhatsApp(
+        message,
+        whatsappWindow,
+        status,
+        "Location detected successfully."
+      );
     },
     (error) => {
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.close();
+      }
+
+      arrivalButton.disabled = false;
+
       const messages = {
         1: "Location permission was denied. Please allow location access.",
         2: "Your location could not be detected. Please try again.",
         3: "Location request timed out. Please try again."
       };
+
       status.textContent = messages[error.code] || "Unable to get your location.";
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -535,6 +600,9 @@ function completeClass() {
     return;
   }
 
+  // Prepare WhatsApp tab immediately from the button click.
+  const whatsappWindow = window.open("about:blank", "_blank");
+
   completed = true;
   departureDone = true;
 
@@ -542,9 +610,18 @@ function completeClass() {
   document.getElementById("classStatus").className = "status done";
   document.getElementById("completeBtn").textContent = "✓ Completed";
   document.getElementById("completeBtn").disabled = true;
-  document.getElementById("gpsStatus").textContent =
-    "Class marked completed in this preview. This record has not been saved.";
+
   updateSummary();
+
+  const status = document.getElementById("gpsStatus");
+  const message = document.getElementById("departureMessage").textContent;
+
+  copyAndOpenWhatsApp(
+    message,
+    whatsappWindow,
+    status,
+    "Class completed successfully."
+  );
 }
 
 function setAttendance(index, isPresent, button) {
