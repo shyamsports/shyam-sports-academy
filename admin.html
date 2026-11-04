@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -237,8 +238,8 @@ body.auth-locked .layout{display:none}
         </div>
       </div>
       <div class="panel">
-        <div class="panel-heading"><div><h3>Management Activity</h3><p>System activity overview</p></div></div>
-        <div class="empty-note">Activity records will appear here after the database is connected.</div>
+        <div class="panel-heading"><div><h3>Management Activity</h3><p>Latest coach activity records</p></div></div>
+        <div id="adminActivityFeed" class="empty-note">Loading coach activity...</div>
       </div>
     </div>
 
@@ -326,7 +327,8 @@ body.auth-locked .layout{display:none}
     <div class="info-box">Schedules will support one-day classes, weekly repeats, regular long-running schedules and special date overrides. Future changes will not rewrite historical class records.</div>
     <div class="panel"><div class="panel-heading"><h3>Schedule Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Date / Repeat</th><th>Time</th><th>Sport</th><th>Batch ID</th><th>Location</th><th>Coach</th><th>Status</th></tr></thead><tbody><tr><td colspan="7" class="empty-note">Scheduled classes will appear here.</td></tr></tbody></table></div></div>
   </section>
-    <!-- WHATSAPP -->
+
+  <!-- WHATSAPP -->
   <section class="page" id="groups">
     <div class="page-heading"><div><h1>WhatsApp Group Management</h1><p>Map each academy batch to its existing parent group.</p></div><button class="btn" onclick="demo('Add WhatsApp Group')">+ Add Group</button></div>
     <div class="info-box">The academy system will store group labels and optional links. It will not create, rename or automatically send messages to WhatsApp groups. Coaches will select the correct existing group and send messages themselves.</div>
@@ -369,7 +371,11 @@ body.auth-locked .layout{display:none}
       <div class="stat-card"><div class="stat-label">Verified Records</div><div class="stat-value">—</div></div>
       <div class="stat-card"><div class="stat-label">Flagged Records</div><div class="stat-value">—</div></div>
     </div>
-    <div class="panel"><div class="panel-heading"><h3>GPS Event History</h3></div><div class="empty-note">GPS events, timestamps, coordinates, accuracy and distance checks will appear here.</div></div>
+    <div class="panel">
+      <div class="panel-heading"><div><h3>GPS Event History</h3><p>Arrival and departure locations recorded by approved coaches.</p></div><button class="btn light" id="refreshCoachActivity" type="button">Refresh Records</button></div>
+      <div id="gpsActivityMessage" class="empty-note">Loading GPS records...</div>
+      <div class="table-wrap" id="gpsActivityTableWrap" style="display:none"><table><thead><tr><th>Coach</th><th>Event</th><th>Date & Time</th><th>GPS Coordinates</th><th>Accuracy</th><th>Map</th></tr></thead><tbody id="gpsActivityBody"></tbody></table></div>
+    </div>
   </section>
 
   <!-- EXCEL -->
@@ -448,7 +454,8 @@ function demo(action){
  alert(action+" is part of the planned management system. Database and secure backend functionality are not connected yet.");
 }
 </script>
-  <script type="module">
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
@@ -510,6 +517,7 @@ async function verifyAdmin(user) {
   }
 
   await loadCoachRequests();
+  await loadCoachActivity();
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -636,6 +644,142 @@ async function changeCoachStatus(coachId, status) {
     alert("Could not update request: " + error.message);
   }
 }
+
+function formatActivityDate(value) {
+  if (!value || typeof value.toDate !== "function") return "—";
+  return value.toDate().toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+function makeCell(text) {
+  const cell = document.createElement("td");
+  cell.textContent = text;
+  return cell;
+}
+
+async function loadCoachActivity() {
+  if (!currentAdmin || currentAdmin.uid !== ADMIN_UID) return;
+
+  const message = document.getElementById("gpsActivityMessage");
+  const wrap = document.getElementById("gpsActivityTableWrap");
+  const body = document.getElementById("gpsActivityBody");
+  const feed = document.getElementById("adminActivityFeed");
+
+  if (message) {
+    message.style.display = "block";
+    message.textContent = "Loading GPS activity records...";
+  }
+  if (wrap) wrap.style.display = "none";
+  if (body) body.replaceChildren();
+  if (feed) feed.textContent = "Loading coach activity...";
+
+  try {
+    const snapshot = await getDocs(collection(db, "coachActivity"));
+    const records = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+
+    records.sort((a, b) => {
+      const at = a.recordedAt?.toDate ? a.recordedAt.toDate().getTime() : 0;
+      const bt = b.recordedAt?.toDate ? b.recordedAt.toDate().getTime() : 0;
+      return bt - at;
+    });
+
+    const todayKey = new Date().toLocaleDateString("en-CA");
+    const todaysRecords = records.filter(item =>
+      item.recordedAt?.toDate &&
+      item.recordedAt.toDate().toLocaleDateString("en-CA") === todayKey
+    );
+    const arrivals = todaysRecords.filter(item => item.eventType === "arrival").length;
+    const departures = todaysRecords.filter(item => item.eventType === "departure").length;
+
+    const gpsPage = document.getElementById("gps");
+    if (gpsPage) {
+      const statValues = gpsPage.querySelectorAll(".stats .stat-card .stat-value");
+      if (statValues[0]) statValues[0].textContent = String(arrivals);
+      if (statValues[1]) statValues[1].textContent = String(departures);
+      if (statValues[2]) statValues[2].textContent = String(records.length);
+      if (statValues[3]) statValues[3].textContent = "—";
+    }
+
+    if (!records.length) {
+      if (message) message.textContent = "No coach GPS activity has been recorded yet.";
+      if (feed) feed.textContent = "No coach activity has been recorded yet.";
+      return;
+    }
+
+    records.forEach(item => {
+      const row = document.createElement("tr");
+      row.appendChild(makeCell(item.coachName || "Unknown coach"));
+
+      const eventCell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "status " + (item.eventType === "arrival" ? "active" : "pending");
+      badge.textContent = item.eventType === "arrival" ? "Arrival" :
+        item.eventType === "departure" ? "Departure" : (item.eventType || "Activity");
+      eventCell.appendChild(badge);
+      row.appendChild(eventCell);
+
+      row.appendChild(makeCell(formatActivityDate(item.recordedAt)));
+      row.appendChild(makeCell(
+        typeof item.latitude === "number" && typeof item.longitude === "number"
+          ? item.latitude.toFixed(6) + ", " + item.longitude.toFixed(6)
+          : "GPS unavailable"
+      ));
+      row.appendChild(makeCell(
+        typeof item.accuracy === "number" ? "±" + item.accuracy.toFixed(1) + " m" : "—"
+      ));
+
+      const mapCell = document.createElement("td");
+      if (typeof item.latitude === "number" && typeof item.longitude === "number") {
+        const link = document.createElement("a");
+        link.href = "https://www.google.com/maps?q=" +
+          encodeURIComponent(item.latitude + "," + item.longitude);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "View Map";
+        link.style.color = "#287cbd";
+        link.style.fontWeight = "700";
+        mapCell.appendChild(link);
+      } else {
+        mapCell.textContent = "—";
+      }
+      row.appendChild(mapCell);
+      if (body) body.appendChild(row);
+    });
+
+    if (message) message.style.display = "none";
+    if (wrap) wrap.style.display = "block";
+
+    if (feed) {
+      feed.replaceChildren();
+      records.slice(0, 8).forEach(item => {
+        const entry = document.createElement("div");
+        entry.className = "activity";
+        const dot = document.createElement("span");
+        dot.className = "dot";
+        const content = document.createElement("div");
+        const title = document.createElement("strong");
+        const eventName = item.eventType === "arrival" ? "arrived at class" :
+          item.eventType === "departure" ? "completed class and recorded departure" :
+          "recorded an activity";
+        title.textContent = (item.coachName || "A coach") + " " + eventName;
+        const detail = document.createElement("small");
+        detail.textContent = formatActivityDate(item.recordedAt);
+        content.append(title, detail);
+        entry.append(dot, content);
+        feed.appendChild(entry);
+      });
+    }
+  } catch (error) {
+    const errorText = "Could not load coach activity: " + error.message;
+    if (message) message.textContent = errorText;
+    if (feed) feed.textContent = errorText;
+  }
+}
+
+document.getElementById("refreshCoachActivity")
+  ?.addEventListener("click", loadCoachActivity);
 
 document.getElementById("refreshCoachRequests")
   .addEventListener("click", loadCoachRequests);
