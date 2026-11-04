@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,10 +106,52 @@ td strong{color:#193b60}
 .form-grid{grid-template-columns:1fr}
 .profile .profile-info{display:none}
 }
+
+/* Secure Admin Login */
+body.auth-locked .layout{display:none}
+#adminLoginScreen{
+  position:fixed;inset:0;z-index:9999;display:flex;
+  align-items:center;justify-content:center;padding:20px;
+  background:#f4f7fb;
+}
+.login-card{
+  width:100%;max-width:420px;padding:32px;background:#fff;
+  border:1px solid #e8edf3;border-radius:16px;
+  box-shadow:0 15px 45px #102b4e18;
+}
+.login-card h1{color:#102b4e;font-size:24px;margin-bottom:8px}
+.login-card p{color:#8290a1;font-size:13px;margin-bottom:24px}
+.login-card label{display:block;font-size:12px;font-weight:700;margin:15px 0 7px}
+.login-card input{
+  width:100%;padding:13px;border:1px solid #dfe6ee;
+  border-radius:8px;outline:none
+}
+.login-card input:focus{border-color:#4b93ce}
+.login-card button{width:100%;margin-top:22px}
+#loginMessage{margin-top:14px;font-size:12px;color:#b83d3d}
+#coachRequestsTable{width:100%}
+#coachRequestMessage{margin-top:8px}
+
 </style>
 </head>
 
-<body>
+<body class="auth-locked">
+
+<div id="adminLoginScreen">
+  <div class="login-card">
+    <div class="brand-icon" style="margin-bottom:20px">S</div>
+    <h1>Admin Login</h1>
+    <p>Sign in to Shyam Sports Academy Administration.</p>
+    <form id="adminLoginForm">
+      <label for="adminEmail">Email Address</label>
+      <input id="adminEmail" type="email" placeholder="Enter admin email" autocomplete="username" required>
+      <label for="adminPassword">Password</label>
+      <input id="adminPassword" type="password" placeholder="Enter password" autocomplete="current-password" required>
+      <button class="btn" type="submit" id="loginButton">Login to Dashboard</button>
+      <div id="loginMessage" role="alert"></div>
+    </form>
+  </div>
+</div>
 <div class="mobile-overlay" id="overlay" onclick="closeMenu()"></div>
 
 <aside class="sidebar" id="sidebar">
@@ -220,7 +261,19 @@ td strong{color:#193b60}
     <div class="panel"><div class="panel-heading"><div><h3>Coach Directory</h3><p>Coach details and account status</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Coach Name</th><th>Email</th><th>Assigned Classes</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td colspan="5" class="empty-note">No live coach records connected.</td></tr></tbody></table></div>
     </div>
-    <div class="panel"><div class="panel-heading"><h3>Coach Approval Requests</h3></div><div class="empty-note">Pending Google Sign-In requests will appear here.</div></div>
+    <div class="panel">
+      <div class="panel-heading">
+        <div><h3>Coach Approval Requests</h3><p>Review and manage new coach registrations.</p></div>
+        <button class="btn light" id="refreshCoachRequests" type="button">Refresh</button>
+      </div>
+      <div id="coachRequestMessage" class="empty-note">Sign in to load registration requests.</div>
+      <div class="table-wrap" id="coachRequestsTable" style="display:none">
+        <table>
+          <thead><tr><th>Coach Name</th><th>Email</th><th>Registration Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="coachRequestsBody"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <!-- STUDENTS -->
@@ -273,8 +326,7 @@ td strong{color:#193b60}
     <div class="info-box">Schedules will support one-day classes, weekly repeats, regular long-running schedules and special date overrides. Future changes will not rewrite historical class records.</div>
     <div class="panel"><div class="panel-heading"><h3>Schedule Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Date / Repeat</th><th>Time</th><th>Sport</th><th>Batch ID</th><th>Location</th><th>Coach</th><th>Status</th></tr></thead><tbody><tr><td colspan="7" class="empty-note">Scheduled classes will appear here.</td></tr></tbody></table></div></div>
   </section>
-
-  <!-- WHATSAPP -->
+    <!-- WHATSAPP -->
   <section class="page" id="groups">
     <div class="page-heading"><div><h1>WhatsApp Group Management</h1><p>Map each academy batch to its existing parent group.</p></div><button class="btn" onclick="demo('Add WhatsApp Group')">+ Add Group</button></div>
     <div class="info-box">The academy system will store group labels and optional links. It will not create, rename or automatically send messages to WhatsApp groups. Coaches will select the correct existing group and send messages themselves.</div>
@@ -396,5 +448,198 @@ function demo(action){
  alert(action+" is part of the planned management system. Database and secure backend functionality are not connected yet.");
 }
 </script>
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, query, where,
+  getDocs, updateDoc
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
+  authDomain: "shyam-sports-academy.firebaseapp.com",
+  projectId: "shyam-sports-academy",
+  storageBucket: "shyam-sports-academy.firebasestorage.app",
+  messagingSenderId: "204237173149",
+  appId: "1:204237173149:web:84f0e36a4981e6adbf3f74",
+  measurementId: "G-548JZ1L682"
+};
+
+const ADMIN_UID = "0CqaMJndttgUhrMyxEXgsD3FHYA2";
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const loginScreen = document.getElementById("adminLoginScreen");
+const loginForm = document.getElementById("adminLoginForm");
+const loginMessage = document.getElementById("loginMessage");
+const loginButton = document.getElementById("loginButton");
+const requestMessage = document.getElementById("coachRequestMessage");
+const requestsTable = document.getElementById("coachRequestsTable");
+const requestsBody = document.getElementById("coachRequestsBody");
+
+let currentAdmin = null;
+
+function showLogin(message = "") {
+  currentAdmin = null;
+  document.body.classList.add("auth-locked");
+  loginScreen.style.display = "flex";
+  loginMessage.textContent = message;
+}
+
+async function verifyAdmin(user) {
+  if (!user || user.uid !== ADMIN_UID) {
+    throw new Error("This account is not authorized to access the Admin Dashboard.");
+  }
+
+  const adminSnapshot = await getDoc(doc(db, "users", user.uid));
+  if (!adminSnapshot.exists() || adminSnapshot.data().role !== "admin") {
+    throw new Error("Admin permission could not be verified.");
+  }
+
+  currentAdmin = user;
+  loginScreen.style.display = "none";
+  document.body.classList.remove("auth-locked");
+
+  const profileInfo = document.querySelector(".profile-info");
+  if (profileInfo) {
+    profileInfo.innerHTML = "<strong>Administrator</strong><small>Authorized Admin</small>";
+  }
+
+  await loadCoachRequests();
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in...";
+  loginMessage.textContent = "";
+
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("adminPassword").value;
+
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    await verifyAdmin(credential.user);
+  } catch (error) {
+    if (auth.currentUser) {
+      try { await signOut(auth); } catch (_) {}
+    }
+    showLogin(error.message || "Login failed. Please try again.");
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Login to Dashboard";
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    showLogin();
+    return;
+  }
+
+  try {
+    await verifyAdmin(user);
+  } catch (error) {
+    try { await signOut(auth); } catch (_) {}
+    showLogin(error.message);
+  }
+});
+
+async function loadCoachRequests() {
+  if (!currentAdmin || currentAdmin.uid !== ADMIN_UID) return;
+
+  requestMessage.style.display = "block";
+  requestMessage.textContent = "Loading registration requests...";
+  requestsTable.style.display = "none";
+  requestsBody.replaceChildren();
+
+  try {
+    const pendingQuery = query(
+      collection(db, "users"),
+      where("role", "==", "coach"),
+      where("status", "==", "pending")
+    );
+
+    const snapshot = await getDocs(pendingQuery);
+
+    if (snapshot.empty) {
+      requestMessage.textContent = "No pending coach registration requests.";
+      return;
+    }
+
+    snapshot.forEach((coachDoc) => {
+      const coach = coachDoc.data();
+      const row = document.createElement("tr");
+
+      const nameCell = document.createElement("td");
+      nameCell.textContent = coach.name || "—";
+
+      const emailCell = document.createElement("td");
+      emailCell.textContent = coach.email || "—";
+
+      const dateCell = document.createElement("td");
+      dateCell.textContent = coach.createdAt?.toDate
+        ? coach.createdAt.toDate().toLocaleString("en-IN")
+        : "—";
+
+      const statusCell = document.createElement("td");
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "status pending";
+      statusBadge.textContent = "Pending";
+      statusCell.appendChild(statusBadge);
+
+      const actionCell = document.createElement("td");
+      const approveButton = document.createElement("button");
+      approveButton.type = "button";
+      approveButton.className = "btn green";
+      approveButton.textContent = "Approve";
+
+      const rejectButton = document.createElement("button");
+      rejectButton.type = "button";
+      rejectButton.className = "btn red";
+      rejectButton.textContent = "Reject";
+      rejectButton.style.marginLeft = "6px";
+
+      approveButton.addEventListener("click", () => changeCoachStatus(coachDoc.id, "approved"));
+      rejectButton.addEventListener("click", () => changeCoachStatus(coachDoc.id, "rejected"));
+
+      actionCell.append(approveButton, rejectButton);
+      row.append(nameCell, emailCell, dateCell, statusCell, actionCell);
+      requestsBody.appendChild(row);
+    });
+
+    requestMessage.style.display = "none";
+    requestsTable.style.display = "block";
+  } catch (error) {
+    requestMessage.textContent = "Could not load requests: " + error.message;
+  }
+}
+
+async function changeCoachStatus(coachId, status) {
+  if (!currentAdmin || currentAdmin.uid !== ADMIN_UID) {
+    alert("Admin authorization required.");
+    return;
+  }
+
+  const action = status === "approved" ? "approve" : "reject";
+  if (!confirm("Are you sure you want to " + action + " this coach?")) return;
+
+  try {
+    await updateDoc(doc(db, "users", coachId), { status });
+    alert("Coach request " + status + " successfully.");
+    await loadCoachRequests();
+  } catch (error) {
+    alert("Could not update request: " + error.message);
+  }
+}
+
+document.getElementById("refreshCoachRequests")
+  .addEventListener("click", loadCoachRequests);
+</script>
+
 </body>
 </html>
