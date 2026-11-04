@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,37 +13,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;ba
 button{font:inherit;cursor:pointer}
 a{text-decoration:none;color:inherit}
 
-/* LOGIN */
-#loginScreen{
-min-height:100vh;display:flex;align-items:center;justify-content:center;
-padding:20px;background:#f4f7fb
-}
-.login-card{
-width:100%;max-width:420px;background:white;padding:30px;
-border-radius:18px;border:1px solid #e7edf4;
-box-shadow:0 8px 35px rgba(16,43,78,.07)
-}
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f4f7fb}
+.login-card{width:100%;max-width:420px;background:white;padding:30px;border-radius:18px;border:1px solid #e7edf4;box-shadow:0 8px 35px rgba(16,43,78,.07)}
 .login-card h1{font-size:24px;color:#102b4e;margin-bottom:7px}
 .login-card p{font-size:13px;color:#8492a3;margin-bottom:20px}
 .login-card label{display:block;font-size:13px;font-weight:700;margin:15px 0 7px}
-.login-card input{
-width:100%;padding:13px;border:1px solid #d8e0e9;
-border-radius:9px;font-size:15px;outline:none
-}
+.login-card input{width:100%;padding:13px;border:1px solid #d8e0e9;border-radius:9px;font-size:15px;outline:none}
 .login-card input:focus{border-color:#247ac1}
-.login-card button{
-width:100%;padding:14px;border:0;border-radius:10px;
-background:#102b4e;color:white;font-weight:800;margin-top:20px
-}
-.login-card button:disabled{opacity:.6}
-#loginMessage{
-display:none;margin-top:16px;padding:12px;border-radius:9px;
-font-size:12px;line-height:1.6
-}
+.login-card button{width:100%;padding:14px;border:0;border-radius:10px;background:#102b4e;color:white;font-weight:800;margin-top:20px}
+.login-card button:disabled{opacity:.6;cursor:wait}
+#loginMessage{display:none;margin-top:16px;padding:12px;border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 #loginMessage.error{display:block;background:#fff0f0;color:#b42318}
 #loginMessage.success{display:block;background:#e6f6ed;color:#197344}
+#loginMessage.info{display:block;background:#eef5fc;color:#18578d}
 
-/* DASHBOARD */
 .app{display:none;max-width:1050px;margin:auto;min-height:100vh;padding-bottom:85px}
 .app.visible{display:block}
 .header{background:white;border-bottom:1px solid #e8edf3;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
@@ -50,11 +34,7 @@ font-size:12px;line-height:1.6
 .logo{width:42px;height:42px;border-radius:13px;background:#102b4e;color:white;display:grid;place-items:center;font-weight:900;font-size:21px}
 .brand h1{font-size:15px;color:#102b4e}
 .brand small{font-size:10px;color:#8492a3;letter-spacing:1px}
-.profile{
-width:38px;height:38px;border-radius:50%;background:#e8f1fb;
-color:#174e80;display:grid;place-items:center;font-weight:800;
-border:0
-}
+.profile{width:38px;height:38px;border-radius:50%;background:#e8f1fb;color:#174e80;display:grid;place-items:center;font-weight:800;border:0}
 .content{padding:25px 22px}
 .welcome{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}
 .welcome h2{font-size:25px;color:#102b4e;letter-spacing:-.5px}
@@ -138,7 +118,6 @@ border:0
 
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="loginScreen">
   <div class="login-card">
     <h1>Coach Login</h1>
@@ -154,13 +133,11 @@ border:0
       <button type="submit" id="loginBtn">Login</button>
     </form>
 
-    <div id="loginMessage" role="status"></div>
+    <div id="loginMessage" role="status" aria-live="polite"></div>
   </div>
 </div>
 
-<!-- COACH DASHBOARD -->
 <div class="app" id="dashboard">
-
 <header class="header">
   <div class="brand">
     <div class="logo">S</div>
@@ -173,7 +150,6 @@ border:0
 </header>
 
 <main class="content">
-
   <div class="welcome">
     <div>
       <h2 id="welcomeName">Good Day, Coach!</h2>
@@ -183,26 +159,13 @@ border:0
   </div>
 
   <div class="summary">
-    <div class="summary-card">
-      <small>Today's Classes</small>
-      <strong id="totalClasses">1</strong>
-    </div>
-    <div class="summary-card">
-      <small>Completed</small>
-      <strong id="completedClasses">0</strong>
-    </div>
-    <div class="summary-card">
-      <small>Students</small>
-      <strong>3</strong>
-    </div>
+    <div class="summary-card"><small>Today's Classes</small><strong id="totalClasses">1</strong></div>
+    <div class="summary-card"><small>Completed</small><strong id="completedClasses">0</strong></div>
+    <div class="summary-card"><small>Students</small><strong>3</strong></div>
   </div>
 
   <section class="section active" id="home">
-    <div class="notice">
-      Preview Mode: The displayed class and student details are sample data.
-      Your assigned schedule will appear here after database connection.
-    </div>
-
+    <div class="notice">Preview Mode: The displayed class and student details are sample data. Your assigned schedule will appear here after database connection.</div>
     <div class="section-heading">
       <h3>Today's Assigned Classes</h3>
       <small id="classDate"></small>
@@ -226,8 +189,8 @@ border:0
         </div>
 
         <div class="class-actions">
-          <button class="btn btn-arrival" id="arrivalBtn" onclick="markArrival()">◎ I'm Here</button>
-          <button class="btn btn-complete" id="completeBtn" onclick="completeClass()" disabled>✓ Class Completed</button>
+          <button class="btn btn-arrival" id="arrivalBtn" type="button" onclick="markArrival()">◎ I'm Here</button>
+          <button class="btn btn-complete" id="completeBtn" type="button" onclick="completeClass()" disabled>✓ Class Completed</button>
         </div>
         <p class="info" id="gpsStatus">GPS permission is requested only when you press an action button.</p>
       </div>
@@ -244,31 +207,24 @@ border:0
   </section>
 
   <section class="section" id="attendance">
-    <div class="section-heading">
-      <h3>Student Attendance</h3>
-      <small>Sample roster</small>
-    </div>
-    <div class="notice">
-      Select Present or Absent for every student. Unselected students will be marked Absent when submitted.
-    </div>
-
+    <div class="section-heading"><h3>Student Attendance</h3><small>Sample roster</small></div>
+    <div class="notice">Select Present or Absent for every student. Unselected students will be marked Absent when submitted.</div>
     <div class="card">
       <div class="student-row">
         <div><div class="student-name">Student One</div><div class="student-id">Sample Student ID: ST-001</div></div>
-        <div class="attendance-toggle"><button class="present" onclick="setAttendance(0,true,this)">Present</button><button class="absent" onclick="setAttendance(0,false,this)">Absent</button></div>
+        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(0,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(0,false,this)">Absent</button></div>
       </div>
       <div class="student-row">
         <div><div class="student-name">Student Two</div><div class="student-id">Sample Student ID: ST-002</div></div>
-        <div class="attendance-toggle"><button class="present" onclick="setAttendance(1,true,this)">Present</button><button class="absent" onclick="setAttendance(1,false,this)">Absent</button></div>
+        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(1,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(1,false,this)">Absent</button></div>
       </div>
       <div class="student-row">
         <div><div class="student-name">Student Three</div><div class="student-id">Sample Student ID: ST-003</div></div>
-        <div class="attendance-toggle"><button class="present" onclick="setAttendance(2,true,this)">Present</button><button class="absent" onclick="setAttendance(2,false,this)">Absent</button></div>
+        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(2,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(2,false,this)">Absent</button></div>
       </div>
-
       <div class="attendance-actions">
-        <button class="btn btn-light" onclick="resetAttendance()">Reset</button>
-        <button class="btn btn-primary" onclick="submitAttendance()">Submit Attendance</button>
+        <button class="btn btn-light" type="button" onclick="resetAttendance()">Reset</button>
+        <button class="btn btn-primary" type="button" onclick="submitAttendance()">Submit Attendance</button>
       </div>
       <p class="info" id="attendanceStatus">Attendance has not been submitted.</p>
     </div>
@@ -277,22 +233,20 @@ border:0
   <section class="section" id="messages">
     <div class="section-heading"><h3>Parent Group Messages</h3></div>
     <div class="notice">Messages are prepared for copying. You must select the correct existing parent group and send the message yourself.</div>
-
     <div class="message-box">
       <h4>Arrival Message</h4>
       <p id="arrivalMessage">Hello Parents! The coach has arrived at your location for today's Skating Class. Please send your children with their skates, water bottle and required equipment. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
-        <button class="btn btn-light" onclick="copyMessage('arrivalMessage')">Copy Message</button>
-        <button class="btn btn-whatsapp" onclick="openWhatsApp('arrivalMessage')">Open WhatsApp</button>
+        <button class="btn btn-light" type="button" onclick="copyMessage('arrivalMessage')">Copy Message</button>
+        <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('arrivalMessage')">Open WhatsApp</button>
       </div>
     </div>
-
     <div class="message-box">
       <h4>Departure Message</h4>
       <p id="departureMessage">Hello Parents! Today's Skating Class has been completed. The coach is now leaving the location. Please arrive to pick up your children. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
-        <button class="btn btn-light" onclick="copyMessage('departureMessage')">Copy Message</button>
-        <button class="btn btn-whatsapp" onclick="openWhatsApp('departureMessage')">Open WhatsApp</button>
+        <button class="btn btn-light" type="button" onclick="copyMessage('departureMessage')">Copy Message</button>
+        <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('departureMessage')">Open WhatsApp</button>
       </div>
     </div>
   </section>
@@ -308,32 +262,28 @@ border:0
     </div>
     <div class="notice">This is a local preview only. Daily summaries, class hours, work days and leave records will be calculated from verified database records after backend integration.</div>
   </section>
-
 </main>
 
 <div class="footer">Shyam Sports Academy · Coach Portal</div>
 
 <nav class="bottom-nav">
   <div class="bottom-inner">
-    <button class="nav-item active" onclick="showSection('home',this)"><span>⌂</span>Home</button>
-    <button class="nav-item" onclick="showSection('attendance',this)"><span>✓</span>Attendance</button>
-    <button class="nav-item" onclick="showSection('messages',this)"><span>✉</span>Messages</button>
-    <button class="nav-item" onclick="showSection('summary',this)"><span>▤</span>Summary</button>
+    <button class="nav-item active" type="button" onclick="showSection('home',this)"><span>⌂</span>Home</button>
+    <button class="nav-item" type="button" onclick="showSection('attendance',this)"><span>✓</span>Attendance</button>
+    <button class="nav-item" type="button" onclick="showSection('messages',this)"><span>✉</span>Messages</button>
+    <button class="nav-item" type="button" onclick="showSection('summary',this)"><span>▤</span>Summary</button>
   </div>
 </nav>
-
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-
 import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-
 import {
   getFirestore,
   doc,
@@ -350,9 +300,9 @@ const firebaseConfig = {
   measurementId: "G-548JZ1L682"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 const loginForm = document.getElementById("loginForm");
 const loginBtn = document.getElementById("loginBtn");
@@ -363,6 +313,13 @@ const dashboard = document.getElementById("dashboard");
 function showLoginMessage(message, type = "error") {
   loginMessage.textContent = message;
   loginMessage.className = type;
+  loginMessage.style.display = "block";
+}
+
+function clearLoginMessage() {
+  loginMessage.textContent = "";
+  loginMessage.className = "";
+  loginMessage.style.display = "none";
 }
 
 function showLogin() {
@@ -373,7 +330,6 @@ function showLogin() {
 function showDashboard(name) {
   loginScreen.style.display = "none";
   dashboard.classList.add("visible");
-
   document.getElementById("welcomeName").textContent =
     "Good Day, " + (name || "Coach") + "!";
 }
@@ -392,57 +348,56 @@ async function verifyCoach(user) {
     throw new Error("This account is not registered as a coach.");
   }
 
+  if (data.status === "pending") {
+    throw new Error("Your account is waiting for admin approval.");
+  }
+
+  if (data.status === "rejected") {
+    throw new Error("Your coach registration has been rejected. Please contact the academy admin.");
+  }
+
   if (data.status !== "approved") {
-    if (data.status === "pending") {
-      throw new Error("Your account is waiting for admin approval.");
-    }
-
-    if (data.status === "rejected") {
-      throw new Error("Your coach registration has been rejected. Please contact the academy admin.");
-    }
-
     throw new Error("Your account status is not valid. Please contact the academy admin.");
   }
 
   return data;
 }
 
+function friendlyAuthError(error) {
+  const messages = {
+    "auth/invalid-credential": "Incorrect email or password. Please check your login details.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/user-disabled": "This account has been disabled. Please contact the academy admin.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/network-request-failed": "Network error. Please check your internet connection and try again.",
+    "auth/operation-not-allowed": "Email and password login is not enabled in Firebase Authentication.",
+    "auth/internal-error": "A Firebase error occurred. Please try again."
+  };
+
+  return messages[error.code] || error.message || "Login failed. Please try again.";
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  loginMessage.className = "";
-  loginMessage.style.display = "none";
+  clearLoginMessage();
 
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
 
+  if (!email || !password) {
+    showLoginMessage("Please enter your email address and password.");
+    return;
+  }
+
   loginBtn.disabled = true;
-  loginBtn.textContent = "Checking Account...";
+  loginBtn.textContent = "Signing In...";
 
   try {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    const data = await verifyCoach(credential.user);
-
-    showDashboard(data.name);
-
+    await signInWithEmailAndPassword(auth, email, password);
+    showLoginMessage("Login successful. Checking your coach approval...", "info");
   } catch (error) {
     console.error("Coach login error:", error);
-
-    if (auth.currentUser) {
-      await signOut(auth);
-    }
-
-    const errorMessages = {
-      "auth/invalid-credential": "Incorrect email or password. Please check your login details.",
-      "auth/invalid-email": "Please enter a valid email address.",
-      "auth/too-many-requests": "Too many attempts. Please try again later.",
-      "permission-denied": "Permission denied while checking your account. Please contact the admin."
-    };
-
-    showLoginMessage(
-      errorMessages[error.code] || error.message || "Login failed. Please try again."
-    );
-
+    showLoginMessage(friendlyAuthError(error), "error");
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = "Login";
@@ -455,29 +410,43 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Checking Account...";
+
   try {
     const data = await verifyCoach(user);
     showDashboard(data.name);
   } catch (error) {
     console.error("Coach approval check:", error);
 
-    await signOut(auth);
-    showLogin();
+    try {
+      await signOut(auth);
+    } catch (signOutError) {
+      console.error("Sign out error:", signOutError);
+    }
 
-    showLoginMessage(error.message || "Your account could not be verified.");
+    showLogin();
+    showLoginMessage(error.message || "Your account could not be verified.", "error");
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Login";
   }
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  loginForm.reset();
-  showLogin();
-  showLoginMessage("You have been logged out.", "success");
+  try {
+    await signOut(auth);
+    loginForm.reset();
+    showLogin();
+    showLoginMessage("You have been logged out.", "success");
+  } catch (error) {
+    showLoginMessage("Unable to log out. Please try again.", "error");
+  }
 });
 </script>
 
 <script>
-const students = [null, null, null];
+const attendance = [null, null, null];
 let arrivalDone = false;
 let completed = false;
 let attendanceDone = false;
@@ -500,4 +469,150 @@ document.getElementById("classDate").textContent =
   });
 
 function showSection(id, button) {
-  docu
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.remove("active");
+  });
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  document.getElementById(id).classList.add("active");
+  button.classList.add("active");
+}
+
+function updateSummary() {
+  document.getElementById("completedClasses").textContent = completed ? "1" : "0";
+  document.getElementById("sumCompleted").textContent = completed ? "1" : "0";
+  document.getElementById("sumAttendance").textContent = attendanceDone ? "Yes" : "No";
+  document.getElementById("sumArrival").textContent = arrivalDone ? "Yes" : "No";
+  document.getElementById("sumDeparture").textContent = departureDone ? "Yes" : "No";
+
+  const progress = completed ? 100 : arrivalDone ? 50 : 0;
+  document.getElementById("progressText").textContent = progress + "%";
+  document.getElementById("progressBar").style.width = progress + "%";
+}
+
+function markArrival() {
+  const status = document.getElementById("gpsStatus");
+
+  if (!navigator.geolocation) {
+    status.textContent = "GPS is not supported by this browser.";
+    return;
+  }
+
+  status.textContent = "Checking your location...";
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      arrivalDone = true;
+      document.getElementById("arrivalBtn").textContent = "✓ Arrival Checked";
+      document.getElementById("arrivalBtn").disabled = true;
+      document.getElementById("completeBtn").disabled = false;
+      status.textContent =
+        "Location detected. Latitude: " +
+        position.coords.latitude.toFixed(5) +
+        ", Longitude: " +
+        position.coords.longitude.toFixed(5) +
+        ". Preview only; not saved.";
+      updateSummary();
+    },
+    (error) => {
+      const messages = {
+        1: "Location permission was denied. Please allow location access.",
+        2: "Your location could not be detected. Please try again.",
+        3: "Location request timed out. Please try again."
+      };
+      status.textContent = messages[error.code] || "Unable to get your location.";
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+function completeClass() {
+  if (!arrivalDone) {
+    alert("Please complete the arrival check first.");
+    return;
+  }
+
+  completed = true;
+  departureDone = true;
+
+  document.getElementById("classStatus").textContent = "Completed";
+  document.getElementById("classStatus").className = "status done";
+  document.getElementById("completeBtn").textContent = "✓ Completed";
+  document.getElementById("completeBtn").disabled = true;
+  document.getElementById("gpsStatus").textContent =
+    "Class marked completed in this preview. This record has not been saved.";
+  updateSummary();
+}
+
+function setAttendance(index, isPresent, button) {
+  attendance[index] = isPresent;
+
+  const buttons = button.parentElement.querySelectorAll("button");
+  buttons.forEach(item => item.classList.remove("selected"));
+  button.classList.add("selected");
+}
+
+function resetAttendance() {
+  attendance.fill(null);
+
+  document.querySelectorAll(".attendance-toggle button").forEach(button => {
+    button.classList.remove("selected");
+  });
+
+  attendanceDone = false;
+  document.getElementById("attendanceStatus").textContent =
+    "Attendance has not been submitted.";
+  updateSummary();
+}
+
+function submitAttendance() {
+  const finalAttendance = attendance.map(value => value === true);
+  const presentCount = finalAttendance.filter(Boolean).length;
+  const absentCount = finalAttendance.length - presentCount;
+
+  attendanceDone = true;
+
+  document.getElementById("attendanceStatus").textContent =
+    "Preview submitted: " + presentCount + " Present, " +
+    absentCount + " Absent. This has not been saved to the database.";
+
+  updateSummary();
+}
+
+async function copyMessage(id) {
+  const message = document.getElementById(id).textContent;
+
+  try {
+    await navigator.clipboard.writeText(message);
+    alert("Message copied successfully.");
+  } catch (error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = message;
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      document.execCommand("copy");
+      alert("Message copied successfully.");
+    } catch (copyError) {
+      alert("Unable to copy. Please select and copy the message manually.");
+    }
+
+    textArea.remove();
+  }
+}
+
+function openWhatsApp(id) {
+  const message = document.getElementById(id).textContent;
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+  window.open(url, "_blank", "noopener");
+}
+
+updateSummary();
+</script>
+
+</body>
+</html>
