@@ -1,215 +1,400 @@
 
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#102b4e">
 <title>Admin Dashboard | Shyam Sports Academy</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f6fa;color:#182235}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f7fb;color:#172b45}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
 .layout{display:flex;min-height:100vh}
-.sidebar{width:250px;background:#111c2e;color:white;padding:24px 15px;flex-shrink:0}
-.brand{font-size:20px;font-weight:bold;padding:5px 10px 25px}
-.brand small{display:block;color:#9eacc0;font-size:12px;margin-top:7px}
-.nav button{display:block;width:100%;padding:13px 14px;margin:5px 0;border:0;border-radius:9px;text-align:left;background:transparent;color:#d4dceb;font-size:14px;cursor:pointer}
-.nav button.active,.nav button:hover{background:#263b59;color:white}
-.main{flex:1;min-width:0}
-.topbar{background:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e7eaf0}
-.topbar h2{margin:0;font-size:20px}
-.admin{font-size:13px;color:#667085}
-.content{padding:25px;max-width:1250px;margin:auto}
-.welcome{background:linear-gradient(120deg,#14243d,#28638b);color:white;border-radius:17px;padding:25px;margin-bottom:22px}
-.welcome h2{margin:0 0 9px}
-.welcome p{margin:0;color:#dce9f6;line-height:1.6}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
-.card,.panel{background:white;border:1px solid #e8ebf1;border-radius:14px;padding:19px}
-.card small{color:#788397}
-.number{font-size:29px;font-weight:bold;margin-top:10px}
-.panel{margin-top:20px}
-.panel h3{margin:0 0 15px}
-.section{display:none}
-.section.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
-.info{padding:15px;background:#f6f8fb;border-radius:10px;margin:10px 0}
-input,select{width:100%;padding:12px;border:1px solid #dce2eb;border-radius:8px;margin:7px 0 13px;font-size:14px;background:white}
-label{font-size:13px;font-weight:bold}
-.action{border:0;background:#1e5c91;color:white;padding:11px 16px;border-radius:8px;cursor:pointer}
-.muted{color:#788397;font-size:13px;line-height:1.6}
-table{width:100%;border-collapse:collapse;min-width:550px}
-th,td{text-align:left;padding:12px;border-bottom:1px solid #edf0f4;font-size:13px}
-.tablewrap{overflow-x:auto}
-.tag{background:#fff3d9;color:#986500;padding:5px 9px;border-radius:20px;font-size:11px}
-@media(max-width:850px){
-.layout{display:block}
-.sidebar{width:100%;padding:12px}
-.brand{padding:5px 8px 12px}
-.nav{display:flex;overflow-x:auto;gap:5px}
-.nav button{white-space:nowrap;width:auto;margin:0;padding:10px}
-.topbar{padding:15px}
-.content{padding:15px}
-.stats{grid-template-columns:repeat(2,1fr)}
-.grid{grid-template-columns:1fr}
+.sidebar{width:255px;background:#102b4e;color:white;padding:24px 16px;position:fixed;inset:0 auto 0 0;overflow-y:auto;z-index:20}
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px 26px;border-bottom:1px solid #ffffff20}
+.brand-icon{width:42px;height:42px;border-radius:13px;background:#fff;color:#102b4e;display:grid;place-items:center;font-size:21px;font-weight:900}
+.brand h2{font-size:15px;line-height:1.3}
+.brand small{color:#b9c9dc;font-size:10px;letter-spacing:1px}
+.nav-label{font-size:10px;letter-spacing:1.5px;color:#91a8c2;margin:24px 10px 10px}
+.nav-link{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;margin:3px 0;border:0;border-radius:9px;background:transparent;color:#d4dfeb;text-align:left;font-size:13px}
+.nav-link:hover,.nav-link.active{background:#ffffff18;color:white}
+.nav-link.active{box-shadow:inset 3px 0 #74b8f5}
+.nav-icon{width:20px;text-align:center;font-size:16px}
+.sidebar-bottom{margin-top:28px;padding:15px 10px;border-top:1px solid #ffffff20;color:#aebfd2;font-size:11px}
+.main{margin-left:255px;width:calc(100% - 255px);min-width:0}
+.topbar{height:72px;background:white;border-bottom:1px solid #e8edf3;display:flex;align-items:center;justify-content:space-between;padding:0 30px;position:sticky;top:0;z-index:10}
+.top-left{display:flex;align-items:center;gap:14px}
+.menu-toggle{display:none;border:0;background:#eef3f9;border-radius:8px;padding:9px}
+.topbar h2{font-size:17px;color:#102b4e}
+.topbar small{color:#8a98a9;font-size:11px}
+.profile{display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:#e6f0fb;color:#174e80;display:grid;place-items:center;font-weight:800}
+.profile strong{font-size:12px;display:block}
+.profile small{font-size:10px;color:#8996a6}
+.content{padding:28px 30px 45px;max-width:1500px;margin:auto}
+.page{display:none}
+.page.active{display:block}
+.page-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:24px}
+.page-heading h1{font-size:25px;color:#102b4e;letter-spacing:-.5px}
+.page-heading p{font-size:13px;color:#8290a1;margin-top:5px}
+.btn{border:0;border-radius:9px;padding:11px 16px;font-size:12px;font-weight:700;background:#102b4e;color:white}
+.btn:hover{opacity:.9}
+.btn.light{background:#edf3fa;color:#244c73}
+.btn.blue{background:#287cbd}
+.btn.green{background:#e6f6ed;color:#197344}
+.btn.red{background:#fff0f0;color:#b83d3d}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.stat-card,.panel,.card{background:white;border:1px solid #e8edf3;border-radius:13px}
+.stat-card{padding:19px}
+.stat-top{display:flex;justify-content:space-between;align-items:center}
+.stat-label{font-size:12px;color:#8290a1}
+.stat-icon{width:35px;height:35px;border-radius:10px;background:#edf4fc;display:grid;place-items:center}
+.stat-value{font-size:27px;font-weight:800;color:#102b4e;margin-top:12px}
+.stat-note{font-size:10px;color:#8996a6;margin-top:3px}
+.panel{padding:20px;margin-bottom:20px}
+.panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.panel-heading h3{font-size:15px;color:#102b4e}
+.panel-heading p{font-size:11px;color:#8996a6;margin-top:3px}
+.grid-two{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.quick{padding:17px;border:1px solid #e8edf3;border-radius:11px;background:#fbfcfe;text-align:left}
+.quick span{font-size:22px}
+.quick strong{display:block;font-size:12px;color:#183b60;margin-top:9px}
+.quick small{display:block;font-size:10px;color:#8a98a9;margin-top:3px}
+.activity{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #eef1f5}
+.activity:last-child{border:0}
+.dot{width:9px;height:9px;border-radius:50%;background:#4b9bd5;margin-top:5px;flex-shrink:0}
+.activity strong{font-size:12px;display:block}
+.activity small{font-size:10px;color:#8996a6}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;white-space:nowrap}
+th{text-align:left;background:#f7f9fc;color:#8190a2;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px}
+td{padding:13px 12px;border-bottom:1px solid #edf0f4;font-size:12px;color:#42566e}
+td strong{color:#193b60}
+.status{display:inline-block;border-radius:30px;padding:5px 9px;font-size:10px;font-weight:700}
+.status.active{background:#e6f6ed;color:#197344}
+.status.pending{background:#fff5df;color:#a46b11}
+.status.inactive{background:#f0f1f4;color:#707c8a}
+.status.flagged{background:#fff0f0;color:#b83d3d}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.field label{display:block;font-size:11px;font-weight:700;color:#53677e;margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 12px;border:1px solid #dfe6ee;border-radius:8px;background:white;color:#344a62;font-size:12px;outline:none}
+.field input:focus,.field select:focus{border-color:#4b93ce}
+.form-actions{margin-top:18px;display:flex;gap:10px}
+.empty-note{padding:22px;text-align:center;color:#8a98a9;font-size:12px;background:#fafbfd;border:1px dashed #dce4ed;border-radius:10px}
+.info-box{padding:14px 16px;background:#eef5fc;border:1px solid #dceafa;border-radius:10px;color:#486783;font-size:12px;margin-bottom:18px}
+.section-title{font-size:14px;color:#173b61;margin:20px 0 12px}
+.mobile-overlay{display:none}
+@media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.grid-two{grid-template-columns:1fr}}
+@media(max-width:700px){
+.sidebar{transform:translateX(-100%);transition:transform .2s ease}
+.sidebar.open{transform:translateX(0)}
+.mobile-overlay.show{display:block;position:fixed;inset:0;background:#07182b70;z-index:15}
+.main{margin-left:0;width:100%}
+.topbar{padding:0 16px;height:65px}
+.menu-toggle{display:block}
+.content{padding:22px 15px 35px}
+.page-heading h1{font-size:21px}
+.page-heading{flex-direction:column}
+.stats{gap:10px}
+.stat-card{padding:14px}
+.stat-value{font-size:23px}
+.quick-grid{grid-template-columns:repeat(2,1fr)}
+.form-grid{grid-template-columns:1fr}
+.profile .profile-info{display:none}
 }
-@media(max-width:380px){.stats{grid-template-columns:1fr}}
 </style>
 </head>
+
 <body>
-<div class="layout">
-<aside class="sidebar">
-<div class="brand">SHYAM SPORTS<small>ACADEMY MANAGEMENT</small></div>
-<nav class="nav">
-<button class="active" onclick="showSection('overview',this)">Overview</button>
-<button onclick="showSection('coaches',this)">Coach Management</button>
-<button onclick="showSection('students',this)">Student Management</button>
-<button onclick="showSection('sports',this)">Sports & Locations</button>
-<button onclick="showSection('batches',this)">Batch Management</button>
-<button onclick="showSection('schedule',this)">Schedule Management</button>
-<button onclick="showSection('attendance',this)">Attendance</button>
-<button onclick="showSection('gps',this)">GPS Monitoring</button>
-<button onclick="showSection('whatsapp',this)">WhatsApp Groups</button>
-<button onclick="showSection('reports',this)">Reports & Excel</button>
-<button onclick="showSection('settings',this)">Settings</button>
-</nav>
+<div class="mobile-overlay" id="overlay" onclick="closeMenu()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-icon">S</div>
+    <div>
+      <h2>Shyam Sports Academy</h2>
+      <small>ADMINISTRATION</small>
+    </div>
+  </div>
+
+  <div class="nav-label">MAIN MENU</div>
+  <button class="nav-link active" onclick="showPage('overview',this)"><span class="nav-icon">▦</span>Overview</button>
+  <button class="nav-link" onclick="showPage('coaches',this)"><span class="nav-icon">♙</span>Coach Management</button>
+  <button class="nav-link" onclick="showPage('students',this)"><span class="nav-icon">♧</span>Student Management</button>
+
+  <div class="nav-label">ACADEMY SETUP</div>
+  <button class="nav-link" onclick="showPage('sports',this)"><span class="nav-icon">⚽</span>Sports Management</button>
+  <button class="nav-link" onclick="showPage('locations',this)"><span class="nav-icon">⌖</span>Location Management</button>
+  <button class="nav-link" onclick="showPage('batches',this)"><span class="nav-icon">▤</span>Batch & Class Management</button>
+  <button class="nav-link" onclick="showPage('schedule',this)"><span class="nav-icon">◷</span>Schedule Management</button>
+  <button class="nav-link" onclick="showPage('groups',this)"><span class="nav-icon">☏</span>WhatsApp Groups</button>
+  <button class="nav-link" onclick="showPage('templates',this)"><span class="nav-icon">✉</span>Message Templates</button>
+
+  <div class="nav-label">MONITORING & REPORTS</div>
+  <button class="nav-link" onclick="showPage('attendance',this)"><span class="nav-icon">✓</span>Attendance</button>
+  <button class="nav-link" onclick="showPage('gps',this)"><span class="nav-icon">◎</span>GPS Monitoring</button>
+  <button class="nav-link" onclick="showPage('excel',this)"><span class="nav-icon">▧</span>Excel Management</button>
+  <button class="nav-link" onclick="showPage('reports',this)"><span class="nav-icon">▥</span>Reports & Analytics</button>
+  <button class="nav-link" onclick="showPage('corrections',this)"><span class="nav-icon">↺</span>Correction Requests</button>
+  <button class="nav-link" onclick="showPage('settings',this)"><span class="nav-icon">⚙</span>Admin Settings</button>
+
+  <div class="sidebar-bottom">Shyam Sports Academy<br>Management System</div>
 </aside>
 
+<div class="layout">
 <main class="main">
-<header class="topbar">
-<h2 id="pageTitle">Overview</h2>
-<div class="admin">Admin Panel · Shyam Sir</div>
-</header>
+  <header class="topbar">
+    <div class="top-left">
+      <button class="menu-toggle" onclick="openMenu()">☰</button>
+      <div>
+        <h2 id="topTitle">Overview</h2>
+        <small>Academy Management System</small>
+      </div>
+    </div>
+    <div class="profile">
+      <div class="avatar">SA</div>
+      <div class="profile-info">
+        <strong>Administrator</strong>
+        <small>Admin Preview</small>
+      </div>
+    </div>
+  </header>
 
-<div class="content">
+  <div class="content">
 
-<section class="section active" id="overview">
-<div class="welcome">
-<h2>Welcome to Shyam Sports Academy</h2>
-<p>Academy Management Dashboard. यहाँ से Coaches, Students, Classes और Attendance का प्रबंधन किया जाएगा।</p>
-</div>
-<div class="stats">
-<div class="card"><small>Total Coaches</small><div class="number">—</div></div>
-<div class="card"><small>Total Students</small><div class="number">—</div></div>
-<div class="card"><small>Active Batches</small><div class="number">—</div></div>
-<div class="card"><small>Today's Classes</small><div class="number">—</div></div>
-</div>
-<div class="panel">
-<h3>Academy Overview</h3>
-<p class="muted">डेटाबेस कनेक्ट होने के बाद यहाँ वास्तविक संख्या और आज की गतिविधियाँ दिखाई जाएँगी।</p>
-<div class="info">Coach Approval · Class Schedule · Attendance · GPS Records · Reports</div>
-</div>
-</section>
+  <!-- OVERVIEW -->
+  <section class="page active" id="overview">
+    <div class="page-heading">
+      <div><h1>Dashboard Overview</h1><p>Welcome to Shyam Sports Academy management.</p></div>
+      <span class="status pending">Preview Mode</span>
+    </div>
 
-<section class="section" id="coaches">
-<div class="panel">
-<h3>Coach Management</h3>
-<p class="muted">नए Coaches की जानकारी, Approval और Class Assignment यहाँ प्रबंधित होंगे।</p>
-<label>Coach Name</label><input placeholder="Coach का नाम">
-<label>Gmail Address</label><input type="email" placeholder="Coach का Gmail">
-<label>Mobile Number</label><input placeholder="Mobile Number">
-<button class="action" onclick="alert('यह Demo Form है। Database जुड़ने पर Save सुविधा चालू होगी।')">Add Coach (Demo)</button>
-</div>
-</section>
+    <div class="info-box">This is a frontend preview. Live academy data, user accounts and database connections are not active yet.</div>
 
-<section class="section" id="students">
-<div class="panel">
-<h3>Student Management</h3>
-<label>Student Name</label><input placeholder="बच्चे का नाम">
-<label>Location</label><input placeholder="Location">
-<label>Sport</label><select><option>Select Sport</option><option>Skating</option><option>Badminton</option><option>Chess</option><option>Rubik's Cube</option><option>Robotics</option></select>
-<label>Batch</label><input placeholder="Batch Name / ID">
-<button class="action" onclick="alert('यह Demo Form है। Database जुड़ने पर Save सुविधा चालू होगी।')">Add Student (Demo)</button>
-</div>
-</section>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-top"><span class="stat-label">Total Coaches</span><span class="stat-icon">♙</span></div><div class="stat-value">—</div><div class="stat-note">Coach records will appear here</div></div>
+      <div class="stat-card"><div class="stat-top"><span class="stat-label">Total Students</span><span class="stat-icon">♧</span></div><div class="stat-value">—</div><div class="stat-note">Student records will appear here</div></div>
+      <div class="stat-card"><div class="stat-top"><span class="stat-label">Active Batches</span><span class="stat-icon">▤</span></div><div class="stat-value">—</div><div class="stat-note">Batch records will appear here</div></div>
+      <div class="stat-card"><div class="stat-top"><span class="stat-label">Today's Classes</span><span class="stat-icon">◷</span></div><div class="stat-value">—</div><div class="stat-note">Daily schedule will appear here</div></div>
+    </div>
 
-<section class="section" id="sports">
-<div class="panel">
-<h3>Sports & Locations</h3>
-<div class="grid">
-<div><label>Sport Name</label><input placeholder="जैसे Skating"></div>
-<div><label>Location Name</label><input placeholder="जैसे Mumbai"></div>
-</div>
-<button class="action" onclick="alert('यह Demo Form है।')">Add Sport / Location (Demo)</button>
-</div>
-</section>
+    <div class="grid-two">
+      <div class="panel">
+        <div class="panel-heading"><div><h3>Quick Actions</h3><p>Academy management shortcuts</p></div></div>
+        <div class="quick-grid">
+          <button class="quick" onclick="showPage('coaches')"><span>♙</span><strong>Manage Coaches</strong><small>Coach records and approvals</small></button>
+          <button class="quick" onclick="showPage('students')"><span>♧</span><strong>Manage Students</strong><small>Student records and batches</small></button>
+          <button class="quick" onclick="showPage('schedule')"><span>◷</span><strong>Manage Schedule</strong><small>Class timings and assignments</small></button>
+          <button class="quick" onclick="showPage('attendance')"><span>✓</span><strong>View Attendance</strong><small>Class-wise attendance</small></button>
+          <button class="quick" onclick="showPage('gps')"><span>◎</span><strong>GPS Monitoring</strong><small>Arrival and departure records</small></button>
+          <button class="quick" onclick="showPage('reports')"><span>▥</span><strong>View Reports</strong><small>Academy performance reports</small></button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-heading"><div><h3>Management Activity</h3><p>System activity overview</p></div></div>
+        <div class="empty-note">Activity records will appear here after the database is connected.</div>
+      </div>
+    </div>
 
-<section class="section" id="batches">
-<div class="panel">
-<h3>Batch Management</h3>
-<label>Batch ID</label><input placeholder="Unique Batch ID">
-<label>Sport</label><input placeholder="Sport Name">
-<label>Location</label><input placeholder="Location">
-<label>Assigned Coach</label><input placeholder="Coach Name">
-<label>WhatsApp Group</label><input placeholder="Group Name / Link">
-<button class="action" onclick="alert('यह Demo Form है।')">Create Batch (Demo)</button>
-</div>
-</section>
+    <div class="panel">
+      <div class="panel-heading"><div><h3>Today's Class Monitoring</h3><p>Coach arrival, class completion and attendance status</p></div></div>
+      <div class="empty-note">Today's assigned classes will appear here.</div>
+    </div>
+  </section>
 
-<section class="section" id="schedule">
-<div class="panel">
-<h3>Schedule Management</h3>
-<label>Class Date</label><input type="date">
-<label>Class Time</label><input type="time">
-<label>Batch ID</label><input placeholder="Batch ID">
-<label>Coach</label><input placeholder="Coach Name">
-<label>Repeat</label><select><option>One Day</option><option>Daily</option><option>Weekly</option><option>Custom Dates</option></select>
-<button class="action" onclick="alert('यह Demo Form है।')">Save Schedule (Demo)</button>
-</div>
-</section>
+  <!-- COACHES -->
+  <section class="page" id="coaches">
+    <div class="page-heading"><div><h1>Coach Management</h1><p>Manage coach profiles, approvals and class assignments.</p></div><button class="btn" onclick="demo('Add Coach')">+ Add Coach</button></div>
+    <div class="info-box">Coach Google Sign-In, first-login approval and role-based access will be connected with authentication and database services.</div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Total Coaches</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Active Coaches</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Approvals</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">On Leave Today</div><div class="stat-value">—</div></div>
+    </div>
+    <div class="panel"><div class="panel-heading"><div><h3>Coach Directory</h3><p>Coach details and account status</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Coach Name</th><th>Email</th><th>Assigned Classes</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td colspan="5" class="empty-note">No live coach records connected.</td></tr></tbody></table></div>
+    </div>
+    <div class="panel"><div class="panel-heading"><h3>Coach Approval Requests</h3></div><div class="empty-note">Pending Google Sign-In requests will appear here.</div></div>
+  </section>
 
-<section class="section" id="attendance">
-<div class="panel">
-<h3>Attendance Management</h3>
-<p class="muted">Batch और तारीख के अनुसार बच्चों की Present / Absent Attendance यहाँ दिखाई जाएगी।</p>
-<div class="info">अभी कोई वास्तविक Attendance रिकॉर्ड उपलब्ध नहीं है।</div>
-</div>
-</section>
+  <!-- STUDENTS -->
+  <section class="page" id="students">
+    <div class="page-heading"><div><h1>Student Management</h1><p>Manage student profiles, batch assignments and course transfers.</p></div><button class="btn" onclick="demo('Add Student')">+ Add Student</button></div>
+    <div class="info-box">Student records will be organized by Location → Sport → Batch. Historical attendance will remain linked to the student record.</div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Active Students</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Active Batches</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Course Transfers</div><div class="stat-value">—</div></div>
+    </div>
+    <div class="panel"><div class="panel-heading"><h3>Student Directory</h3><button class="btn light" onclick="demo('Student Search')">Search Students</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Student Name</th><th>Student ID</th><th>Sport</th><th>Location</th><th>Batch ID</th><th>Status</th></tr></thead><tbody><tr><td colspan="6" class="empty-note">Student records will appear here after database connection.</td></tr></tbody></table></div>
+    </div>
+  </section>
 
-<section class="section" id="gps">
-<div class="panel">
-<h3>Arrival & Departure GPS Monitoring</h3>
-<p class="muted">Coach के I'm Here और Class Completed करने पर GPS, Timestamp और Location Verification रिकॉर्ड यहाँ दिखेंगे।</p>
-<div class="info">GPS Records Database कनेक्ट होने के बाद उपलब्ध होंगे।</div>
-</div>
-</section>
+  <!-- SPORTS -->
+  <section class="page" id="sports">
+    <div class="page-heading"><div><h1>Sports Management</h1><p>Manage academy sports and learning programs.</p></div><button class="btn" onclick="demo('Add Sport')">+ Add Sport</button></div>
+    <div class="info-box">Initial academy programs: Skating, Badminton, Chess, Rubik's Cube and Robotics. Additional sports can be configured later.</div>
+    <div class="panel"><div class="panel-heading"><h3>Sports Directory</h3></div>
+      <div class="table-wrap"><table><thead><tr><th>Sport / Program</th><th>Locations</th><th>Active Batches</th><th>Students</th><th>Status</th></tr></thead><tbody>
+      <tr><td><strong>Skating</strong></td><td>—</td><td>—</td><td>—</td><td><span class="status active">Configured</span></td></tr>
+      <tr><td><strong>Badminton</strong></td><td>—</td><td>—</td><td>—</td><td><span class="status active">Configured</span></td></tr>
+      <tr><td><strong>Chess</strong></td><td>—</td><td>—</td><td>—</td><td><span class="status active">Configured</span></td></tr>
+      <tr><td><strong>Rubik's Cube</strong></td><td>—</td><td>—</td><td>—</td><td><span class="status active">Configured</span></td></tr>
+      <tr><td><strong>Robotics</strong></td><td>—</td><td>—</td><td>—</td><td><span class="status active">Configured</span></td></tr>
+      </tbody></table></div>
+    </div>
+  </section>
 
-<section class="section" id="whatsapp">
-<div class="panel">
-<h3>WhatsApp Group Management</h3>
-<label>Batch ID</label><input placeholder="Unique Batch ID">
-<label>Parent Group Name</label><input placeholder="WhatsApp Group Name">
-<label>Group Link (Optional)</label><input placeholder="WhatsApp Group Link">
-<button class="action" onclick="alert('यह Demo Form है।')">Save Group (Demo)</button>
-</div>
-</section>
+  <!-- LOCATIONS -->
+  <section class="page" id="locations">
+    <div class="page-heading"><div><h1>Location Management</h1><p>Manage academy locations, societies and training venues.</p></div><button class="btn" onclick="demo('Add Location')">+ Add Location</button></div>
+    <div class="info-box">A single location can contain multiple sports and multiple batches. Each batch will have its own unique Batch ID.</div>
+    <div class="panel"><div class="panel-heading"><h3>Location Directory</h3></div><div class="empty-note">Location records will appear here.</div></div>
+  </section>
 
-<section class="section" id="reports">
-<div class="panel">
-<h3>Reports & Excel</h3>
-<p class="muted">Daily, Monthly और Yearly Reports तथा Batch-wise Excel Export यहाँ तैयार होंगे।</p>
-<div class="info">पहले Database और रिपोर्टिंग सिस्टम जोड़ना बाकी है।</div>
-</div>
-</section>
+  <!-- BATCHES -->
+  <section class="page" id="batches">
+    <div class="page-heading"><div><h1>Batch & Class Management</h1><p>Create batches and connect students, coaches, schedules and groups.</p></div><button class="btn" onclick="demo('Create Batch')">+ Create Batch</button></div>
+    <div class="info-box">Each batch will have a globally unique Batch ID and its own roster, assigned coach, location, sport, schedule and WhatsApp group mapping.</div>
+    <div class="panel"><div class="panel-heading"><h3>Batch Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Batch ID</th><th>Batch Name</th><th>Sport</th><th>Location</th><th>Coach</th><th>Students</th><th>Status</th></tr></thead><tbody><tr><td colspan="7" class="empty-note">Batch records will appear here.</td></tr></tbody></table></div></div>
+  </section>
 
-<section class="section" id="settings">
-<div class="panel">
-<h3>Admin Settings</h3>
-<p class="muted">Admin Access, GPS Radius, Academy Details और अन्य Settings यहाँ प्रबंधित होंगी।</p>
-<div class="info">Security और Google Login को Database Setup के समय जोड़ा जाएगा।</div>
-</div>
-</section>
+  <!-- SCHEDULE -->
+  <section class="page" id="schedule">
+    <div class="page-heading"><div><h1>Schedule Management</h1><p>Manage recurring schedules and date-specific class changes.</p></div><button class="btn" onclick="demo('Create Schedule')">+ Create Schedule</button></div>
+    <div class="info-box">Schedules will support one-day classes, weekly repeats, regular long-running schedules and special date overrides. Future changes will not rewrite historical class records.</div>
+    <div class="panel"><div class="panel-heading"><h3>Schedule Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Date / Repeat</th><th>Time</th><th>Sport</th><th>Batch ID</th><th>Location</th><th>Coach</th><th>Status</th></tr></thead><tbody><tr><td colspan="7" class="empty-note">Scheduled classes will appear here.</td></tr></tbody></table></div></div>
+  </section>
 
-</div>
+  <!-- WHATSAPP -->
+  <section class="page" id="groups">
+    <div class="page-heading"><div><h1>WhatsApp Group Management</h1><p>Map each academy batch to its existing parent group.</p></div><button class="btn" onclick="demo('Add WhatsApp Group')">+ Add Group</button></div>
+    <div class="info-box">The academy system will store group labels and optional links. It will not create, rename or automatically send messages to WhatsApp groups. Coaches will select the correct existing group and send messages themselves.</div>
+    <div class="panel"><div class="panel-heading"><h3>Group Mapping Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Group Label</th><th>Batch ID</th><th>Sport</th><th>Location</th><th>Group Reference</th><th>Status</th></tr></thead><tbody><tr><td colspan="6" class="empty-note">WhatsApp group mappings will appear here.</td></tr></tbody></table></div></div>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section class="page" id="templates">
+    <div class="page-heading"><div><h1>Message Templates</h1><p>Manage arrival and departure messages for coaches.</p></div><button class="btn" onclick="demo('Save Message Template')">Save Templates</button></div>
+    <div class="info-box">Templates can be customized by sport. Coaches will copy the prepared message and manually send it to the correct parent group.</div>
+    <div class="panel">
+      <div class="field"><label>Sport</label><select><option>Skating</option><option>Badminton</option><option>Chess</option><option>Rubik's Cube</option><option>Robotics</option></select></div>
+      <h3 class="section-title">Arrival Message</h3>
+      <div class="field"><textarea style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" placeholder="Enter arrival message template"></textarea></div>
+      <h3 class="section-title">Departure Message</h3>
+      <div class="field"><textarea style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" placeholder="Enter departure message template"></textarea></div>
+    </div>
+  </section>
+
+  <!-- ATTENDANCE -->
+  <section class="page" id="attendance">
+    <div class="page-heading"><div><h1>Attendance Management</h1><p>Review class-wise and student-wise attendance records.</p></div><button class="btn light" onclick="demo('Attendance Filters')">Filter Records</button></div>
+    <div class="info-box">Coaches will mark students present after class. Unselected students will be marked absent when attendance is submitted. Admin corrections will preserve an audit history.</div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Classes Held</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Present Students</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Absent Students</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Submissions</div><div class="stat-value">—</div></div>
+    </div>
+    <div class="panel"><div class="panel-heading"><h3>Attendance Records</h3></div><div class="empty-note">Attendance records will appear here after database connection.</div></div>
+  </section>
+
+  <!-- GPS -->
+  <section class="page" id="gps">
+    <div class="page-heading"><div><h1>GPS Monitoring</h1><p>Review coach arrival and departure verification records.</p></div></div>
+    <div class="info-box">GPS will be captured only when a coach presses "I'm Here" or "Class Completed". No continuous tracking. Location accuracy and distance from the scheduled venue will be recorded for review.</div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Arrivals Today</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Departures Today</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Verified Records</div><div class="stat-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Flagged Records</div><div class="stat-value">—</div></div>
+    </div>
+    <div class="panel"><div class="panel-heading"><h3>GPS Event History</h3></div><div class="empty-note">GPS events, timestamps, coordinates, accuracy and distance checks will appear here.</div></div>
+  </section>
+
+  <!-- EXCEL -->
+  <section class="page" id="excel">
+    <div class="page-heading"><div><h1>Excel Management</h1><p>Organize batch-wise attendance and academy data exports.</p></div><button class="btn" onclick="demo('Export Excel')">Export Excel</button></div>
+    <div class="info-box">The database will remain the primary source of truth. Excel files will be generated from database records. Batch-wise exports can be organized by sport and location.</div>
+    <div class="panel"><div class="panel-heading"><h3>Batch-wise Excel Files</h3></div><div class="empty-note">Excel exports will be available after database and export functionality are connected.</div></div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="page" id="reports">
+    <div class="page-heading"><div><h1>Reports & Analytics</h1><p>Review daily, monthly and yearly academy performance.</p></div><button class="btn light" onclick="demo('Generate Report')">Generate Report</button></div>
+    <div class="panel"><div class="form-grid">
+      <div class="field"><label>Report Type</label><select><option>Coach Performance</option><option>Student Attendance</option><option>Batch Performance</option><option>Location Summary</option><option>Class History</option><option>GPS History</option></select></div>
+      <div class="field"><label>Report Period</label><select><option>Daily</option><option>Monthly</option><option>Yearly</option><option>Custom Date Range</option></select></div>
+      <div class="field"><label>Start Date</label><input type="date"></div>
+      <div class="field"><label>End Date</label><input type="date"></div>
+    </div><div class="form-actions"><button class="btn" onclick="demo('Generate Report')">Generate Report</button></div></div>
+    <div class="panel"><div class="panel-heading"><h3>Report Results</h3></div><div class="empty-note">Reports will appear here when live records are connected.</div></div>
+  </section>
+
+  <!-- CORRECTIONS -->
+  <section class="page" id="corrections">
+    <div class="page-heading"><div><h1>Correction Requests</h1><p>Review coach requests to correct submitted class records.</p></div></div>
+    <div class="info-box">Only authorized Admin users can approve or reject correction requests. Original records and changes will be retained in the audit history.</div>
+    <div class="panel"><div class="panel-heading"><h3>Pending Requests</h3></div><div class="empty-note">No live correction requests connected.</div></div>
+    <div class="panel"><div class="panel-heading"><h3>Audit History</h3></div><div class="empty-note">Record changes and admin actions will appear here.</div></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="page" id="settings">
+    <div class="page-heading"><div><h1>Admin Settings</h1><p>Configure authorized access and academy preferences.</p></div></div>
+    <div class="info-box">Admin access will be restricted to the authorized administrator Google account. Security rules will be enforced through the backend, not only through the user interface.</div>
+    <div class="panel"><h3>Administrator Access</h3><p style="font-size:12px;color:#8290a1;margin-top:8px">Authorized Google account configuration will be connected during authentication setup.</p></div>
+    <div class="panel"><h3>Academy Preferences</h3><p style="font-size:12px;color:#8290a1;margin-top:8px">Academy name, time zone, schedule preferences and other settings will be configured here.</p></div>
+  </section>
+
+  </div>
 </main>
 </div>
+
 <script>
-function showSection(id,button){
-document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-document.getElementById(id).classList.add('active');
-document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
-button.classList.add('active');
-document.getElementById('pageTitle').textContent=button.textContent;
+const pageTitles={
+ overview:"Overview",coaches:"Coach Management",students:"Student Management",
+ sports:"Sports Management",locations:"Location Management",batches:"Batch & Class Management",
+ schedule:"Schedule Management",groups:"WhatsApp Groups",templates:"Message Templates",
+ attendance:"Attendance Management",gps:"GPS Monitoring",excel:"Excel Management",
+ reports:"Reports & Analytics",corrections:"Correction Requests",settings:"Admin Settings"
+};
+
+function showPage(id,button){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ const target=document.getElementById(id);
+ if(target) target.classList.add("active");
+ document.querySelectorAll(".nav-link").forEach(b=>b.classList.remove("active"));
+ if(button) button.classList.add("active");
+ else{
+   document.querySelectorAll(".nav-link").forEach(b=>{
+     if(b.getAttribute("onclick")?.includes("'"+id+"'")) b.classList.add("active");
+   });
+ }
+ document.getElementById("topTitle").textContent=pageTitles[id]||"Dashboard";
+ closeMenu();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openMenu(){
+ document.getElementById("sidebar").classList.add("open");
+ document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+ document.getElementById("sidebar").classList.remove("open");
+ document.getElementById("overlay").classList.remove("show");
+}
+function demo(action){
+ alert(action+" is part of the planned management system. Database and secure backend functionality are not connected yet.");
 }
 </script>
 </body>
 </html>
-
