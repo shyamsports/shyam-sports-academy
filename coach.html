@@ -1,1 +1,92 @@
 
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Coach Dashboard | Shyam Sports Academy</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fa;color:#182235;font-family:Arial,sans-serif}
+header{background:#111d30;color:white;padding:22px 18px}
+header h2{margin:0 0 7px;font-size:21px}
+header p{margin:0;color:#c5d1e0;font-size:13px}
+main{max-width:850px;margin:auto;padding:18px}
+.welcome{background:linear-gradient(130deg,#193653,#286a91);color:white;padding:22px;border-radius:17px}
+.welcome h2{margin:0 0 8px}
+.welcome p{margin:0;color:#e2edf7;line-height:1.5;font-size:14px}
+.date{font-weight:bold;margin:22px 0 12px}
+.class-card{background:white;padding:18px;border:1px solid #e5eaf0;border-radius:15px;margin-bottom:15px}
+.class-card h3{margin:0 0 12px}
+.details{font-size:14px;line-height:1.9;color:#586579}
+.status{display:inline-block;background:#fff2d5;color:#8b6100;padding:6px 10px;border-radius:20px;font-size:12px;margin:10px 0}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+button{border:0;border-radius:10px;padding:13px 8px;font-size:14px;font-weight:bold;cursor:pointer}
+.arrive{background:#e2f5eb;color:#167344}
+.complete{background:#e8efff;color:#2854a0}
+.attendance{background:white;border:1px solid #e5eaf0;padding:18px;border-radius:15px;margin-top:18px}
+.student{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #edf0f4;gap:10px}
+.student input{width:19px;height:19px}
+.note{font-size:12px;color:#778397;line-height:1.6}
+footer{text-align:center;color:#8792a3;padding:25px;font-size:12px}
+@media(max-width:400px){.actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h2>Shyam Sports Academy</h2>
+<p>Coach Dashboard</p>
+</header>
+<main>
+<section class="welcome">
+<h2>नमस्ते, Coach!</h2>
+<p>आज की Classes और Attendance देखने के लिए आपका Dashboard।</p>
+</section>
+
+<div class="date" id="today"></div>
+
+<section class="class-card">
+<h3>आज की Class</h3>
+<div class="details">
+Sport: <b>Skating</b><br>
+Batch: <b>Demo Batch A</b><br>
+Location: <b>Demo Location</b><br>
+Time: <b>सुबह 7:00 – 8:00</b><br>
+Students: <b>Demo Roster</b>
+</div>
+<span class="status" id="classStatus">अभी शुरू नहीं हुई</span>
+<div class="actions">
+<button class="arrive" onclick="demoAction('arrival')">I'm Here</button>
+<button class="complete" onclick="demoAction('complete')">Class Completed</button>
+</div>
+<p class="note">ये अभी Demo Buttons हैं। असली GPS और समय का रिकॉर्ड Database जुड़ने के बाद सेव होगा।</p>
+</section>
+
+<section class="attendance">
+<h3>Attendance Demo</h3>
+<p class="note">नीचे केवल उदाहरण के लिए नाम हैं। असली Batch के बच्चों की सूची Admin से आएगी।</p>
+<div class="student"><span>Demo Student 1</span><input type="checkbox"></div>
+<div class="student"><span>Demo Student 2</span><input type="checkbox"></div>
+<div class="student"><span>Demo Student 3</span><input type="checkbox"></div>
+<button style="background:#172f50;color:white;width:100%;margin-top:16px" onclick="alert('Demo only: Attendance अभी Database में सेव नहीं होती।')">Submit Attendance (Demo)</button>
+</section>
+</main>
+<footer>Shyam Sports Academy · Coach Portal</footer>
+<script>
+document.getElementById('today').textContent =
+'आज की तारीख: '+new Date().toLocaleDateString('hi-IN',{day:'numeric',month:'long',year:'numeric'});
+
+function demoAction(type){
+if(type==='arrival'){
+document.getElementById('classStatus').textContent='Arrival Demo दबाया गया';
+alert("Demo: GPS और Arrival रिकॉर्ड अभी सेव नहीं हो रहा है।");
+}else{
+document.getElementById('classStatus').textContent='Class Completed Demo दबाया गया';
+alert("Demo: Departure रिकॉर्ड अभी सेव नहीं हो रहा है।");
+}
+}
+</script>
+</body>
+</html>
+
