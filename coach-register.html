@@ -1,1 +1,180 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coach Registration | Shyam Sports Academy</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f5f9;
+      font-family: Arial, sans-serif;
+      color: #172033;
+    }
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 35px rgba(0,0,0,.07);
+    }
+    h1 { margin: 0 0 8px; font-size: 25px; }
+    .sub { color: #687386; margin: 0 0 25px; line-height: 1.5; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 16px 0 7px; }
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d8deea;
+      border-radius: 9px;
+      font-size: 15px;
+      outline: none;
+    }
+    input:focus { border-color: #2563eb; }
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      border: 0;
+      border-radius: 9px;
+      background: #155eef;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    #message {
+      display: none;
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 9px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .success { display: block !important; background: #e9f8ef; color: #176b38; }
+    .error { display: block !important; background: #fff0f0; color: #b42318; }
+    .login { text-align: center; margin-top: 20px; font-size: 14px; }
+    a { color: #155eef; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Coach Registration</h1>
+    <p class="sub">Create your coach account. Your account will be reviewed by the academy admin.</p>
+
+    <form id="registerForm">
+      <label for="name">Full Name</label>
+      <input id="name" type="text" autocomplete="name" required>
+
+      <label for="email">Email Address</label>
+      <input id="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" minlength="6" autocomplete="new-password" required>
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" required>
+
+      <button id="submitBtn" type="submit">Submit Registration</button>
+    </form>
+
+    <div id="message" role="status"></div>
+    <p class="login">Already registered? <a href="coach.html">Go to Coach Dashboard</a></p>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
+      authDomain: "shyam-sports-academy.firebaseapp.com",
+      projectId: "shyam-sports-academy",
+      storageBucket: "shyam-sports-academy.firebasestorage.app",
+      messagingSenderId: "204237173149",
+      appId: "1:204237173149:web:84f0e36a4981e6adbf3f74",
+      measurementId: "G-548JZ1L682"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("registerForm");
+    const button = document.getElementById("submitBtn");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.className = "";
+      message.style.display = "none";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        message.textContent = "Passwords do not match.";
+        message.className = "error";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Submitting...";
+
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = credential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          name: name,
+          email: user.email,
+          role: "coach",
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+
+        await signOut(auth);
+
+        form.reset();
+        message.textContent = "Registration submitted successfully. Please wait for admin approval before logging in.";
+        message.className = "success";
+
+      } catch (error) {
+        console.error(error);
+        const messages = {
+          "auth/email-already-in-use": "This email is already registered. Please use another email or log in.",
+          "auth/invalid-email": "Please enter a valid email address.",
+          "auth/weak-password": "Password must contain at least 6 characters.",
+          "permission-denied": "Registration could not be saved. Please contact the academy admin."
+        };
+        message.textContent = messages[error.code] || error.message || "Registration failed. Please try again.";
+        message.className = "error";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Submit Registration";
+      }
+    });
+  </script>
+</body>
+</html>
+
