@@ -1,92 +1,401 @@
 
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#101827">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#102b4e">
 <title>Coach Dashboard | Shyam Sports Academy</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f3f6fa;color:#182235;font-family:Arial,sans-serif}
-header{background:#111d30;color:white;padding:22px 18px}
-header h2{margin:0 0 7px;font-size:21px}
-header p{margin:0;color:#c5d1e0;font-size:13px}
-main{max-width:850px;margin:auto;padding:18px}
-.welcome{background:linear-gradient(130deg,#193653,#286a91);color:white;padding:22px;border-radius:17px}
-.welcome h2{margin:0 0 8px}
-.welcome p{margin:0;color:#e2edf7;line-height:1.5;font-size:14px}
-.date{font-weight:bold;margin:22px 0 12px}
-.class-card{background:white;padding:18px;border:1px solid #e5eaf0;border-radius:15px;margin-bottom:15px}
-.class-card h3{margin:0 0 12px}
-.details{font-size:14px;line-height:1.9;color:#586579}
-.status{display:inline-block;background:#fff2d5;color:#8b6100;padding:6px 10px;border-radius:20px;font-size:12px;margin:10px 0}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-button{border:0;border-radius:10px;padding:13px 8px;font-size:14px;font-weight:bold;cursor:pointer}
-.arrive{background:#e2f5eb;color:#167344}
-.complete{background:#e8efff;color:#2854a0}
-.attendance{background:white;border:1px solid #e5eaf0;padding:18px;border-radius:15px;margin-top:18px}
-.student{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #edf0f4;gap:10px}
-.student input{width:19px;height:19px}
-.note{font-size:12px;color:#778397;line-height:1.6}
-footer{text-align:center;color:#8792a3;padding:25px;font-size:12px}
-@media(max-width:400px){.actions{grid-template-columns:1fr}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f7fb;color:#172b45;line-height:1.5}
+button{font:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+.app{max-width:1050px;margin:auto;min-height:100vh;padding-bottom:85px}
+.header{background:white;border-bottom:1px solid #e8edf3;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:42px;height:42px;border-radius:13px;background:#102b4e;color:white;display:grid;place-items:center;font-weight:900;font-size:21px}
+.brand h1{font-size:15px;color:#102b4e}
+.brand small{font-size:10px;color:#8492a3;letter-spacing:1px}
+.profile{width:38px;height:38px;border-radius:50%;background:#e8f1fb;color:#174e80;display:grid;place-items:center;font-weight:800}
+.content{padding:25px 22px}
+.welcome{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}
+.welcome h2{font-size:25px;color:#102b4e;letter-spacing:-.5px}
+.welcome p{font-size:12px;color:#8492a3;margin-top:4px}
+.date-box{padding:9px 12px;background:white;border:1px solid #e5ebf2;border-radius:10px;font-size:11px;color:#526a83;font-weight:700}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.summary-card{background:white;border:1px solid #e7edf4;border-radius:13px;padding:15px}
+.summary-card small{font-size:11px;color:#8290a1}
+.summary-card strong{display:block;font-size:23px;color:#102b4e;margin-top:6px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:26px 0 13px}
+.section-heading h3{font-size:16px;color:#102b4e}
+.section-heading small{font-size:10px;color:#8492a3}
+.card{background:white;border:1px solid #e7edf4;border-radius:15px;padding:18px;margin-bottom:15px;box-shadow:0 4px 15px rgba(16,43,78,.025)}
+.class-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sport-name{font-size:18px;font-weight:800;color:#102b4e}
+.batch{font-size:11px;color:#8492a3;margin-top:3px}
+.status{font-size:10px;padding:5px 9px;border-radius:30px;font-weight:800;white-space:nowrap}
+.status.scheduled{background:#edf3fb;color:#37658e}
+.status.done{background:#e6f6ed;color:#197344}
+.status.wait{background:#fff4df;color:#9a6918}
+.details{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:17px 0;padding:14px;background:#f8fafc;border-radius:10px}
+.detail small{display:block;font-size:10px;color:#8a98a9}
+.detail strong{display:block;font-size:12px;color:#304b68;margin-top:4px}
+.class-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:0;border-radius:10px;padding:13px 12px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-arrival{background:#eaf3fc;color:#18578d}
+.btn-complete{background:#102b4e;color:white}
+.btn-whatsapp{background:#e8f7ee;color:#167343}
+.btn-light{background:#f0f3f7;color:#51667d}
+.btn-primary{background:#102b4e;color:white}
+.info{font-size:11px;color:#8290a1;margin-top:10px}
+.student-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f4}
+.student-row:last-child{border-bottom:0}
+.student-name{font-size:13px;font-weight:700;color:#27435f}
+.student-id{font-size:10px;color:#9aa5b2}
+.attendance-toggle{display:flex;gap:6px}
+.attendance-toggle button{border:0;border-radius:8px;padding:8px 11px;font-size:10px;font-weight:800}
+.present{background:#e6f6ed;color:#197344}
+.absent{background:#fff0f0;color:#b83d3d}
+.attendance-toggle button.selected{outline:2px solid #9bb6d0;outline-offset:1px}
+.attendance-actions{display:flex;gap:10px;margin-top:15px}
+.attendance-actions .btn{flex:1}
+.message-box{background:#f8fafc;border:1px solid #e8edf3;border-radius:11px;padding:15px;margin-bottom:12px}
+.message-box h4{font-size:13px;color:#102b4e;margin-bottom:7px}
+.message-box p{font-size:12px;color:#61748a;line-height:1.7}
+.message-actions{display:flex;gap:8px;margin-top:12px}
+.message-actions button{flex:1}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e7edf4;display:flex;justify-content:center;z-index:15}
+.bottom-inner{max-width:700px;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav-item{border:0;background:white;color:#8290a1;padding:12px 4px 10px;font-size:10px;font-weight:700}
+.nav-item span{display:block;font-size:19px;margin-bottom:3px}
+.nav-item.active{color:#1b6aa8}
+.section{display:none}
+.section.active{display:block}
+.notice{background:#eef5fc;border:1px solid #dceafa;border-radius:10px;padding:13px;color:#486783;font-size:11px;margin-bottom:15px}
+.empty{padding:25px;text-align:center;color:#8492a3;border:1px dashed #dce4ed;border-radius:12px;font-size:12px}
+.progress-line{height:7px;background:#edf1f6;border-radius:20px;overflow:hidden;margin-top:10px}
+.progress-line div{height:100%;width:0;background:#247ac1;border-radius:20px}
+.footer{text-align:center;color:#9aa5b2;font-size:10px;padding:15px}
+@media(min-width:760px){
+.content{padding:30px}
+.class-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.class-grid .card{margin-bottom:0}
+}
+@media(max-width:480px){
+.content{padding:19px 14px}
+.header{padding:13px 15px}
+.welcome h2{font-size:21px}
+.summary{gap:8px}
+.summary-card{padding:12px}
+.summary-card strong{font-size:20px}
+.date-box{font-size:10px;padding:8px}
+.class-actions{grid-template-columns:1fr}
+.details{gap:10px}
+.attendance-toggle button{padding:8px}
+}
 </style>
 </head>
+
 <body>
-<header>
-<h2>Shyam Sports Academy</h2>
-<p>Coach Dashboard</p>
+<div class="app">
+
+<header class="header">
+  <div class="brand">
+    <div class="logo">S</div>
+    <div>
+      <h1>Shyam Sports Academy</h1>
+      <small>COACH PORTAL</small>
+    </div>
+  </div>
+  <div class="profile">C</div>
 </header>
-<main>
-<section class="welcome">
-<h2>नमस्ते, Coach!</h2>
-<p>आज की Classes और Attendance देखने के लिए आपका Dashboard।</p>
-</section>
 
-<div class="date" id="today"></div>
+<main class="content">
 
-<section class="class-card">
-<h3>आज की Class</h3>
-<div class="details">
-Sport: <b>Skating</b><br>
-Batch: <b>Demo Batch A</b><br>
-Location: <b>Demo Location</b><br>
-Time: <b>सुबह 7:00 – 8:00</b><br>
-Students: <b>Demo Roster</b>
-</div>
-<span class="status" id="classStatus">अभी शुरू नहीं हुई</span>
-<div class="actions">
-<button class="arrive" onclick="demoAction('arrival')">I'm Here</button>
-<button class="complete" onclick="demoAction('complete')">Class Completed</button>
-</div>
-<p class="note">ये अभी Demo Buttons हैं। असली GPS और समय का रिकॉर्ड Database जुड़ने के बाद सेव होगा।</p>
-</section>
+  <div class="welcome">
+    <div>
+      <h2>Good Day, Coach!</h2>
+      <p>Here is your academy schedule.</p>
+    </div>
+    <div class="date-box" id="todayDate">Today</div>
+  </div>
 
-<section class="attendance">
-<h3>Attendance Demo</h3>
-<p class="note">नीचे केवल उदाहरण के लिए नाम हैं। असली Batch के बच्चों की सूची Admin से आएगी।</p>
-<div class="student"><span>Demo Student 1</span><input type="checkbox"></div>
-<div class="student"><span>Demo Student 2</span><input type="checkbox"></div>
-<div class="student"><span>Demo Student 3</span><input type="checkbox"></div>
-<button style="background:#172f50;color:white;width:100%;margin-top:16px" onclick="alert('Demo only: Attendance अभी Database में सेव नहीं होती।')">Submit Attendance (Demo)</button>
-</section>
+  <div class="summary">
+    <div class="summary-card">
+      <small>Today's Classes</small>
+      <strong id="totalClasses">1</strong>
+    </div>
+    <div class="summary-card">
+      <small>Completed</small>
+      <strong id="completedClasses">0</strong>
+    </div>
+    <div class="summary-card">
+      <small>Students</small>
+      <strong>3</strong>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section class="section active" id="home">
+    <div class="notice">
+      Preview Mode: The displayed class and student details are sample data.
+      Your assigned schedule will appear here after secure login and database connection.
+    </div>
+
+    <div class="section-heading">
+      <h3>Today's Assigned Classes</h3>
+      <small id="classDate"></small>
+    </div>
+
+    <div class="class-grid">
+      <div class="card">
+        <div class="class-top">
+          <div>
+            <div class="sport-name">Skating</div>
+            <div class="batch">Batch ID: SAMPLE-SK-001</div>
+          </div>
+          <span class="status scheduled" id="classStatus">Scheduled</span>
+        </div>
+
+        <div class="details">
+          <div class="detail"><small>Location</small><strong>Sample Academy Location</strong></div>
+          <div class="detail"><small>Scheduled Time</small><strong>05:00 PM – 06:00 PM</strong></div>
+          <div class="detail"><small>Students</small><strong>3 Students</strong></div>
+          <div class="detail"><small>WhatsApp Group</small><strong>Skating Sample Group</strong></div>
+        </div>
+
+        <div class="class-actions">
+          <button class="btn btn-arrival" id="arrivalBtn" onclick="markArrival()">◎ I'm Here</button>
+          <button class="btn btn-complete" id="completeBtn" onclick="completeClass()" disabled>✓ Class Completed</button>
+        </div>
+        <p class="info" id="gpsStatus">GPS permission is requested only when you press an action button.</p>
+      </div>
+    </div>
+
+    <div class="section-heading"><h3>Class Progress</h3></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;font-size:12px">
+        <strong>Today's Work Progress</strong><strong id="progressText">0%</strong>
+      </div>
+      <div class="progress-line"><div id="progressBar"></div></div>
+      <p class="info">Your daily class summary will update after records are saved.</p>
+    </div>
+  </section>
+
+  <!-- ATTENDANCE -->
+  <section class="section" id="attendance">
+    <div class="section-heading">
+      <h3>Student Attendance</h3>
+      <small>Sample roster</small>
+    </div>
+    <div class="notice">
+      Select Present or Absent for every student. Unselected students will be marked Absent when submitted.
+    </div>
+
+    <div class="card">
+      <div class="student-row">
+        <div><div class="student-name">Student One</div><div class="student-id">Sample Student ID: ST-001</div></div>
+        <div class="attendance-toggle"><button class="present" onclick="setAttendance(0,true,this)">Present</button><button class="absent" onclick="setAttendance(0,false,this)">Absent</button></div>
+      </div>
+      <div class="student-row">
+        <div><div class="student-name">Student Two</div><div class="student-id">Sample Student ID: ST-002</div></div>
+        <div class="attendance-toggle"><button class="present" onclick="setAttendance(1,true,this)">Present</button><button class="absent" onclick="setAttendance(1,false,this)">Absent</button></div>
+      </div>
+      <div class="student-row">
+        <div><div class="student-name">Student Three</div><div class="student-id">Sample Student ID: ST-003</div></div>
+        <div class="attendance-toggle"><button class="present" onclick="setAttendance(2,true,this)">Present</button><button class="absent" onclick="setAttendance(2,false,this)">Absent</button></div>
+      </div>
+
+      <div class="attendance-actions">
+        <button class="btn btn-light" onclick="resetAttendance()">Reset</button>
+        <button class="btn btn-primary" onclick="submitAttendance()">Submit Attendance</button>
+      </div>
+      <p class="info" id="attendanceStatus">Attendance has not been submitted.</p>
+    </div>
+  </section>
+
+  <!-- MESSAGES -->
+  <section class="section" id="messages">
+    <div class="section-heading"><h3>Parent Group Messages</h3></div>
+    <div class="notice">Messages are prepared for copying. You must select the correct existing parent group and send the message yourself.</div>
+
+    <div class="message-box">
+      <h4>Arrival Message</h4>
+      <p id="arrivalMessage">Hello Parents! The coach has arrived at your location for today's Skating Class. Please send your children with their skates, water bottle and required equipment. Thank you! Shyam Sports Academy</p>
+      <div class="message-actions">
+        <button class="btn btn-light" onclick="copyMessage('arrivalMessage')">Copy Message</button>
+        <button class="btn btn-whatsapp" onclick="openWhatsApp('arrivalMessage')">Open WhatsApp</button>
+      </div>
+    </div>
+
+    <div class="message-box">
+      <h4>Departure Message</h4>
+      <p id="departureMessage">Hello Parents! Today's Skating Class has been completed. The coach is now leaving the location. Please arrive to pick up your children. Thank you! Shyam Sports Academy</p>
+      <div class="message-actions">
+        <button class="btn btn-light" onclick="copyMessage('departureMessage')">Copy Message</button>
+        <button class="btn btn-whatsapp" onclick="openWhatsApp('departureMessage')">Open WhatsApp</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="section" id="summary">
+    <div class="section-heading"><h3>Daily Work Summary</h3></div>
+    <div class="card">
+      <div class="student-row"><span class="student-name">Scheduled Classes</span><strong id="sumScheduled">1</strong></div>
+      <div class="student-row"><span class="student-name">Completed Classes</span><strong id="sumCompleted">0</strong></div>
+      <div class="student-row"><span class="student-name">Attendance Submitted</span><strong id="sumAttendance">No</strong></div>
+      <div class="student-row"><span class="student-name">Arrival Recorded</span><strong id="sumArrival">No</strong></div>
+      <div class="student-row"><span class="student-name">Departure Recorded</span><strong id="sumDeparture">No</strong></div>
+    </div>
+    <div class="notice">This is a local preview only. Daily summaries, class hours, work days and leave records will be calculated from verified database records after backend integration.</div>
+  </section>
+
 </main>
-<footer>Shyam Sports Academy · Coach Portal</footer>
-<script>
-document.getElementById('today').textContent =
-'आज की तारीख: '+new Date().toLocaleDateString('hi-IN',{day:'numeric',month:'long',year:'numeric'});
 
-function demoAction(type){
-if(type==='arrival'){
-document.getElementById('classStatus').textContent='Arrival Demo दबाया गया';
-alert("Demo: GPS और Arrival रिकॉर्ड अभी सेव नहीं हो रहा है।");
-}else{
-document.getElementById('classStatus').textContent='Class Completed Demo दबाया गया';
-alert("Demo: Departure रिकॉर्ड अभी सेव नहीं हो रहा है।");
+<div class="footer">Shyam Sports Academy · Coach Portal</div>
+
+<nav class="bottom-nav">
+  <div class="bottom-inner">
+    <button class="nav-item active" onclick="showSection('home',this)"><span>⌂</span>Home</button>
+    <button class="nav-item" onclick="showSection('attendance',this)"><span>✓</span>Attendance</button>
+    <button class="nav-item" onclick="showSection('messages',this)"><span>✉</span>Messages</button>
+    <button class="nav-item" onclick="showSection('summary',this)"><span>▤</span>Summary</button>
+  </div>
+</nav>
+
+</div>
+
+<script>
+const students=[null,null,null];
+let arrivalDone=false;
+let completed=false;
+let attendanceDone=false;
+let departureDone=false;
+
+const today=new Date();
+document.getElementById("todayDate").textContent=today.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+document.getElementById("classDate").textContent=today.toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
+
+function showSection(id,button){
+ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+ button.classList.add("active");
+ window.scrollTo({top:0,behavior:"smooth"});
 }
+
+function getLocation(){
+ return new Promise((resolve,reject)=>{
+   if(!navigator.geolocation){
+     reject(new Error("GPS is not supported by this device."));
+     return;
+   }
+   navigator.geolocation.getCurrentPosition(
+     position=>resolve(position),
+     error=>reject(error),
+     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+   );
+ });
+}
+
+async function markArrival(){
+ if(arrivalDone){alert("Arrival is already marked in this preview.");return;}
+ const status=document.getElementById("gpsStatus");
+ status.textContent="Requesting GPS permission...";
+ try{
+   const pos=await getLocation();
+   arrivalDone=true;
+   status.textContent="Sample GPS captured. Coordinates: "+pos.coords.latitude.toFixed(5)+", "+pos.coords.longitude.toFixed(5)+". Not saved to database.";
+   document.getElementById("arrivalBtn").textContent="✓ Arrival Marked";
+   document.getElementById("arrivalBtn").disabled=true;
+   document.getElementById("completeBtn").disabled=false;
+   document.getElementById("sumArrival").textContent="Preview Only";
+   alert("GPS received for this preview. No database record has been saved.");
+ }catch(error){
+   status.textContent="GPS unavailable: "+error.message;
+   alert("GPS could not be captured. Please check location permission and try again.");
+ }
+}
+
+async function completeClass(){
+ if(!arrivalDone){alert("Please mark your arrival first.");return;}
+ if(completed)return;
+ if(!confirm("Have you completed this class?"))return;
+ const status=document.getElementById("gpsStatus");
+ status.textContent="Capturing departure GPS...";
+ try{
+   const pos=await getLocation();
+   completed=true;
+   departureDone=true;
+   document.getElementById("classStatus").textContent="Completed";
+   document.getElementById("classStatus").className="status done";
+   document.getElementById("completeBtn").textContent="✓ Completed";
+   document.getElementById("completeBtn").disabled=true;
+   document.getElementById("sumDeparture").textContent="Preview Only";
+   status.textContent="Departure GPS captured for preview. Not saved to database.";
+   updateProgress();
+   alert("Departure GPS captured for preview. Attendance must be submitted separately. No database record has been saved.");
+ }catch(error){
+   status.textContent="GPS unavailable: "+error.message;
+   alert("GPS could not be captured. Please check location permission and try again.");
+ }
+}
+
+function setAttendance(index,isPresent,button){
+ students[index]=isPresent;
+ const row=button.parentElement;
+ row.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+ button.classList.add("selected");
+}
+
+function resetAttendance(){
+ students.fill(null);
+ document.querySelectorAll(".attendance-toggle button").forEach(b=>b.classList.remove("selected"));
+ document.getElementById("attendanceStatus").textContent="Attendance selection reset.";
+}
+
+function submitAttendance(){
+ if(!completed){
+   alert("Please complete the class before submitting attendance.");
+   return;
+ }
+ const finalRecords=students.map(value=>value===true);
+ const present=finalRecords.filter(Boolean).length;
+ const absent=finalRecords.length-present;
+ attendanceDone=true;
+ document.getElementById("attendanceStatus").textContent=
+   "Preview submitted: "+present+" Present, "+absent+" Absent. Not saved to database.";
+ document.getElementById("sumAttendance").textContent="Preview Only";
+ alert("Preview attendance: "+present+" Present and "+absent+" Absent. No records have been saved.");
+}
+
+async function copyMessage(id){
+ const text=document.getElementById(id).textContent;
+ try{
+   await navigator.clipboard.writeText(text);
+   alert("Message copied. Select the correct parent group and paste it.");
+ }catch(error){
+   alert("Copy is unavailable. Please select and copy the message manually.");
+ }
+}
+
+async function openWhatsApp(id){
+ const text=document.getElementById(id).textContent;
+ try{await navigator.clipboard.writeText(text);}catch(error){}
+ window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+
+function updateProgress(){
+ const percentage=completed?100:arrivalDone?50:0;
+ document.getElementById("progressText").textContent=percentage+"%";
+ document.getElementById("progressBar").style.width=percentage+"%";
+ document.getElementById("completedClasses").textContent=completed?"1":"0";
+ document.getElementById("sumCompleted").textContent=completed?"1":"0";
 }
 </script>
 </body>
 </html>
-
