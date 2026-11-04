@@ -1,1 +1,215 @@
 
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Shyam Sports Academy</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6fa;color:#182235}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:250px;background:#111c2e;color:white;padding:24px 15px;flex-shrink:0}
+.brand{font-size:20px;font-weight:bold;padding:5px 10px 25px}
+.brand small{display:block;color:#9eacc0;font-size:12px;margin-top:7px}
+.nav button{display:block;width:100%;padding:13px 14px;margin:5px 0;border:0;border-radius:9px;text-align:left;background:transparent;color:#d4dceb;font-size:14px;cursor:pointer}
+.nav button.active,.nav button:hover{background:#263b59;color:white}
+.main{flex:1;min-width:0}
+.topbar{background:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e7eaf0}
+.topbar h2{margin:0;font-size:20px}
+.admin{font-size:13px;color:#667085}
+.content{padding:25px;max-width:1250px;margin:auto}
+.welcome{background:linear-gradient(120deg,#14243d,#28638b);color:white;border-radius:17px;padding:25px;margin-bottom:22px}
+.welcome h2{margin:0 0 9px}
+.welcome p{margin:0;color:#dce9f6;line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
+.card,.panel{background:white;border:1px solid #e8ebf1;border-radius:14px;padding:19px}
+.card small{color:#788397}
+.number{font-size:29px;font-weight:bold;margin-top:10px}
+.panel{margin-top:20px}
+.panel h3{margin:0 0 15px}
+.section{display:none}
+.section.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.info{padding:15px;background:#f6f8fb;border-radius:10px;margin:10px 0}
+input,select{width:100%;padding:12px;border:1px solid #dce2eb;border-radius:8px;margin:7px 0 13px;font-size:14px;background:white}
+label{font-size:13px;font-weight:bold}
+.action{border:0;background:#1e5c91;color:white;padding:11px 16px;border-radius:8px;cursor:pointer}
+.muted{color:#788397;font-size:13px;line-height:1.6}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{text-align:left;padding:12px;border-bottom:1px solid #edf0f4;font-size:13px}
+.tablewrap{overflow-x:auto}
+.tag{background:#fff3d9;color:#986500;padding:5px 9px;border-radius:20px;font-size:11px}
+@media(max-width:850px){
+.layout{display:block}
+.sidebar{width:100%;padding:12px}
+.brand{padding:5px 8px 12px}
+.nav{display:flex;overflow-x:auto;gap:5px}
+.nav button{white-space:nowrap;width:auto;margin:0;padding:10px}
+.topbar{padding:15px}
+.content{padding:15px}
+.stats{grid-template-columns:repeat(2,1fr)}
+.grid{grid-template-columns:1fr}
+}
+@media(max-width:380px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="brand">SHYAM SPORTS<small>ACADEMY MANAGEMENT</small></div>
+<nav class="nav">
+<button class="active" onclick="showSection('overview',this)">Overview</button>
+<button onclick="showSection('coaches',this)">Coach Management</button>
+<button onclick="showSection('students',this)">Student Management</button>
+<button onclick="showSection('sports',this)">Sports & Locations</button>
+<button onclick="showSection('batches',this)">Batch Management</button>
+<button onclick="showSection('schedule',this)">Schedule Management</button>
+<button onclick="showSection('attendance',this)">Attendance</button>
+<button onclick="showSection('gps',this)">GPS Monitoring</button>
+<button onclick="showSection('whatsapp',this)">WhatsApp Groups</button>
+<button onclick="showSection('reports',this)">Reports & Excel</button>
+<button onclick="showSection('settings',this)">Settings</button>
+</nav>
+</aside>
+
+<main class="main">
+<header class="topbar">
+<h2 id="pageTitle">Overview</h2>
+<div class="admin">Admin Panel · Shyam Sir</div>
+</header>
+
+<div class="content">
+
+<section class="section active" id="overview">
+<div class="welcome">
+<h2>Welcome to Shyam Sports Academy</h2>
+<p>Academy Management Dashboard. यहाँ से Coaches, Students, Classes और Attendance का प्रबंधन किया जाएगा।</p>
+</div>
+<div class="stats">
+<div class="card"><small>Total Coaches</small><div class="number">—</div></div>
+<div class="card"><small>Total Students</small><div class="number">—</div></div>
+<div class="card"><small>Active Batches</small><div class="number">—</div></div>
+<div class="card"><small>Today's Classes</small><div class="number">—</div></div>
+</div>
+<div class="panel">
+<h3>Academy Overview</h3>
+<p class="muted">डेटाबेस कनेक्ट होने के बाद यहाँ वास्तविक संख्या और आज की गतिविधियाँ दिखाई जाएँगी।</p>
+<div class="info">Coach Approval · Class Schedule · Attendance · GPS Records · Reports</div>
+</div>
+</section>
+
+<section class="section" id="coaches">
+<div class="panel">
+<h3>Coach Management</h3>
+<p class="muted">नए Coaches की जानकारी, Approval और Class Assignment यहाँ प्रबंधित होंगे।</p>
+<label>Coach Name</label><input placeholder="Coach का नाम">
+<label>Gmail Address</label><input type="email" placeholder="Coach का Gmail">
+<label>Mobile Number</label><input placeholder="Mobile Number">
+<button class="action" onclick="alert('यह Demo Form है। Database जुड़ने पर Save सुविधा चालू होगी।')">Add Coach (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="students">
+<div class="panel">
+<h3>Student Management</h3>
+<label>Student Name</label><input placeholder="बच्चे का नाम">
+<label>Location</label><input placeholder="Location">
+<label>Sport</label><select><option>Select Sport</option><option>Skating</option><option>Badminton</option><option>Chess</option><option>Rubik's Cube</option><option>Robotics</option></select>
+<label>Batch</label><input placeholder="Batch Name / ID">
+<button class="action" onclick="alert('यह Demo Form है। Database जुड़ने पर Save सुविधा चालू होगी।')">Add Student (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="sports">
+<div class="panel">
+<h3>Sports & Locations</h3>
+<div class="grid">
+<div><label>Sport Name</label><input placeholder="जैसे Skating"></div>
+<div><label>Location Name</label><input placeholder="जैसे Mumbai"></div>
+</div>
+<button class="action" onclick="alert('यह Demo Form है।')">Add Sport / Location (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="batches">
+<div class="panel">
+<h3>Batch Management</h3>
+<label>Batch ID</label><input placeholder="Unique Batch ID">
+<label>Sport</label><input placeholder="Sport Name">
+<label>Location</label><input placeholder="Location">
+<label>Assigned Coach</label><input placeholder="Coach Name">
+<label>WhatsApp Group</label><input placeholder="Group Name / Link">
+<button class="action" onclick="alert('यह Demo Form है।')">Create Batch (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="schedule">
+<div class="panel">
+<h3>Schedule Management</h3>
+<label>Class Date</label><input type="date">
+<label>Class Time</label><input type="time">
+<label>Batch ID</label><input placeholder="Batch ID">
+<label>Coach</label><input placeholder="Coach Name">
+<label>Repeat</label><select><option>One Day</option><option>Daily</option><option>Weekly</option><option>Custom Dates</option></select>
+<button class="action" onclick="alert('यह Demo Form है।')">Save Schedule (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="attendance">
+<div class="panel">
+<h3>Attendance Management</h3>
+<p class="muted">Batch और तारीख के अनुसार बच्चों की Present / Absent Attendance यहाँ दिखाई जाएगी।</p>
+<div class="info">अभी कोई वास्तविक Attendance रिकॉर्ड उपलब्ध नहीं है।</div>
+</div>
+</section>
+
+<section class="section" id="gps">
+<div class="panel">
+<h3>Arrival & Departure GPS Monitoring</h3>
+<p class="muted">Coach के I'm Here और Class Completed करने पर GPS, Timestamp और Location Verification रिकॉर्ड यहाँ दिखेंगे।</p>
+<div class="info">GPS Records Database कनेक्ट होने के बाद उपलब्ध होंगे।</div>
+</div>
+</section>
+
+<section class="section" id="whatsapp">
+<div class="panel">
+<h3>WhatsApp Group Management</h3>
+<label>Batch ID</label><input placeholder="Unique Batch ID">
+<label>Parent Group Name</label><input placeholder="WhatsApp Group Name">
+<label>Group Link (Optional)</label><input placeholder="WhatsApp Group Link">
+<button class="action" onclick="alert('यह Demo Form है।')">Save Group (Demo)</button>
+</div>
+</section>
+
+<section class="section" id="reports">
+<div class="panel">
+<h3>Reports & Excel</h3>
+<p class="muted">Daily, Monthly और Yearly Reports तथा Batch-wise Excel Export यहाँ तैयार होंगे।</p>
+<div class="info">पहले Database और रिपोर्टिंग सिस्टम जोड़ना बाकी है।</div>
+</div>
+</section>
+
+<section class="section" id="settings">
+<div class="panel">
+<h3>Admin Settings</h3>
+<p class="muted">Admin Access, GPS Radius, Academy Details और अन्य Settings यहाँ प्रबंधित होंगी।</p>
+<div class="info">Security और Google Login को Database Setup के समय जोड़ा जाएगा।</div>
+</div>
+</section>
+
+</div>
+</main>
+</div>
+<script>
+function showSection(id,button){
+document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+button.classList.add('active');
+document.getElementById('pageTitle').textContent=button.textContent;
+}
+</script>
+</body>
+</html>
+
