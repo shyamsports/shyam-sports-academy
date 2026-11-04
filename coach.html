@@ -12,7 +12,6 @@
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f7fb;color:#172b45;line-height:1.5}
 button{font:inherit;cursor:pointer}
 a{text-decoration:none;color:inherit}
-
 #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f4f7fb}
 .login-card{width:100%;max-width:420px;background:white;padding:30px;border-radius:18px;border:1px solid #e7edf4;box-shadow:0 8px 35px rgba(16,43,78,.07)}
 .login-card h1{font-size:24px;color:#102b4e;margin-bottom:7px}
@@ -26,7 +25,6 @@ a{text-decoration:none;color:inherit}
 #loginMessage.error{display:block;background:#fff0f0;color:#b42318}
 #loginMessage.success{display:block;background:#e6f6ed;color:#197344}
 #loginMessage.info{display:block;background:#eef5fc;color:#18578d}
-
 .app{display:none;max-width:1050px;margin:auto;min-height:100vh;padding-bottom:85px}
 .app.visible{display:block}
 .header{background:white;border-bottom:1px solid #e8edf3;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
@@ -95,7 +93,6 @@ a{text-decoration:none;color:inherit}
 .progress-line{height:7px;background:#edf1f6;border-radius:20px;overflow:hidden;margin-top:10px}
 .progress-line div{height:100%;width:0;background:#247ac1;border-radius:20px}
 .footer{text-align:center;color:#9aa5b2;font-size:10px;padding:15px}
-
 @media(min-width:760px){
 .content{padding:30px}
 .class-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
@@ -122,17 +119,13 @@ a{text-decoration:none;color:inherit}
   <div class="login-card">
     <h1>Coach Login</h1>
     <p>Sign in using your registered coach account. Only approved coaches can access the dashboard.</p>
-
     <form id="loginForm">
       <label for="loginEmail">Email Address</label>
       <input id="loginEmail" type="email" autocomplete="username" required>
-
       <label for="loginPassword">Password</label>
       <input id="loginPassword" type="password" autocomplete="current-password" required>
-
       <button type="submit" id="loginBtn">Login</button>
     </form>
-
     <div id="loginMessage" role="status" aria-live="polite"></div>
   </div>
 </div>
@@ -232,10 +225,10 @@ a{text-decoration:none;color:inherit}
 
   <section class="section" id="messages">
     <div class="section-heading"><h3>Parent Group Messages</h3></div>
-    <div class="notice">Messages are prepared for copying. You must select the correct existing parent group and send the message yourself.</div>
+    <div class="notice">Messages contain only class arrival and departure updates. Location information is not included.</div>
     <div class="message-box">
       <h4>Arrival Message</h4>
-      <p id="arrivalMessage">Hello Parents! The coach has arrived at your location for today's Skating Class. Please send your children with their skates, water bottle and required equipment. Thank you! Shyam Sports Academy</p>
+      <p id="arrivalMessage">Hello Parents! The Coach has arrived for today's class. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
         <button class="btn btn-light" type="button" onclick="copyMessage('arrivalMessage')">Copy Message</button>
         <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('arrivalMessage')">Open WhatsApp</button>
@@ -243,7 +236,7 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="message-box">
       <h4>Departure Message</h4>
-      <p id="departureMessage">Hello Parents! Today's Skating Class has been completed. The coach is now leaving the location. Please arrive to pick up your children. Thank you! Shyam Sports Academy</p>
+      <p id="departureMessage">Hello Parents! Today's class has been completed. The Coach is now leaving. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
         <button class="btn btn-light" type="button" onclick="copyMessage('departureMessage')">Copy Message</button>
         <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('departureMessage')">Open WhatsApp</button>
@@ -260,7 +253,7 @@ a{text-decoration:none;color:inherit}
       <div class="student-row"><span class="student-name">Arrival Recorded</span><strong id="sumArrival">No</strong></div>
       <div class="student-row"><span class="student-name">Departure Recorded</span><strong id="sumDeparture">No</strong></div>
     </div>
-    <div class="notice">This is a local preview only. Daily summaries, class hours, work days and leave records will be calculated from verified database records after backend integration.</div>
+    <div class="notice">Daily summaries and verified records will be connected to the database in the next development step.</div>
   </section>
 </main>
 
@@ -287,7 +280,10 @@ import {
 import {
   getFirestore,
   doc,
-  getDoc
+  getDoc,
+  addDoc,
+  collection,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -362,6 +358,31 @@ async function verifyCoach(user) {
 
   return data;
 }
+
+/* This function saves GPS activity to Firestore for Admin access. */
+window.saveCoachActivity = async function(eventType, position) {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("Coach is not logged in.");
+  }
+
+  const profile = await verifyCoach(user);
+
+  await addDoc(collection(db, "coachActivity"), {
+    coachUid: user.uid,
+    coachName: profile.name || user.displayName || "Coach",
+    coachEmail: user.email || "",
+    eventType: eventType,
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+    recordedAt: serverTimestamp(),
+    createdAt: serverTimestamp()
+  });
+
+  return true;
+};
 
 function friendlyAuthError(error) {
   const messages = {
@@ -451,6 +472,8 @@ let arrivalDone = false;
 let completed = false;
 let attendanceDone = false;
 let departureDone = false;
+let arrivalInProgress = false;
+let departureInProgress = false;
 
 const today = new Date();
 
@@ -493,105 +516,157 @@ function updateSummary() {
   document.getElementById("progressBar").style.width = progress + "%";
 }
 
-/* Copies the message and opens WhatsApp in the tab prepared by the button click. */
-async function copyAndOpenWhatsApp(message, whatsappWindow, statusElement, successText) {
-  let copied = false;
+/* Parent messages contain no GPS or map link. */
+function getArrivalMessage() {
+  return "Hello Parents! The Coach has arrived for today's class. Thank you! Shyam Sports Academy";
+}
+
+function getDepartureMessage() {
+  return "Hello Parents! Today's class has been completed. The Coach is now leaving. Thank you! Shyam Sports Academy";
+}
+
+/*
+  Open WhatsApp immediately during the button click.
+  This avoids opening a blank tab and prevents the Dashboard
+  from being accidentally opened again.
+*/
+function copyAndOpenWhatsApp(message, statusElement) {
+  let clipboardPromise = null;
+  let copiedFallback = false;
 
   try {
-    await navigator.clipboard.writeText(message);
-    copied = true;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      clipboardPromise = navigator.clipboard.writeText(message);
+    }
   } catch (error) {
+    clipboardPromise = null;
+  }
+
+  if (!clipboardPromise) {
     const textArea = document.createElement("textarea");
     textArea.value = message;
     textArea.style.position = "fixed";
-    textArea.style.opacity = "0";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
     document.body.appendChild(textArea);
+    textArea.focus();
     textArea.select();
 
     try {
-      copied = document.execCommand("copy");
-    } catch (copyError) {
-      copied = false;
+      copiedFallback = document.execCommand("copy");
+    } catch (error) {
+      copiedFallback = false;
     }
 
     textArea.remove();
   }
 
-  const whatsappURL = "https://wa.me/?text=" + encodeURIComponent(message);
+  const whatsappURL =
+    "https://wa.me/?text=" + encodeURIComponent(message);
 
-  if (whatsappWindow && !whatsappWindow.closed) {
-    whatsappWindow.location.href = whatsappURL;
+  /* This must happen directly during the button click. */
+  const whatsappTab = window.open(whatsappURL, "_blank");
+
+  if (!whatsappTab) {
+    statusElement.textContent =
+      "Please allow pop-ups for this website to open WhatsApp automatically.";
   } else {
     statusElement.textContent =
-      (copied ? "Message copied. " : "Copy failed. ") +
-      "Please allow pop-ups to open WhatsApp automatically.";
-    return;
+      "Opening WhatsApp. Select the correct Parent Group and press Send.";
   }
 
-  statusElement.textContent = copied
-    ? successText + " Message copied and WhatsApp opened. Please select the parent group and press Send."
-    : "WhatsApp opened. Please copy the message manually and send it.";
+  if (clipboardPromise) {
+    clipboardPromise.then(() => {
+      statusElement.textContent =
+        "Message copied. WhatsApp opened. Select the Parent Group and press Send.";
+    }).catch(() => {
+      statusElement.textContent =
+        "WhatsApp opened. If the message is not copied, copy it from the Messages section.";
+    });
+  } else if (copiedFallback) {
+    statusElement.textContent =
+      "Message copied. WhatsApp opened. Select the Parent Group and press Send.";
+  }
 }
 
-function markArrival() {
-  const status = document.getElementById("gpsStatus");
-  const arrivalButton = document.getElementById("arrivalBtn");
-
+function getCurrentGPS(successCallback, errorCallback) {
   if (!navigator.geolocation) {
-    status.textContent = "GPS is not supported by this browser.";
+    errorCallback("GPS is not supported by this browser.");
     return;
   }
 
-  // Open a blank tab immediately from the button click.
-  const whatsappWindow = window.open("about:blank", "_blank");
-
-  status.textContent = "Checking your location...";
-  arrivalButton.disabled = true;
-
   navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      arrivalDone = true;
-
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      const mapLink = "https://www.google.com/maps?q=" + latitude + "," + longitude;
-
-      const message =
-        "Hello Parents! The coach has arrived at your location for today's Skating Class.\n\n" +
-        "Coach Location: " + mapLink + "\n\n" +
-        "Please send your children with their skates, water bottle and required equipment.\n\n" +
-        "Thank you!\nShyam Sports Academy";
-
-      arrivalButton.textContent = "✓ Arrival Checked";
-      arrivalButton.disabled = true;
-      document.getElementById("completeBtn").disabled = false;
-
-      updateSummary();
-
-      await copyAndOpenWhatsApp(
-        message,
-        whatsappWindow,
-        status,
-        "Location detected successfully."
-      );
-    },
+    successCallback,
     (error) => {
-      if (whatsappWindow && !whatsappWindow.closed) {
-        whatsappWindow.close();
-      }
-
-      arrivalButton.disabled = false;
-
       const messages = {
         1: "Location permission was denied. Please allow location access.",
         2: "Your location could not be detected. Please try again.",
         3: "Location request timed out. Please try again."
       };
 
-      status.textContent = messages[error.code] || "Unable to get your location.";
+      errorCallback(messages[error.code] || "Unable to get your location.");
     },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
+    }
   );
+}
+
+function markArrival() {
+  if (arrivalDone || arrivalInProgress) return;
+
+  const status = document.getElementById("gpsStatus");
+  const arrivalButton = document.getElementById("arrivalBtn");
+  const completeButton = document.getElementById("completeBtn");
+
+  /*
+    First: copy the simple message and open WhatsApp.
+    GPS is collected separately for the Admin record.
+  */
+  copyAndOpenWhatsApp(getArrivalMessage(), status);
+
+  if (!navigator.geolocation) {
+    status.textContent += " GPS is not supported by this browser.";
+    return;
+  }
+
+  arrivalInProgress = true;
+  arrivalButton.disabled = true;
+  arrivalButton.textContent = "Checking Location...";
+  status.textContent = "WhatsApp is opening. Checking GPS location for the Admin record...";
+
+  getCurrentGPS(async (position) => {
+    try {
+      await window.saveCoachActivity("arrival", position);
+
+      arrivalDone = true;
+      arrivalButton.textContent = "✓ Arrival Recorded";
+      completeButton.disabled = false;
+
+      status.textContent =
+        "Arrival GPS record saved successfully for Admin. Parent message contains no location.";
+
+      updateSummary();
+    } catch (error) {
+      console.error("Arrival record error:", error);
+
+      arrivalButton.disabled = false;
+      arrivalButton.textContent = "◎ I'm Here";
+
+      status.textContent =
+        "GPS detected, but the Admin record could not be saved. Please try again. " +
+        (error.message || "");
+    } finally {
+      arrivalInProgress = false;
+    }
+  }, (message) => {
+    arrivalInProgress = false;
+    arrivalButton.disabled = false;
+    arrivalButton.textContent = "◎ I'm Here";
+    status.textContent = message + " Arrival GPS was not recorded.";
+  });
 }
 
 function completeClass() {
@@ -600,28 +675,59 @@ function completeClass() {
     return;
   }
 
-  // Prepare WhatsApp tab immediately from the button click.
-  const whatsappWindow = window.open("about:blank", "_blank");
-
-  completed = true;
-  departureDone = true;
-
-  document.getElementById("classStatus").textContent = "Completed";
-  document.getElementById("classStatus").className = "status done";
-  document.getElementById("completeBtn").textContent = "✓ Completed";
-  document.getElementById("completeBtn").disabled = true;
-
-  updateSummary();
+  if (completed || departureInProgress) return;
 
   const status = document.getElementById("gpsStatus");
-  const message = document.getElementById("departureMessage").textContent;
+  const completeButton = document.getElementById("completeBtn");
 
-  copyAndOpenWhatsApp(
-    message,
-    whatsappWindow,
-    status,
-    "Class completed successfully."
-  );
+  /*
+    First: copy the simple departure message and open WhatsApp.
+    Then: collect a fresh GPS location for the Admin record.
+  */
+  copyAndOpenWhatsApp(getDepartureMessage(), status);
+
+  departureInProgress = true;
+  completeButton.disabled = true;
+  completeButton.textContent = "Recording Departure...";
+
+  status.textContent =
+    "WhatsApp is opening. Checking departure GPS location for the Admin record...";
+
+  getCurrentGPS(async (position) => {
+    try {
+      await window.saveCoachActivity("departure", position);
+
+      completed = true;
+      departureDone = true;
+
+      document.getElementById("classStatus").textContent = "Completed";
+      document.getElementById("classStatus").className = "status done";
+
+      completeButton.textContent = "✓ Completed";
+      completeButton.disabled = true;
+
+      status.textContent =
+        "Departure GPS record saved successfully for Admin. Parent message contains no location.";
+
+      updateSummary();
+    } catch (error) {
+      console.error("Departure record error:", error);
+
+      completeButton.disabled = false;
+      completeButton.textContent = "✓ Retry Class Completion";
+
+      status.textContent =
+        "GPS detected, but the departure record could not be saved. Please try again. " +
+        (error.message || "");
+    } finally {
+      departureInProgress = false;
+    }
+  }, (message) => {
+    departureInProgress = false;
+    completeButton.disabled = false;
+    completeButton.textContent = "✓ Retry Class Completion";
+    status.textContent = message + " Departure GPS was not recorded.";
+  });
 }
 
 function setAttendance(index, isPresent, button) {
@@ -668,12 +774,14 @@ async function copyMessage(id) {
   } catch (error) {
     const textArea = document.createElement("textarea");
     textArea.value = message;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
     document.body.appendChild(textArea);
     textArea.select();
 
     try {
-      document.execCommand("copy");
-      alert("Message copied successfully.");
+      const copied = document.execCommand("copy");
+      alert(copied ? "Message copied successfully." : "Unable to copy. Please copy manually.");
     } catch (copyError) {
       alert("Unable to copy. Please select and copy the message manually.");
     }
@@ -685,7 +793,7 @@ async function copyMessage(id) {
 function openWhatsApp(id) {
   const message = document.getElementById(id).textContent;
   const url = "https://wa.me/?text=" + encodeURIComponent(message);
-  window.open(url, "_blank", "noopener");
+  window.open(url, "_blank");
 }
 
 updateSummary();
