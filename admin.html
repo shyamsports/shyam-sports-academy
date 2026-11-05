@@ -275,20 +275,105 @@ body.auth-locked .layout{display:none}
       </div>
     </div>
   </section>
-      <!-- STUDENTS -->
-  <section class="page" id="students">
-    <div class="page-heading"><div><h1>Student Management</h1><p>Manage student profiles, batch assignments and course transfers.</p></div><button class="btn" onclick="demo('Add Student')">+ Add Student</button></div>
-    <div class="info-box">Student records will be organized by Location → Sport → Batch. Historical attendance will remain linked to the student record.</div>
-    <div class="stats">
-      <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value">—</div></div>
-      <div class="stat-card"><div class="stat-label">Active Students</div><div class="stat-value">—</div></div>
-      <div class="stat-card"><div class="stat-label">Active Batches</div><div class="stat-value">—</div></div>
-      <div class="stat-card"><div class="stat-label">Course Transfers</div><div class="stat-value">—</div></div>
+     <!-- STUDENTS -->
+<section class="page" id="students">
+  <div class="page-heading">
+    <div>
+      <h1>Student Management</h1>
+      <p>Manage student profiles and batch assignments.</p>
     </div>
-    <div class="panel"><div class="panel-heading"><h3>Student Directory</h3><button class="btn light" onclick="demo('Student Search')">Search Students</button></div>
-      <div class="table-wrap"><table><thead><tr><th>Student Name</th><th>Student ID</th><th>Sport</th><th>Location</th><th>Batch ID</th><th>Status</th></tr></thead><tbody><tr><td colspan="6" class="empty-note">Student records will appear here after database connection.</td></tr></tbody></table></div>
+    <button class="btn" id="addStudentButton" type="button">+ Add Student</button>
+  </div>
+
+  <div class="info-box">
+    Student records are saved in Firebase and linked to their assigned batches.
+  </div>
+
+  <div class="panel" id="studentFormPanel" style="display:none">
+    <div class="panel-heading"><h3>Add New Student</h3></div>
+    <form id="studentForm">
+      <div class="form-grid">
+        <div class="field">
+          <label for="studentNameInput">Student Name</label>
+          <input id="studentNameInput" type="text" maxlength="100" required placeholder="Enter student name">
+        </div>
+        <div class="field">
+          <label for="studentAgeInput">Age</label>
+          <input id="studentAgeInput" type="number" min="2" max="100" required placeholder="Enter age">
+        </div>
+        <div class="field">
+          <label for="studentPhoneInput">Parent / Guardian Phone</label>
+          <input id="studentPhoneInput" type="tel" maxlength="20" placeholder="Enter phone number">
+        </div>
+        <div class="field">
+          <label for="studentBatchInput">Assign Batch</label>
+          <select id="studentBatchInput" required>
+            <option value="">Loading batches...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="studentStatusInput">Student Status</label>
+          <select id="studentStatusInput">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="saveStudentButton" type="submit">Save Student</button>
+        <button class="btn light" id="cancelStudentButton" type="button">Cancel</button>
+      </div>
+      <p id="studentFormMessage" class="empty-note" aria-live="polite"></p>
+    </form>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Students</div>
+      <div class="stat-value" id="studentTotalCount">0</div>
     </div>
-  </section>
+    <div class="stat-card">
+      <div class="stat-label">Active Students</div>
+      <div class="stat-value" id="studentActiveCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Assigned Students</div>
+      <div class="stat-value" id="studentAssignedCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unassigned Students</div>
+      <div class="stat-value" id="studentUnassignedCount">0</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Student Directory</h3>
+        <p>Live student records from Firebase.</p>
+      </div>
+      <button class="btn light" id="refreshStudentsButton" type="button">Refresh</button>
+    </div>
+    <div id="studentsMessage" class="empty-note">Loading students...</div>
+    <div class="table-wrap" id="studentsTableWrap" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Student ID</th>
+            <th>Age</th>
+            <th>Phone</th>
+            <th>Sport</th>
+            <th>Batch</th>
+            <th>Location</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="studentsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section> 
 
   <!-- SPORTS -->
   <section class="page" id="sports">
