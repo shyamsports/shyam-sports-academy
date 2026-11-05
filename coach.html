@@ -10,9 +10,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f7fb;color:#172b45;line-height:1.5}
-button{font:inherit;cursor:pointer}
-a{text-decoration:none;color:inherit}
-#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f4f7fb}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{width:100%;max-width:420px;background:white;padding:30px;border-radius:18px;border:1px solid #e7edf4;box-shadow:0 8px 35px rgba(16,43,78,.07)}
 .login-card h1{font-size:24px;color:#102b4e;margin-bottom:7px}
 .login-card p{font-size:13px;color:#8492a3;margin-bottom:20px}
@@ -20,14 +21,13 @@ a{text-decoration:none;color:inherit}
 .login-card input{width:100%;padding:13px;border:1px solid #d8e0e9;border-radius:9px;font-size:15px;outline:none}
 .login-card input:focus{border-color:#247ac1}
 .login-card button{width:100%;padding:14px;border:0;border-radius:10px;background:#102b4e;color:white;font-weight:800;margin-top:20px}
-.login-card button:disabled{opacity:.6;cursor:wait}
 #loginMessage{display:none;margin-top:16px;padding:12px;border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 #loginMessage.error{display:block;background:#fff0f0;color:#b42318}
 #loginMessage.success{display:block;background:#e6f6ed;color:#197344}
 #loginMessage.info{display:block;background:#eef5fc;color:#18578d}
-.app{display:none;max-width:1050px;margin:auto;min-height:100vh;padding-bottom:85px}
+.app{display:none;max-width:1100px;margin:auto;min-height:100vh;padding-bottom:85px}
 .app.visible{display:block}
-.header{background:white;border-bottom:1px solid #e8edf3;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header{background:white;border-bottom:1px solid #e8edf3;padding:15px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .brand{display:flex;align-items:center;gap:11px}
 .logo{width:42px;height:42px;border-radius:13px;background:#102b4e;color:white;display:grid;place-items:center;font-weight:900;font-size:21px}
 .brand h1{font-size:15px;color:#102b4e}
@@ -46,30 +46,37 @@ a{text-decoration:none;color:inherit}
 .section-heading h3{font-size:16px;color:#102b4e}
 .section-heading small{font-size:10px;color:#8492a3}
 .card{background:white;border:1px solid #e7edf4;border-radius:15px;padding:18px;margin-bottom:15px;box-shadow:0 4px 15px rgba(16,43,78,.025)}
+.notice{background:#eef5fc;border:1px solid #dceafa;border-radius:10px;padding:13px;color:#486783;font-size:11px;margin-bottom:15px}
+.notice.warning{background:#fff8e8;border-color:#f3e4bd;color:#8a641c}
+.empty{padding:25px;text-align:center;color:#8492a3;border:1px dashed #dce4ed;border-radius:12px;font-size:12px;background:white}
+.class-grid{display:grid;grid-template-columns:1fr;gap:14px}
 .class-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .sport-name{font-size:18px;font-weight:800;color:#102b4e}
-.batch{font-size:11px;color:#8492a3;margin-top:3px}
-.status{font-size:10px;padding:5px 9px;border-radius:30px;font-weight:800;white-space:nowrap}
-.status.scheduled{background:#edf3fb;color:#37658e}
+.batch{font-size:11px;color:#8492a3;margin-top:3px;overflow-wrap:anywhere}
+.status{font-size:10px;padding:5px 9px;border-radius:30px;font-weight:800;white-space:nowrap;background:#edf3fb;color:#37658e}
 .status.done{background:#e6f6ed;color:#197344}
 .status.wait{background:#fff4df;color:#9a6918}
+.status.error{background:#fff0f0;color:#b42318}
 .details{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:17px 0;padding:14px;background:#f8fafc;border-radius:10px}
 .detail small{display:block;font-size:10px;color:#8a98a9}
-.detail strong{display:block;font-size:12px;color:#304b68;margin-top:4px}
+.detail strong{display:block;font-size:12px;color:#304b68;margin-top:4px;overflow-wrap:anywhere}
 .class-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{border:0;border-radius:10px;padding:13px 12px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn{border:0;border-radius:10px;padding:12px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px}
 .btn-arrival{background:#eaf3fc;color:#18578d}
 .btn-complete{background:#102b4e;color:white}
 .btn-whatsapp{background:#e8f7ee;color:#167343}
 .btn-light{background:#f0f3f7;color:#51667d}
 .btn-primary{background:#102b4e;color:white}
-.info{font-size:11px;color:#8290a1;margin-top:10px}
+.info{font-size:11px;color:#8290a1;margin-top:10px;overflow-wrap:anywhere}
+.section{display:none}
+.section.active{display:block}
+.progress-line{height:7px;background:#edf1f6;border-radius:20px;overflow:hidden;margin-top:10px}
+.progress-line div{height:100%;width:0;background:#247ac1;border-radius:20px}
 .student-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f4}
 .student-row:last-child{border-bottom:0}
 .student-name{font-size:13px;font-weight:700;color:#27435f}
-.student-id{font-size:10px;color:#9aa5b2}
-.attendance-toggle{display:flex;gap:6px}
+.student-id{font-size:10px;color:#9aa5b2;overflow-wrap:anywhere}
+.attendance-toggle{display:flex;gap:6px;flex-shrink:0}
 .attendance-toggle button{border:0;border-radius:8px;padding:8px 11px;font-size:10px;font-weight:800}
 .present{background:#e6f6ed;color:#197344}
 .absent{background:#fff0f0;color:#b83d3d}
@@ -81,22 +88,17 @@ a{text-decoration:none;color:inherit}
 .message-box p{font-size:12px;color:#61748a;line-height:1.7}
 .message-actions{display:flex;gap:8px;margin-top:12px}
 .message-actions button{flex:1}
+.field-label{display:block;font-size:12px;font-weight:700;color:#526a83;margin:12px 0 6px}
+.field-select{width:100%;padding:12px;border:1px solid #d8e0e9;border-radius:9px;background:white;color:#304b68}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e7edf4;display:flex;justify-content:center;z-index:15}
 .bottom-inner{max-width:700px;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}
 .nav-item{border:0;background:white;color:#8290a1;padding:12px 4px 10px;font-size:10px;font-weight:700}
 .nav-item span{display:block;font-size:19px;margin-bottom:3px}
 .nav-item.active{color:#1b6aa8}
-.section{display:none}
-.section.active{display:block}
-.notice{background:#eef5fc;border:1px solid #dceafa;border-radius:10px;padding:13px;color:#486783;font-size:11px;margin-bottom:15px}
-.empty{padding:25px;text-align:center;color:#8492a3;border:1px dashed #dce4ed;border-radius:12px;font-size:12px}
-.progress-line{height:7px;background:#edf1f6;border-radius:20px;overflow:hidden;margin-top:10px}
-.progress-line div{height:100%;width:0;background:#247ac1;border-radius:20px}
 .footer{text-align:center;color:#9aa5b2;font-size:10px;padding:15px}
 @media(min-width:760px){
 .content{padding:30px}
-.class-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-.class-grid .card{margin-bottom:0}
+.class-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:480px){
 .content{padding:19px 14px}
@@ -109,6 +111,8 @@ a{text-decoration:none;color:inherit}
 .class-actions{grid-template-columns:1fr}
 .details{gap:10px}
 .attendance-toggle button{padding:8px}
+.attendance-actions{flex-direction:column}
+.student-row{align-items:flex-start}
 }
 </style>
 </head>
@@ -146,114 +150,90 @@ a{text-decoration:none;color:inherit}
   <div class="welcome">
     <div>
       <h2 id="welcomeName">Good Day, Coach!</h2>
-      <p>Here is your academy schedule.</p>
+      <p>Your assigned batches and student records.</p>
     </div>
     <div class="date-box" id="todayDate">Today</div>
   </div>
 
   <div class="summary">
-    <div class="summary-card"><small>Today's Classes</small><strong id="totalClasses">1</strong></div>
-    <div class="summary-card"><small>Completed</small><strong id="completedClasses">0</strong></div>
-    <div class="summary-card"><small>Students</small><strong>3</strong></div>
+    <div class="summary-card"><small>Assigned Batches</small><strong id="totalBatches">0</strong></div>
+    <div class="summary-card"><small>Arrival Records</small><strong id="arrivalCount">0</strong></div>
+    <div class="summary-card"><small>Completed Classes</small><strong id="completedCount">0</strong></div>
   </div>
 
   <section class="section active" id="home">
-    <div class="notice">Preview Mode: The displayed class and student details are sample data. Your assigned schedule will appear here after database connection.</div>
+    <div class="notice warning">
+      Class timings are not connected yet because the Admin Schedule system is still pending. Your assigned active batches will appear here. Arrival and completion records can be saved for each batch.
+    </div>
+
     <div class="section-heading">
-      <h3>Today's Assigned Classes</h3>
+      <h3>My Assigned Batches</h3>
       <small id="classDate"></small>
     </div>
 
-    <div class="class-grid">
-      <div class="card">
-        <div class="class-top">
-          <div>
-            <div class="sport-name">Skating</div>
-            <div class="batch">Batch ID: SAMPLE-SK-001</div>
-          </div>
-          <span class="status scheduled" id="classStatus">Scheduled</span>
-        </div>
-
-        <div class="details">
-          <div class="detail"><small>Location</small><strong>Sample Academy Location</strong></div>
-          <div class="detail"><small>Scheduled Time</small><strong>05:00 PM – 06:00 PM</strong></div>
-          <div class="detail"><small>Students</small><strong>3 Students</strong></div>
-          <div class="detail"><small>WhatsApp Group</small><strong>Skating Sample Group</strong></div>
-        </div>
-
-        <div class="class-actions">
-          <button class="btn btn-arrival" id="arrivalBtn" type="button" onclick="markArrival()">◎ I'm Here</button>
-          <button class="btn btn-complete" id="completeBtn" type="button" onclick="completeClass()" disabled>✓ Class Completed</button>
-        </div>
-        <p class="info" id="gpsStatus">GPS permission is requested only when you press an action button.</p>
-      </div>
+    <div id="batchList" class="class-grid">
+      <div class="empty">Loading your assigned batches...</div>
     </div>
 
     <div class="section-heading"><h3>Class Progress</h3></div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;font-size:12px">
-        <strong>Today's Work Progress</strong><strong id="progressText">0%</strong>
+        <strong>Today's Completion Progress</strong>
+        <strong id="progressText">0%</strong>
       </div>
       <div class="progress-line"><div id="progressBar"></div></div>
-      <p class="info">Your daily class summary will update after records are saved.</p>
+      <p class="info">Progress updates when class completion records are saved during this session.</p>
     </div>
   </section>
 
   <section class="section" id="attendance">
-    <div class="section-heading"><h3>Student Attendance</h3><small>Sample roster</small></div>
-    <div class="notice">Select Present or Absent for every student. Unselected students will be marked Absent when submitted.</div>
+    <div class="section-heading"><h3>Student Attendance</h3></div>
     <div class="card">
-      <div class="student-row">
-        <div><div class="student-name">Student One</div><div class="student-id">Sample Student ID: ST-001</div></div>
-        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(0,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(0,false,this)">Absent</button></div>
-      </div>
-      <div class="student-row">
-        <div><div class="student-name">Student Two</div><div class="student-id">Sample Student ID: ST-002</div></div>
-        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(1,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(1,false,this)">Absent</button></div>
-      </div>
-      <div class="student-row">
-        <div><div class="student-name">Student Three</div><div class="student-id">Sample Student ID: ST-003</div></div>
-        <div class="attendance-toggle"><button class="present" type="button" onclick="setAttendance(2,true,this)">Present</button><button class="absent" type="button" onclick="setAttendance(2,false,this)">Absent</button></div>
-      </div>
-      <div class="attendance-actions">
-        <button class="btn btn-light" type="button" onclick="resetAttendance()">Reset</button>
-        <button class="btn btn-primary" type="button" onclick="submitAttendance()">Submit Attendance</button>
-      </div>
-      <p class="info" id="attendanceStatus">Attendance has not been submitted.</p>
+      <label class="field-label" for="attendanceBatch">Select Batch</label>
+      <select id="attendanceBatch" class="field-select">
+        <option value="">Loading batches...</option>
+      </select>
+    </div>
+    <div id="attendancePanel">
+      <div class="empty">Select an assigned batch to view its students.</div>
     </div>
   </section>
 
   <section class="section" id="messages">
     <div class="section-heading"><h3>Parent Group Messages</h3></div>
-    <div class="notice">Messages contain only class arrival and departure updates. Location information is not included.</div>
+    <div class="notice">Messages contain class updates only. GPS coordinates and location information are never included in these messages. You must select the correct parent group and send the message yourself.</div>
+
     <div class="message-box">
       <h4>Arrival Message</h4>
       <p id="arrivalMessage">Hello Parents! The Coach has arrived for today's class. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
-        <button class="btn btn-light" type="button" onclick="copyMessage('arrivalMessage')">Copy Message</button>
-        <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('arrivalMessage')">Open WhatsApp</button>
+        <button class="btn btn-light" type="button" data-copy="arrivalMessage">Copy Message</button>
+        <button class="btn btn-whatsapp" type="button" data-whatsapp="arrivalMessage">Open WhatsApp</button>
       </div>
     </div>
+
     <div class="message-box">
       <h4>Departure Message</h4>
       <p id="departureMessage">Hello Parents! Today's class has been completed. The Coach is now leaving. Thank you! Shyam Sports Academy</p>
       <div class="message-actions">
-        <button class="btn btn-light" type="button" onclick="copyMessage('departureMessage')">Copy Message</button>
-        <button class="btn btn-whatsapp" type="button" onclick="openWhatsApp('departureMessage')">Open WhatsApp</button>
+        <button class="btn btn-light" type="button" data-copy="departureMessage">Copy Message</button>
+        <button class="btn btn-whatsapp" type="button" data-whatsapp="departureMessage">Open WhatsApp</button>
       </div>
     </div>
+    <p class="info" id="messageStatus"></p>
   </section>
 
   <section class="section" id="summary">
     <div class="section-heading"><h3>Daily Work Summary</h3></div>
     <div class="card">
-      <div class="student-row"><span class="student-name">Scheduled Classes</span><strong id="sumScheduled">1</strong></div>
+      <div class="student-row"><span class="student-name">Assigned Batches</span><strong id="sumBatches">0</strong></div>
+      <div class="student-row"><span class="student-name">Arrival Recorded</span><strong id="sumArrival">0</strong></div>
       <div class="student-row"><span class="student-name">Completed Classes</span><strong id="sumCompleted">0</strong></div>
-      <div class="student-row"><span class="student-name">Attendance Submitted</span><strong id="sumAttendance">No</strong></div>
-      <div class="student-row"><span class="student-name">Arrival Recorded</span><strong id="sumArrival">No</strong></div>
-      <div class="student-row"><span class="student-name">Departure Recorded</span><strong id="sumDeparture">No</strong></div>
+      <div class="student-row"><span class="student-name">Attendance Submitted</span><strong id="sumAttendance">0</strong></div>
+      <div class="student-row"><span class="student-name">Students Marked Present</span><strong id="sumPresent">0</strong></div>
+      <div class="student-row"><span class="student-name">Students Marked Absent</span><strong id="sumAbsent">0</strong></div>
     </div>
-    <div class="notice">Daily summaries and verified records will be connected to the database in the next development step.</div>
+    <div class="notice">This summary shows records saved during the current dashboard session. Monthly and yearly reports will be connected after the Admin reporting system is completed.</div>
   </section>
 </main>
 
@@ -261,10 +241,10 @@ a{text-decoration:none;color:inherit}
 
 <nav class="bottom-nav">
   <div class="bottom-inner">
-    <button class="nav-item active" type="button" onclick="showSection('home',this)"><span>⌂</span>Home</button>
-    <button class="nav-item" type="button" onclick="showSection('attendance',this)"><span>✓</span>Attendance</button>
-    <button class="nav-item" type="button" onclick="showSection('messages',this)"><span>✉</span>Messages</button>
-    <button class="nav-item" type="button" onclick="showSection('summary',this)"><span>▤</span>Summary</button>
+    <button class="nav-item active" type="button" data-section="home"><span>⌂</span>Home</button>
+    <button class="nav-item" type="button" data-section="attendance"><span>✓</span>Attendance</button>
+    <button class="nav-item" type="button" data-section="messages"><span>✉</span>Messages</button>
+    <button class="nav-item" type="button" data-section="summary"><span>▤</span>Summary</button>
   </div>
 </nav>
 </div>
@@ -282,7 +262,11 @@ import {
   doc,
   getDoc,
   addDoc,
+  setDoc,
   collection,
+  query,
+  where,
+  getDocs,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
@@ -306,6 +290,15 @@ const loginMessage = document.getElementById("loginMessage");
 const loginScreen = document.getElementById("loginScreen");
 const dashboard = document.getElementById("dashboard");
 
+let currentProfile = null;
+let assignedBatches = [];
+let selectedBatchStudents = [];
+let attendanceState = {};
+let arrivalRecords = new Set();
+let completedRecords = new Set();
+let attendanceRecords = new Map();
+let attendanceSaving = false;
+
 function showLoginMessage(message, type = "error") {
   loginMessage.textContent = message;
   loginMessage.className = type;
@@ -328,6 +321,8 @@ function showDashboard(name) {
   dashboard.classList.add("visible");
   document.getElementById("welcomeName").textContent =
     "Good Day, " + (name || "Coach") + "!";
+  document.getElementById("logoutBtn").textContent =
+    (name || "C").trim().charAt(0).toUpperCase();
 }
 
 async function verifyCoach(user) {
@@ -359,8 +354,486 @@ async function verifyCoach(user) {
   return data;
 }
 
-/* This function saves GPS activity to Firestore for Admin access. */
-window.saveCoachActivity = async function(eventType, position) {
+function todayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  })[character]);
+}
+
+function getFriendlyError(error) {
+  const code = error?.code || "";
+  const messages = {
+    "permission-denied": "Firebase permission denied. Firestore Rules need to allow this coach to access the required records.",
+    "unavailable": "Firebase is temporarily unavailable. Please check your internet connection.",
+    "auth/invalid-credential": "Incorrect email or password. Please check your login details.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/user-disabled": "This account has been disabled. Please contact the academy admin.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/network-request-failed": "Network error. Please check your internet connection.",
+    "auth/operation-not-allowed": "Email and password login is not enabled in Firebase Authentication."
+  };
+
+  return messages[code] || error?.message || "Something went wrong. Please try again.";
+}
+
+function showSection(sectionId, button) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.toggle("active", section.id === sectionId);
+  });
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.toggle("active", item === button);
+  });
+}
+
+document.querySelectorAll(".nav-item").forEach(button => {
+  button.addEventListener("click", () => {
+    showSection(button.dataset.section, button);
+  });
+});
+
+function updateDateLabels() {
+  const now = new Date();
+
+  document.getElementById("todayDate").textContent =
+    now.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+
+  document.getElementById("classDate").textContent =
+    now.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short"
+    });
+}
+
+function updateSummary() {
+  const batchCount = assignedBatches.length;
+  const arrivalCountValue = arrivalRecords.size;
+  const completedCountValue = completedRecords.size;
+  const attendanceCountValue = attendanceRecords.size;
+
+  let presentTotal = 0;
+  let absentTotal = 0;
+
+  attendanceRecords.forEach(record => {
+    presentTotal += record.present || 0;
+    absentTotal += record.absent || 0;
+  });
+
+  document.getElementById("totalBatches").textContent = batchCount;
+  document.getElementById("arrivalCount").textContent = arrivalCountValue;
+  document.getElementById("completedCount").textContent = completedCountValue;
+
+  document.getElementById("sumBatches").textContent = batchCount;
+  document.getElementById("sumArrival").textContent = arrivalCountValue;
+  document.getElementById("sumCompleted").textContent = completedCountValue;
+  document.getElementById("sumAttendance").textContent = attendanceCountValue;
+  document.getElementById("sumPresent").textContent = presentTotal;
+  document.getElementById("sumAbsent").textContent = absentTotal;
+
+  const progress = batchCount
+    ? Math.round((completedCountValue / batchCount) * 100)
+    : 0;
+
+  document.getElementById("progressText").textContent = progress + "%";
+  document.getElementById("progressBar").style.width = progress + "%";
+}
+
+/* Load batches assigned to the currently logged-in coach. */
+async function loadAssignedBatches() {
+  const batchList = document.getElementById("batchList");
+  batchList.innerHTML = '<div class="empty">Loading assigned batches...</div>';
+
+  const batchQuery = query(
+    collection(db, "batches"),
+    where("coachId", "==", auth.currentUser.uid)
+  );
+
+  const snapshot = await getDocs(batchQuery);
+
+  assignedBatches = snapshot.docs
+    .map(item => ({ id: item.id, ...item.data() }))
+    .filter(batch => batch.status === "active")
+    .sort((a, b) =>
+      String(a.batchName || "").localeCompare(String(b.batchName || ""))
+    );
+
+  renderBatches();
+  populateAttendanceBatchSelect();
+  updateSummary();
+}
+
+function renderBatches() {
+  const container = document.getElementById("batchList");
+
+  if (!assignedBatches.length) {
+    container.innerHTML =
+      '<div class="empty">No active batches have been assigned to your account yet. Please contact the academy admin.</div>';
+    return;
+  }
+
+  container.innerHTML = assignedBatches.map(batch => {
+    const batchId = escapeHTML(batch.id);
+    const batchName = escapeHTML(batch.batchName || "Unnamed Batch");
+    const sport = escapeHTML(batch.sport || "Sport not specified");
+    const location = escapeHTML(batch.locationName || "Location not specified");
+    const arrivalDone = arrivalRecords.has(batch.id);
+    const completed = completedRecords.has(batch.id);
+
+    let statusText = "Assigned Batch";
+    let statusClass = "status";
+
+    if (completed) {
+      statusText = "Completed";
+      statusClass = "status done";
+    } else if (arrivalDone) {
+      statusText = "Arrival Recorded";
+      statusClass = "status wait";
+    }
+
+    return `
+      <div class="card" data-batch-card="${batchId}">
+        <div class="class-top">
+          <div>
+            <div class="sport-name">${sport}</div>
+            <div class="batch">${batchName}</div>
+            <div class="batch">Batch ID: ${batchId}</div>
+          </div>
+          <span class="${statusClass}" id="status-${batchId}">${statusText}</span>
+        </div>
+
+        <div class="details">
+          <div class="detail">
+            <small>Location</small>
+            <strong>${location}</strong>
+          </div>
+          <div class="detail">
+            <small>Coach</small>
+            <strong>${escapeHTML(currentProfile?.name || "Coach")}</strong>
+          </div>
+          <div class="detail">
+            <small>Students</small>
+            <strong id="student-count-${batchId}">Loading...</strong>
+          </div>
+          <div class="detail">
+            <small>Class Timing</small>
+            <strong>Schedule not assigned yet</strong>
+          </div>
+        </div>
+
+        <div class="class-actions">
+          <button class="btn btn-arrival" type="button"
+            data-action="arrival" data-batch="${batchId}"
+            ${arrivalDone || completed ? "disabled" : ""}>
+            ${arrivalDone ? "✓ Arrival Recorded" : "◎ I'm Here"}
+          </button>
+
+          <button class="btn btn-complete" type="button"
+            data-action="complete" data-batch="${batchId}"
+            ${!arrivalDone || completed ? "disabled" : ""}>
+            ${completed ? "✓ Class Completed" : "✓ Class Completed"}
+          </button>
+        </div>
+
+        <p class="info" id="gps-${batchId}">
+          GPS is requested only when you press an arrival or completion button.
+        </p>
+      </div>
+    `;
+  }).join("");
+
+  assignedBatches.forEach(batch => {
+    loadStudentCount(batch).catch(error => {
+      console.error("Student count error:", error);
+      const element = document.getElementById("student-count-" + batch.id);
+      if (element) element.textContent = "Unavailable";
+    });
+  });
+}
+
+async function loadStudentCount(batch) {
+  const studentQuery = query(
+    collection(db, "students"),
+    where("batchId", "==", batch.id)
+  );
+
+  const snapshot = await getDocs(studentQuery);
+  const activeStudents = snapshot.docs.filter(student =>
+    (student.data().status || "active") === "active"
+  );
+
+  const element = document.getElementById("student-count-" + batch.id);
+  if (element) {
+    element.textContent = activeStudents.length + " Students";
+  }
+}
+
+function populateAttendanceBatchSelect() {
+  const select = document.getElementById("attendanceBatch");
+
+  if (!assignedBatches.length) {
+    select.innerHTML = '<option value="">No assigned batches</option>';
+    document.getElementById("attendancePanel").innerHTML =
+      '<div class="empty">No active batches are available for attendance.</div>';
+    return;
+  }
+
+  select.innerHTML =
+    '<option value="">Select a batch</option>' +
+    assignedBatches.map(batch =>
+      `<option value="${escapeHTML(batch.id)}">${escapeHTML(batch.batchName || batch.sport || batch.id)}</option>`
+    ).join("");
+}
+
+async function loadStudentsForAttendance(batchId) {
+  const panel = document.getElementById("attendancePanel");
+
+  if (!batchId) {
+    panel.innerHTML =
+      '<div class="empty">Select an assigned batch to view its students.</div>';
+    selectedBatchStudents = [];
+    attendanceState = {};
+    return;
+  }
+
+  panel.innerHTML = '<div class="empty">Loading students...</div>';
+
+  try {
+    const studentQuery = query(
+      collection(db, "students"),
+      where("batchId", "==", batchId)
+    );
+
+    const snapshot = await getDocs(studentQuery);
+
+    selectedBatchStudents = snapshot.docs
+      .map(item => ({ id: item.id, ...item.data() }))
+      .filter(student => (student.status || "active") === "active")
+      .sort((a, b) =>
+        String(a.name || "").localeCompare(String(b.name || ""))
+      );
+
+    attendanceState = {};
+
+    if (!selectedBatchStudents.length) {
+      panel.innerHTML =
+        '<div class="empty">No active students were found in this batch. Please check the student records in the Admin Dashboard.</div>';
+      return;
+    }
+
+    renderAttendanceStudents(batchId);
+  } catch (error) {
+    console.error("Student loading error:", error);
+    panel.innerHTML =
+      `<div class="empty">${escapeHTML(getFriendlyError(error))}</div>`;
+  }
+}
+
+function renderAttendanceStudents(batchId) {
+  const panel = document.getElementById("attendancePanel");
+  const batch = assignedBatches.find(item => item.id === batchId);
+
+  const rows = selectedBatchStudents.map(student => {
+    const studentId = escapeHTML(student.id);
+    const name = escapeHTML(student.name || "Unnamed Student");
+    const value = attendanceState[student.id];
+
+    return `
+      <div class="student-row">
+        <div>
+          <div class="student-name">${name}</div>
+          <div class="student-id">Student ID: ${studentId}</div>
+        </div>
+        <div class="attendance-toggle">
+          <button type="button" class="present ${value === true ? "selected" : ""}"
+            data-attendance="present" data-student="${studentId}">Present</button>
+          <button type="button" class="absent ${value === false ? "selected" : ""}"
+            data-attendance="absent" data-student="${studentId}">Absent</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  panel.innerHTML = `
+    <div class="card">
+      <div class="section-heading" style="margin-top:0">
+        <h3>${escapeHTML(batch?.batchName || batch?.sport || "Selected Batch")}</h3>
+        <small>${selectedBatchStudents.length} Students</small>
+      </div>
+      <div class="notice">Choose Present or Absent for each student. Any student left unselected will be marked Absent when you submit.</div>
+      ${rows}
+      <div class="attendance-actions">
+        <button class="btn btn-light" type="button" id="resetAttendanceBtn">Reset</button>
+        <button class="btn btn-primary" type="button" id="submitAttendanceBtn">Submit Attendance</button>
+      </div>
+      <p class="info" id="attendanceStatus">Attendance has not been submitted for this selection.</p>
+    </div>
+  `;
+}
+
+document.getElementById("attendanceBatch").addEventListener("change", event => {
+  loadStudentsForAttendance(event.target.value);
+});
+
+document.getElementById("attendancePanel").addEventListener("click", event => {
+  const attendanceButton = event.target.closest("[data-attendance]");
+
+  if (attendanceButton) {
+    const studentId = attendanceButton.dataset.student;
+    const isPresent = attendanceButton.dataset.attendance === "present";
+
+    attendanceState[studentId] = isPresent;
+
+    const row = attendanceButton.closest(".student-row");
+    row.querySelectorAll("button").forEach(button => {
+      button.classList.remove("selected");
+    });
+
+    attendanceButton.classList.add("selected");
+    return;
+  }
+
+  if (event.target.closest("#resetAttendanceBtn")) {
+    attendanceState = {};
+    const batchId = document.getElementById("attendanceBatch").value;
+    renderAttendanceStudents(batchId);
+    return;
+  }
+
+  if (event.target.closest("#submitAttendanceBtn")) {
+    submitAttendance();
+  }
+});
+
+async function submitAttendance() {
+  if (attendanceSaving) return;
+
+  const batchId = document.getElementById("attendanceBatch").value;
+  const statusElement = document.getElementById("attendanceStatus");
+  const submitButton = document.getElementById("submitAttendanceBtn");
+
+  if (!batchId || !selectedBatchStudents.length) {
+    if (statusElement) statusElement.textContent = "Please select a batch with students.";
+    return;
+  }
+
+  const batch = assignedBatches.find(item => item.id === batchId);
+  if (!batch) return;
+
+  const records = selectedBatchStudents.map(student => ({
+    studentId: student.id,
+    studentName: student.name || "Unnamed Student",
+    status: attendanceState[student.id] === true ? "present" : "absent"
+  }));
+
+  const presentCount = records.filter(item => item.status === "present").length;
+  const absentCount = records.length - presentCount;
+  const date = todayKey();
+
+  const attendanceDocumentId =
+    auth.currentUser.uid + "_" + batchId + "_" + date;
+
+  attendanceSaving = true;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving Attendance...";
+  }
+  if (statusElement) statusElement.textContent = "Saving attendance to Firebase...";
+
+  try {
+    await setDoc(
+      doc(db, "studentAttendance", attendanceDocumentId),
+      {
+        attendanceId: attendanceDocumentId,
+        coachUid: auth.currentUser.uid,
+        coachName: currentProfile?.name || "Coach",
+        batchId: batch.id,
+        batchName: batch.batchName || "",
+        sport: batch.sport || "",
+        date: date,
+        students: records,
+        totalStudents: records.length,
+        presentCount: presentCount,
+        absentCount: absentCount,
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    attendanceRecords.set(batchId, {
+      present: presentCount,
+      absent: absentCount
+    });
+
+    if (statusElement) {
+      statusElement.textContent =
+        "Attendance saved successfully: " + presentCount +
+        " Present, " + absentCount + " Absent.";
+    }
+
+    updateSummary();
+  } catch (error) {
+    console.error("Attendance save error:", error);
+
+    if (statusElement) {
+      statusElement.textContent =
+        "Attendance could not be saved. " + getFriendlyError(error);
+    }
+  } finally {
+    attendanceSaving = false;
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit Attendance";
+    }
+  }
+}
+
+/* GPS is collected only after the coach presses a class action button. */
+function getCurrentGPS() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("GPS is not supported by this browser."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      error => {
+        const messages = {
+          1: "Location permission was denied. Please allow location access.",
+          2: "Your location could not be detected. Please try again.",
+          3: "Location request timed out. Please try again."
+        };
+
+        reject(new Error(messages[error.code] || "Unable to get your location."));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0
+      }
+    );
+  });
+}
+
+async function saveCoachActivity(eventType, position, batch) {
   const user = auth.currentUser;
 
   if (!user) {
@@ -374,31 +847,148 @@ window.saveCoachActivity = async function(eventType, position) {
     coachName: profile.name || user.displayName || "Coach",
     coachEmail: user.email || "",
     eventType: eventType,
+    batchId: batch.id,
+    batchName: batch.batchName || "",
+    sport: batch.sport || "",
+    locationName: batch.locationName || "",
     latitude: position.coords.latitude,
     longitude: position.coords.longitude,
     accuracy: position.coords.accuracy,
     recordedAt: serverTimestamp(),
     createdAt: serverTimestamp()
   });
-
-  return true;
-};
-
-function friendlyAuthError(error) {
-  const messages = {
-    "auth/invalid-credential": "Incorrect email or password. Please check your login details.",
-    "auth/invalid-email": "Please enter a valid email address.",
-    "auth/user-disabled": "This account has been disabled. Please contact the academy admin.",
-    "auth/too-many-requests": "Too many attempts. Please try again later.",
-    "auth/network-request-failed": "Network error. Please check your internet connection and try again.",
-    "auth/operation-not-allowed": "Email and password login is not enabled in Firebase Authentication.",
-    "auth/internal-error": "A Firebase error occurred. Please try again."
-  };
-
-  return messages[error.code] || error.message || "Login failed. Please try again.";
 }
 
-loginForm.addEventListener("submit", async (event) => {
+async function recordBatchAction(action, batchId, button) {
+  const batch = assignedBatches.find(item => item.id === batchId);
+  if (!batch || !auth.currentUser) return;
+
+  const isArrival = action === "arrival";
+
+  if (isArrival && (arrivalRecords.has(batchId) || completedRecords.has(batchId))) {
+    return;
+  }
+
+  if (!isArrival && !arrivalRecords.has(batchId)) {
+    alert("Please record your arrival first.");
+    return;
+  }
+
+  if (!isArrival && completedRecords.has(batchId)) return;
+
+  const card = document.querySelector(`[data-batch-card="${CSS.escape(batchId)}"]`);
+  const status = document.getElementById("gps-" + batchId);
+
+  if (!card || !status) return;
+
+  const actionButtons = card.querySelectorAll(".class-actions button");
+  actionButtons.forEach(item => item.disabled = true);
+
+  button.textContent = isArrival ? "Checking GPS..." : "Saving Departure...";
+
+  status.textContent = "Please allow location access. Saving your GPS record for the Admin...";
+
+  try {
+    const position = await getCurrentGPS();
+    await saveCoachActivity(isArrival ? "arrival" : "departure", position, batch);
+
+    if (isArrival) {
+      arrivalRecords.add(batchId);
+      status.textContent =
+        "Arrival GPS record saved successfully for the Admin. No WhatsApp message was sent.";
+    } else {
+      completedRecords.add(batchId);
+      status.textContent =
+        "Departure GPS record saved successfully for the Admin. No WhatsApp message was sent.";
+    }
+
+    renderBatches();
+    updateSummary();
+  } catch (error) {
+    console.error("Class activity save error:", error);
+
+    status.textContent = getFriendlyError(error);
+
+    actionButtons.forEach(item => item.disabled = false);
+    button.disabled = false;
+    button.textContent = isArrival ? "◎ I'm Here" : "✓ Retry Class Completion";
+  }
+}
+
+document.getElementById("batchList").addEventListener("click", event => {
+  const button = event.target.closest("[data-action]");
+  if (!button) return;
+
+  recordBatchAction(
+    button.dataset.action,
+    button.dataset.batch,
+    button
+  );
+});
+
+/* Parent messages are separate from GPS actions. */
+async function copyMessage(elementId) {
+  const message = document.getElementById(elementId).textContent;
+  const status = document.getElementById("messageStatus");
+
+  try {
+    await navigator.clipboard.writeText(message);
+    status.textContent = "Message copied successfully.";
+  } catch (error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = message;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      const copied = document.execCommand("copy");
+      status.textContent = copied
+        ? "Message copied successfully."
+        : "Unable to copy. Please copy the message manually.";
+    } catch (copyError) {
+      status.textContent = "Unable to copy. Please copy the message manually.";
+    }
+
+    textArea.remove();
+  }
+}
+
+function openWhatsApp(elementId) {
+  const message = document.getElementById(elementId).textContent;
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+  const whatsappTab = window.open(url, "_blank");
+
+  document.getElementById("messageStatus").textContent =
+    whatsappTab
+      ? "WhatsApp opened. Select the correct parent group and press Send."
+      : "Please allow pop-ups to open WhatsApp.";
+}
+
+document.querySelectorAll("[data-copy]").forEach(button => {
+  button.addEventListener("click", () => copyMessage(button.dataset.copy));
+});
+
+document.querySelectorAll("[data-whatsapp]").forEach(button => {
+  button.addEventListener("click", () => openWhatsApp(button.dataset.whatsapp));
+});
+
+async function loadCoachDashboard() {
+  updateDateLabels();
+
+  await loadAssignedBatches();
+
+  const attendanceBatch = document.getElementById("attendanceBatch");
+  if (assignedBatches.length === 1) {
+    attendanceBatch.value = assignedBatches[0].id;
+    await loadStudentsForAttendance(assignedBatches[0].id);
+  }
+
+  updateSummary();
+}
+
+loginForm.addEventListener("submit", async event => {
   event.preventDefault();
   clearLoginMessage();
 
@@ -418,27 +1008,39 @@ loginForm.addEventListener("submit", async (event) => {
     showLoginMessage("Login successful. Checking your coach approval...", "info");
   } catch (error) {
     console.error("Coach login error:", error);
-    showLoginMessage(friendlyAuthError(error), "error");
+    showLoginMessage(getFriendlyError(error), "error");
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = "Login";
   }
 });
 
-onAuthStateChanged(auth, async (user) => {
+let authCheckInProgress = false;
+
+onAuthStateChanged(auth, async user => {
   if (!user) {
+    currentProfile = null;
+    assignedBatches = [];
+    arrivalRecords.clear();
+    completedRecords.clear();
+    attendanceRecords.clear();
     showLogin();
     return;
   }
+
+  if (authCheckInProgress) return;
+  authCheckInProgress = true;
 
   loginBtn.disabled = true;
   loginBtn.textContent = "Checking Account...";
 
   try {
-    const data = await verifyCoach(user);
-    showDashboard(data.name);
+    currentProfile = await verifyCoach(user);
+    showDashboard(currentProfile.name);
+
+    await loadCoachDashboard();
   } catch (error) {
-    console.error("Coach approval check:", error);
+    console.error("Coach dashboard loading error:", error);
 
     try {
       await signOut(auth);
@@ -447,8 +1049,9 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     showLogin();
-    showLoginMessage(error.message || "Your account could not be verified.", "error");
+    showLoginMessage(getFriendlyError(error), "error");
   } finally {
+    authCheckInProgress = false;
     loginBtn.disabled = false;
     loginBtn.textContent = "Login";
   }
@@ -464,338 +1067,8 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
     showLoginMessage("Unable to log out. Please try again.", "error");
   }
 });
-</script>
 
-<script>
-const attendance = [null, null, null];
-let arrivalDone = false;
-let completed = false;
-let attendanceDone = false;
-let departureDone = false;
-let arrivalInProgress = false;
-let departureInProgress = false;
-
-const today = new Date();
-
-document.getElementById("todayDate").textContent =
-  today.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
-
-document.getElementById("classDate").textContent =
-  today.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short"
-  });
-
-function showSection(id, button) {
-  document.querySelectorAll(".section").forEach(section => {
-    section.classList.remove("active");
-  });
-
-  document.querySelectorAll(".nav-item").forEach(item => {
-    item.classList.remove("active");
-  });
-
-  document.getElementById(id).classList.add("active");
-  button.classList.add("active");
-}
-
-function updateSummary() {
-  document.getElementById("completedClasses").textContent = completed ? "1" : "0";
-  document.getElementById("sumCompleted").textContent = completed ? "1" : "0";
-  document.getElementById("sumAttendance").textContent = attendanceDone ? "Yes" : "No";
-  document.getElementById("sumArrival").textContent = arrivalDone ? "Yes" : "No";
-  document.getElementById("sumDeparture").textContent = departureDone ? "Yes" : "No";
-
-  const progress = completed ? 100 : arrivalDone ? 50 : 0;
-  document.getElementById("progressText").textContent = progress + "%";
-  document.getElementById("progressBar").style.width = progress + "%";
-}
-
-/* Parent messages contain no GPS or map link. */
-function getArrivalMessage() {
-  return "Hello Parents! The Coach has arrived for today's class. Thank you! Shyam Sports Academy";
-}
-
-function getDepartureMessage() {
-  return "Hello Parents! Today's class has been completed. The Coach is now leaving. Thank you! Shyam Sports Academy";
-}
-
-/*
-  Open WhatsApp immediately during the button click.
-  This avoids opening a blank tab and prevents the Dashboard
-  from being accidentally opened again.
-*/
-function copyAndOpenWhatsApp(message, statusElement) {
-  let clipboardPromise = null;
-  let copiedFallback = false;
-
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      clipboardPromise = navigator.clipboard.writeText(message);
-    }
-  } catch (error) {
-    clipboardPromise = null;
-  }
-
-  if (!clipboardPromise) {
-    const textArea = document.createElement("textarea");
-    textArea.value = message;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    textArea.style.top = "0";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-      copiedFallback = document.execCommand("copy");
-    } catch (error) {
-      copiedFallback = false;
-    }
-
-    textArea.remove();
-  }
-
-  const whatsappURL =
-    "https://wa.me/?text=" + encodeURIComponent(message);
-
-  /* This must happen directly during the button click. */
-  const whatsappTab = window.open(whatsappURL, "_blank");
-
-  if (!whatsappTab) {
-    statusElement.textContent =
-      "Please allow pop-ups for this website to open WhatsApp automatically.";
-  } else {
-    statusElement.textContent =
-      "Opening WhatsApp. Select the correct Parent Group and press Send.";
-  }
-
-  if (clipboardPromise) {
-    clipboardPromise.then(() => {
-      statusElement.textContent =
-        "Message copied. WhatsApp opened. Select the Parent Group and press Send.";
-    }).catch(() => {
-      statusElement.textContent =
-        "WhatsApp opened. If the message is not copied, copy it from the Messages section.";
-    });
-  } else if (copiedFallback) {
-    statusElement.textContent =
-      "Message copied. WhatsApp opened. Select the Parent Group and press Send.";
-  }
-}
-
-function getCurrentGPS(successCallback, errorCallback) {
-  if (!navigator.geolocation) {
-    errorCallback("GPS is not supported by this browser.");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    successCallback,
-    (error) => {
-      const messages = {
-        1: "Location permission was denied. Please allow location access.",
-        2: "Your location could not be detected. Please try again.",
-        3: "Location request timed out. Please try again."
-      };
-
-      errorCallback(messages[error.code] || "Unable to get your location.");
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 0
-    }
-  );
-}
-
-function markArrival() {
-  if (arrivalDone || arrivalInProgress) return;
-
-  const status = document.getElementById("gpsStatus");
-  const arrivalButton = document.getElementById("arrivalBtn");
-  const completeButton = document.getElementById("completeBtn");
-
-  /*
-    First: copy the simple message and open WhatsApp.
-    GPS is collected separately for the Admin record.
-  */
-  copyAndOpenWhatsApp(getArrivalMessage(), status);
-
-  if (!navigator.geolocation) {
-    status.textContent += " GPS is not supported by this browser.";
-    return;
-  }
-
-  arrivalInProgress = true;
-  arrivalButton.disabled = true;
-  arrivalButton.textContent = "Checking Location...";
-  status.textContent = "WhatsApp is opening. Checking GPS location for the Admin record...";
-
-  getCurrentGPS(async (position) => {
-    try {
-      await window.saveCoachActivity("arrival", position);
-
-      arrivalDone = true;
-      arrivalButton.textContent = "✓ Arrival Recorded";
-      completeButton.disabled = false;
-
-      status.textContent =
-        "Arrival GPS record saved successfully for Admin. Parent message contains no location.";
-
-      updateSummary();
-    } catch (error) {
-      console.error("Arrival record error:", error);
-
-      arrivalButton.disabled = false;
-      arrivalButton.textContent = "◎ I'm Here";
-
-      status.textContent =
-        "GPS detected, but the Admin record could not be saved. Please try again. " +
-        (error.message || "");
-    } finally {
-      arrivalInProgress = false;
-    }
-  }, (message) => {
-    arrivalInProgress = false;
-    arrivalButton.disabled = false;
-    arrivalButton.textContent = "◎ I'm Here";
-    status.textContent = message + " Arrival GPS was not recorded.";
-  });
-}
-
-function completeClass() {
-  if (!arrivalDone) {
-    alert("Please complete the arrival check first.");
-    return;
-  }
-
-  if (completed || departureInProgress) return;
-
-  const status = document.getElementById("gpsStatus");
-  const completeButton = document.getElementById("completeBtn");
-
-  /*
-    First: copy the simple departure message and open WhatsApp.
-    Then: collect a fresh GPS location for the Admin record.
-  */
-  copyAndOpenWhatsApp(getDepartureMessage(), status);
-
-  departureInProgress = true;
-  completeButton.disabled = true;
-  completeButton.textContent = "Recording Departure...";
-
-  status.textContent =
-    "WhatsApp is opening. Checking departure GPS location for the Admin record...";
-
-  getCurrentGPS(async (position) => {
-    try {
-      await window.saveCoachActivity("departure", position);
-
-      completed = true;
-      departureDone = true;
-
-      document.getElementById("classStatus").textContent = "Completed";
-      document.getElementById("classStatus").className = "status done";
-
-      completeButton.textContent = "✓ Completed";
-      completeButton.disabled = true;
-
-      status.textContent =
-        "Departure GPS record saved successfully for Admin. Parent message contains no location.";
-
-      updateSummary();
-    } catch (error) {
-      console.error("Departure record error:", error);
-
-      completeButton.disabled = false;
-      completeButton.textContent = "✓ Retry Class Completion";
-
-      status.textContent =
-        "GPS detected, but the departure record could not be saved. Please try again. " +
-        (error.message || "");
-    } finally {
-      departureInProgress = false;
-    }
-  }, (message) => {
-    departureInProgress = false;
-    completeButton.disabled = false;
-    completeButton.textContent = "✓ Retry Class Completion";
-    status.textContent = message + " Departure GPS was not recorded.";
-  });
-}
-
-function setAttendance(index, isPresent, button) {
-  attendance[index] = isPresent;
-
-  const buttons = button.parentElement.querySelectorAll("button");
-  buttons.forEach(item => item.classList.remove("selected"));
-  button.classList.add("selected");
-}
-
-function resetAttendance() {
-  attendance.fill(null);
-
-  document.querySelectorAll(".attendance-toggle button").forEach(button => {
-    button.classList.remove("selected");
-  });
-
-  attendanceDone = false;
-  document.getElementById("attendanceStatus").textContent =
-    "Attendance has not been submitted.";
-  updateSummary();
-}
-
-function submitAttendance() {
-  const finalAttendance = attendance.map(value => value === true);
-  const presentCount = finalAttendance.filter(Boolean).length;
-  const absentCount = finalAttendance.length - presentCount;
-
-  attendanceDone = true;
-
-  document.getElementById("attendanceStatus").textContent =
-    "Preview submitted: " + presentCount + " Present, " +
-    absentCount + " Absent. This has not been saved to the database.";
-
-  updateSummary();
-}
-
-async function copyMessage(id) {
-  const message = document.getElementById(id).textContent;
-
-  try {
-    await navigator.clipboard.writeText(message);
-    alert("Message copied successfully.");
-  } catch (error) {
-    const textArea = document.createElement("textarea");
-    textArea.value = message;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    document.body.appendChild(textArea);
-    textArea.select();
-
-    try {
-      const copied = document.execCommand("copy");
-      alert(copied ? "Message copied successfully." : "Unable to copy. Please copy manually.");
-    } catch (copyError) {
-      alert("Unable to copy. Please select and copy the message manually.");
-    }
-
-    textArea.remove();
-  }
-}
-
-function openWhatsApp(id) {
-  const message = document.getElementById(id).textContent;
-  const url = "https://wa.me/?text=" + encodeURIComponent(message);
-  window.open(url, "_blank");
-}
-
+updateDateLabels();
 updateSummary();
 </script>
 
