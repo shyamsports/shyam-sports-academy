@@ -162,8 +162,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </div>
 
   <section class="section active" id="home">
-    <div class="notice warning">
-      Class timings are not connected yet because the Admin Schedule system is still pending. Your assigned active batches will appear here. Arrival and completion records can be saved for each batch.
+    <div class="notice">
+      Your assigned active batches and class schedules are loaded from the academy records. Please check your class days and timings before starting a class.
     </div>
 
     <div class="section-heading">
@@ -292,6 +292,8 @@ const dashboard = document.getElementById("dashboard");
 
 let currentProfile = null;
 let assignedBatches = [];
+let assignedSchedules = [];
+let scheduleLoadError = false;
 let selectedBatchStudents = [];
 let attendanceState = {};
 let arrivalRecords = new Set();
@@ -455,6 +457,129 @@ function updateSummary() {
   document.getElementById("progressBar").style.width = progress + "%";
 }
 
+/* Load schedules assigned to the currently logged-in coach. */
+async function loadAssignedSchedules() {
+  assignedSchedules = [];
+  scheduleLoadError = false;
+
+  const scheduleQuery = query(
+    collection(db, "schedules"),
+    where("coachId", "==", auth.currentUser.uid)
+  );
+
+  try {
+    const snapshot = await getDocs(scheduleQuery);
+
+    assignedSchedules = snapshot.docs
+      .map(item => ({ id: item.id, ...item.data() }))
+      .filter(schedule => {
+        const status = String(schedule.status || "scheduled").toLowerCase();
+        return status !== "cancelled" && status !== "canceled" &&
+               status !== "inactive" && status !== "deleted";
+      });
+  } catch (error) {
+    console.error("Schedule loading error:", error);
+    scheduleLoadError = true;
+  }
+}
+
+function formatScheduleTime(schedule) {
+  const start = schedule.startTime || "";
+  const end = schedule.endTime || "";
+
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `Starts at ${start}`;
+  if (end) return `Ends at ${end}`;
+  return "Time not specified";
+}
+
+function formatScheduleDays(schedule) {
+  const daysOrder = [
+    "Monday","Tuesday","Wednesday","Thursday",
+    "Friday","Saturday","Sunday"
+  ];
+
+  if (Array.isArray(schedule.daysOfWeek) && schedule.daysOfWeek.length) {
+    const selectedDays = schedule.daysOfWeek
+      .map(day => String(day).trim())
+      .sort((a, b) => {
+        const indexA = daysOrder.findIndex(item => item.toLowerCase() === a.toLowerCase());
+        const indexB = daysOrder.findIndex(item => item.toLowerCase() === b.toLowerCase());
+        return indexA - indexB;
+      });
+
+    return selectedDays.join(", ");
+  }
+
+  if (schedule.classDate) {
+    const date = new Date(schedule.classDate + "T00:00:00");
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+    return String(schedule.classDate);
+  }
+
+  return "Days not specified";
+}
+
+function getBatchSchedules(batchId) {
+  return assignedSchedules.filter(schedule => schedule.batchId === batchId);
+}
+
+function renderScheduleDetails(batchId) {
+  if (scheduleLoadError) {
+    return `
+      <div class="detail">
+        <small>Class Days</small>
+        <strong>Unable to load schedule</strong>
+      </div>
+      <div class="detail">
+        <small>Class Timing</small>
+        <strong>Please contact Admin</strong>
+      </div>
+    `;
+  }
+
+  const schedules = getBatchSchedules(batchId);
+
+  if (!schedules.length) {
+    return `
+      <div class="detail">
+        <small>Class Days</small>
+        <strong>Schedule not assigned yet</strong>
+      </div>
+      <div class="detail">
+        <small>Class Timing</small>
+        <strong>Not available</strong>
+      </div>
+    `;
+  }
+
+  return schedules.map((schedule, index) => {
+    const type = String(schedule.scheduleType || "").toLowerCase();
+    const scheduleLabel =
+      type.includes("date") || schedule.classDate
+        ? "Date-Specific"
+        : "Weekly Recurring";
+
+    return `
+      <div class="detail">
+        <small>${scheduleLabel} · Class Days</small>
+        <strong>${escapeHTML(formatScheduleDays(schedule))}</strong>
+      </div>
+      <div class="detail">
+        <small>${scheduleLabel} · Class Timing</small>
+        <strong>${escapeHTML(formatScheduleTime(schedule))}</strong>
+      </div>
+    `;
+  }).join("");
+}
+
 /* Load batches assigned to the currently logged-in coach. */
 async function loadAssignedBatches() {
   const batchList = document.getElementById("batchList");
@@ -473,6 +598,8 @@ async function loadAssignedBatches() {
     .sort((a, b) =>
       String(a.batchName || "").localeCompare(String(b.batchName || ""))
     );
+
+  await loadAssignedSchedules();
 
   renderBatches();
   populateAttendanceBatchSelect();
@@ -531,10 +658,7 @@ function renderBatches() {
             <small>Students</small>
             <strong id="student-count-${batchId}">Loading...</strong>
           </div>
-          <div class="detail">
-            <small>Class Timing</small>
-            <strong>Schedule not assigned yet</strong>
-          </div>
+          ${renderScheduleDetails(batch.id)}
         </div>
 
         <div class="class-actions">
@@ -1021,6 +1145,7 @@ onAuthStateChanged(auth, async user => {
   if (!user) {
     currentProfile = null;
     assignedBatches = [];
+    assignedSchedules = [];
     arrivalRecords.clear();
     completedRecords.clear();
     attendanceRecords.clear();
