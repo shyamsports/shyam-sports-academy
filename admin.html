@@ -1546,5 +1546,855 @@ document.getElementById("refreshCoachRequests").addEventListener("click",loadCoa
 document.getElementById("refreshCoachDirectory").addEventListener("click",loadCoachDirectory);
 
 </script>
+ 
+<script type="module">
+import {getApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {
+  getAuth,onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {
+  getFirestore,doc,getDoc,collection,query,where,getDocs,
+  setDoc,updateDoc,serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+const locationApp=getApp();
+const locationAuth=getAuth(locationApp);
+const locationDB=getFirestore(locationApp);
+const LOCATION_ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
+
+let locationRecords=[];
+let locationSports=[];
+let editingLocationId=null;
+
+const el=id=>document.getElementById(id);
+const safe=value=>value==null?"":String(value);
+
+function locationMessage(message){
+  const box=el("locationFormMessage");
+  if(box)box.textContent=message;
+}
+
+function locationCell(value){
+  const td=document.createElement("td");
+  td.textContent=safe(value)||"—";
+  return td;
+}
+
+function locationButton(label,className,callback){
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="btn "+className;
+  button.textContent=label;
+  button.addEventListener("click",callback);
+  return button;
+}
+
+/* BUILD LOCATION MANAGEMENT UI */
+
+function buildLocationInterface(){
+  const section=el("locations");
+  if(!section)return;
+
+  section.innerHTML=`
+    <div class="page-heading">
+      <div>
+        <h1>Location Management</h1>
+        <p>Manage academy locations, addresses and available sports.</p>
+      </div>
+      <button class="btn" id="newLocationButton" type="button">+ Add Location</button>
+    </div>
+
+    <div class="info-box">
+      Each location can support multiple sports and batches.
+      Inactive locations cannot be selected for new batches.
+      Existing batch records will be preserved.
+    </div>
+
+    <div class="panel" id="locationFormPanel" style="display:none">
+      <div class="panel-heading">
+        <h3 id="locationFormTitle">Add New Location</h3>
+      </div>
+
+      <form id="locationForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="locationNameInput">Location Name</label>
+            <input id="locationNameInput" maxlength="100"
+              placeholder="Example: Vijay Nagar Ground" required>
+          </div>
+
+          <div class="field">
+            <label for="locationAddressInput">Full Address</label>
+            <input id="locationAddressInput" maxlength="300"
+              placeholder="Enter complete location address" required>
+          </div>
+
+          <div class="field">
+            <label for="locationStatusInput">Location Status</label>
+            <select id="locationStatusInput">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 class="section-title">Available Sports</h3>
+        <div id="locationSportsOptions" class="day-options">
+          <span>Loading sports...</span>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" id="saveLocationButton" type="submit">Save Location</button>
+          <button class="btn light" id="cancelLocationButton" type="button">Cancel</button>
+        </div>
+
+        <p id="locationFormMessage" class="empty-note" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Locations</div>
+        <div class="stat-value" id="locationTotalCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Locations</div>
+        <div class="stat-value" id="locationActiveCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Inactive Locations</div>
+        <div class="stat-value" id="locationInactiveCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Batches</div>
+        <div class="stat-value" id="locationBatchCount">0</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-heading">
+        <div>
+          <h3>Location Directory</h3>
+          <p>Location records stored in Firebase.</p>
+        </div>
+        <button class="btn light" id="refreshLocationsButton" type="button">Refresh</button>
+      </div>
+
+      <div id="locationsMessage" class="empty-note">Loading locations...</div>
+
+      <div class="table-wrap" id="locationsTableWrap" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Location Name</th>
+              <th>Address</th>
+              <th>Available Sports</th>
+              <th>Batches</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="locationsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  /* Replace old free-text batch location with a dropdown */
+
+  const oldLocation=el("batchLocationInput");
+  if(oldLocation){
+    const select=document.createElement("select");
+    select.id="batchLocationInput";
+    select.required=true;
+    select.innerHTML='<option value="">Select active location</option>';
+    oldLocation.replaceWith(select);
+  }
+
+  const locationForm=el("locationForm");
+
+  el("newLocationButton").addEventListener("click",()=>{
+    editingLocationId=null;
+    locationForm.reset();
+    el("locationFormTitle").textContent="Add New Location";
+    el("locationStatusInput").value="active";
+    el("saveLocationButton").textContent="Save Location";
+    renderLocationSports();
+    el("locationFormPanel").style.display="block";
+    el("locationNameInput").focus();
+  });
+
+  el("cancelLocationButton").addEventListener("click",closeLocationForm);
+  el("refreshLocationsButton").addEventListener("click",loadLocations);
+  locationForm.addEventListener("submit",saveLocation);
+
+  el("batchSportInput").addEventListener("change",filterBatchLocations);
+  el("batchLocationInput").addEventListener("change",validateBatchLocation);
+}
+
+function closeLocationForm(){
+  el("locationFormPanel").style.display="none";
+  el("locationForm").reset();
+  editingLocationId=null;
+  locationMessage("");
+}
+
+/* LOAD ACTIVE SPORTS */
+
+async function loadLocationSports(){
+  const snapshot=await getDocs(collection(locationDB,"sports"));
+
+  locationSports=snapshot.docs
+    .map(item=>({id:item.id,...item.data()}))
+    .filter(item=>item.status==="active")
+    .sort((a,b)=>safe(a.name).localeCompare(safe(b.name)));
+
+  renderLocationSports();
+}
+
+function renderLocationSports(selected=[]){
+  const container=el("locationSportsOptions");
+  if(!container)return;
+
+  container.replaceChildren();
+
+  if(!locationSports.length){
+    container.textContent="No active sports found. Add sports in Sports Management first.";
+    return;
+  }
+
+  locationSports.forEach(sport=>{
+    const label=document.createElement("label");
+    const checkbox=document.createElement("input");
+
+    checkbox.type="checkbox";
+    checkbox.name="locationSport";
+    checkbox.value=sport.name;
+    checkbox.checked=selected.includes(sport.name);
+
+    label.append(checkbox,document.createTextNode(" "+sport.name));
+    container.appendChild(label);
+  });
+}
+
+function selectedLocationSports(){
+  return Array.from(
+    document.querySelectorAll('input[name="locationSport"]:checked')
+  ).map(input=>input.value);
+}
+
+/* LEGACY LOCATION MIGRATION */
+
+async function migrateOldBatchLocations(){
+  const batchSnapshot=await getDocs(collection(locationDB,"batches"));
+  const existingLocations=await getDocs(collection(locationDB,"locations"));
+
+  const existingIds=new Set(existingLocations.docs.map(item=>item.id));
+  const legacyMap=new Map();
+
+  batchSnapshot.docs.forEach(batchDoc=>{
+    const batch=batchDoc.data();
+    const name=safe(batch.locationName).trim();
+
+    if(!name)return;
+
+    const oldId=safe(batch.locationId).trim()||makeLegacyLocationId(name);
+
+    if(!legacyMap.has(oldId)){
+      legacyMap.set(oldId,{name,sports:new Set()});
+    }
+
+    if(batch.sport){
+      legacyMap.get(oldId).sports.add(batch.sport);
+    }
+  });
+
+  for(const [id,data] of legacyMap){
+    if(existingIds.has(id))continue;
+
+    await setDoc(doc(locationDB,"locations",id),{
+      locationId:id,
+      name:data.name,
+      address:"",
+      sports:Array.from(data.sports),
+      status:"active",
+      migratedFromLegacyBatch:true,
+      createdAt:serverTimestamp(),
+      updatedAt:serverTimestamp()
+    });
+  }
+
+  /* Add missing historical batch sports without replacing location data */
+
+  const refreshed=await getDocs(collection(locationDB,"locations"));
+
+  for(const locationDoc of refreshed.docs){
+    const location=locationDoc.data();
+    const batchSports=legacyMap.get(locationDoc.id)?.sports;
+
+    if(!batchSports)continue;
+
+    const merged=new Set([
+      ...(Array.isArray(location.sports)?location.sports:[]),
+      ...Array.from(batchSports)
+    ]);
+
+    if(merged.size!==(Array.isArray(location.sports)?location.sports.length:0)){
+      await updateDoc(locationDoc.ref,{
+        sports:Array.from(merged),
+        updatedAt:serverTimestamp()
+      });
+    }
+  }
+}
+
+function makeLegacyLocationId(name){
+  const slug=name.toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-|-$/g,"");
+
+  return slug||("location-"+Date.now().toString(36));
+}
+
+/* LOAD LOCATIONS */
+
+async function loadLocations(){
+  if(!locationAuth.currentUser||
+     locationAuth.currentUser.uid!==LOCATION_ADMIN_UID)return;
+
+  const message=el("locationsMessage");
+  const wrap=el("locationsTableWrap");
+  const body=el("locationsTableBody");
+
+  message.style.display="block";
+  message.textContent="Loading locations...";
+  wrap.style.display="none";
+  body.replaceChildren();
+
+  try{
+    await loadLocationSports();
+    await migrateOldBatchLocations();
+
+    const [locationSnapshot,batchSnapshot]=await Promise.all([
+      getDocs(collection(locationDB,"locations")),
+      getDocs(collection(locationDB,"batches"))
+    ]);
+
+    locationRecords=locationSnapshot.docs.map(item=>({
+      id:item.id,...item.data()
+    })).sort((a,b)=>safe(a.name).localeCompare(safe(b.name)));
+
+    const batchCounts={};
+    batchSnapshot.docs.forEach(item=>{
+      const batch=item.data();
+      const id=batch.locationId;
+      if(id)batchCounts[id]=(batchCounts[id]||0)+1;
+    });
+
+    const active=locationRecords.filter(x=>x.status==="active").length;
+    const inactive=locationRecords.length-active;
+
+    el("locationTotalCount").textContent=locationRecords.length;
+    el("locationActiveCount").textContent=active;
+    el("locationInactiveCount").textContent=inactive;
+    el("locationBatchCount").textContent=batchSnapshot.size;
+
+    if(!locationRecords.length){
+      message.textContent="No locations added yet. Select Add Location to create your first location.";
+      updateBatchLocationOptions();
+      return;
+    }
+
+    locationRecords.forEach(location=>{
+      const row=document.createElement("tr");
+
+      row.append(
+        locationCell(location.name),
+        locationCell(location.address),
+        locationCell(Array.isArray(location.sports)?location.sports.join(", "):"—"),
+        locationCell(batchCounts[location.id]||0)
+      );
+
+      const statusCell=document.createElement("td");
+      const badge=document.createElement("span");
+      badge.className="status "+(location.status==="active"?"active":"inactive");
+      badge.textContent=location.status==="active"?"Active":"Inactive";
+      statusCell.appendChild(badge);
+      row.appendChild(statusCell);
+
+      const actionCell=document.createElement("td");
+      const actions=document.createElement("div");
+      actions.className="coach-action-buttons";
+
+      actions.appendChild(locationButton("Edit","light",()=>editLocation(location.id)));
+
+      actions.appendChild(locationButton(
+        location.status==="active"?"Deactivate":"Activate",
+        location.status==="active"?"red":"green",
+        ()=>toggleLocationStatus(location.id)
+      ));
+
+      actionCell.appendChild(actions);
+      row.appendChild(actionCell);
+      body.appendChild(row);
+    });
+
+    message.style.display="none";
+    wrap.style.display="block";
+
+    updateBatchLocationOptions();
+
+  }catch(error){
+    message.textContent="Could not load locations: "+error.message;
+  }
+}
+
+/* ADD / UPDATE LOCATION */
+
+async function saveLocation(event){
+  event.preventDefault();
+
+  if(!locationAuth.currentUser||
+     locationAuth.currentUser.uid!==LOCATION_ADMIN_UID)return;
+
+  const name=el("locationNameInput").value.trim();
+  const address=el("locationAddressInput").value.trim();
+  const status=el("locationStatusInput").value;
+  const sports=selectedLocationSports();
+  const button=el("saveLocationButton");
+
+  if(!name||!address){
+    locationMessage("Please enter the location name and full address.");
+    return;
+  }
+
+  if(!sports.length){
+    locationMessage("Select at least one sport for this location.");
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent="Saving...";
+
+  try{
+    let locationId=editingLocationId;
+
+    if(!locationId){
+      const base=makeLegacyLocationId(name);
+      locationId=base;
+
+      let suffix=1;
+      while(true){
+        const existing=await getDoc(doc(locationDB,"locations",locationId));
+        if(!existing.exists())break;
+        locationId=base+"-"+suffix++;
+      }
+    }
+
+    const existingLocation=editingLocationId
+      ?locationRecords.find(item=>item.id===editingLocationId)
+      :null;
+
+    const batches=await getDocs(query(
+      collection(locationDB,"batches"),
+      where("locationId","==",locationId)
+    ));
+
+    const activeBatches=batches.docs.filter(item=>
+      item.data().status==="active"
+    );
+
+    const removedSports=(existingLocation?.sports||[])
+      .filter(sport=>!sports.includes(sport));
+
+    const usedSports=new Set(
+      activeBatches.map(item=>item.data().sport).filter(Boolean)
+    );
+
+    const blocked=removedSports.filter(sport=>usedSports.has(sport));
+
+    if(blocked.length){
+      throw new Error(
+        "Cannot remove these sports because active batches are using them: "+
+        blocked.join(", ")
+      );
+    }
+
+    if(status==="inactive"&&activeBatches.length){
+      throw new Error(
+        "This location has "+activeBatches.length+
+        " active batch(es). Deactivate or move those batches first."
+      );
+    }
+
+    const payload={
+      locationId,
+      name,
+      address,
+      sports,
+      status,
+      updatedAt:serverTimestamp()
+    };
+
+    if(!editingLocationId){
+      payload.createdAt=serverTimestamp();
+    }
+
+    await setDoc(
+      doc(locationDB,"locations",locationId),
+      payload,
+      {merge:true}
+    );
+
+    /* Keep existing batch names synchronized after a location rename */
+
+    if(existingLocation&&existingLocation.name!==name){
+      for(const batchDoc of batches.docs){
+        await updateDoc(batchDoc.ref,{
+          locationName:name,
+          updatedAt:serverTimestamp()
+        });
+      }
+    }
+
+    closeLocationForm();
+    await loadLocations();
+
+    alert("Location saved successfully.");
+
+  }catch(error){
+    locationMessage("Could not save location: "+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent=editingLocationId?"Update Location":"Save Location";
+  }
+}
+
+/* EDIT LOCATION */
+
+function editLocation(locationId){
+  const location=locationRecords.find(item=>item.id===locationId);
+  if(!location)return;
+
+  editingLocationId=locationId;
+
+  el("locationFormTitle").textContent="Edit Location";
+  el("locationNameInput").value=location.name||"";
+  el("locationAddressInput").value=location.address||"";
+  el("locationStatusInput").value=location.status||"active";
+  el("saveLocationButton").textContent="Update Location";
+
+  renderLocationSports(Array.isArray(location.sports)?location.sports:[]);
+
+  el("locationFormPanel").style.display="block";
+  el("locationFormPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ACTIVATE / DEACTIVATE */
+
+async function toggleLocationStatus(locationId){
+  const location=locationRecords.find(item=>item.id===locationId);
+  if(!location)return;
+
+  const nextStatus=location.status==="active"?"inactive":"active";
+
+  if(nextStatus==="inactive"){
+    const batches=await getDocs(query(
+      collection(locationDB,"batches"),
+      where("locationId","==",locationId)
+    ));
+
+    const activeBatches=batches.docs.filter(item=>
+      item.data().status==="active"
+    );
+
+    if(activeBatches.length){
+      alert(
+        "This location cannot be deactivated because "+
+        activeBatches.length+" active batch(es) are assigned to it."
+      );
+      return;
+    }
+  }
+
+  if(!confirm("Change this location status to "+nextStatus+"?"))return;
+
+  try{
+    await updateDoc(doc(locationDB,"locations",locationId),{
+      status:nextStatus,
+      updatedAt:serverTimestamp()
+    });
+
+    await loadLocations();
+    alert("Location status updated successfully.");
+
+  }catch(error){
+    alert("Could not update location: "+error.message);
+  }
+}
+
+/* BATCH LOCATION DROPDOWN */
+
+function updateBatchLocationOptions(){
+  const select=el("batchLocationInput");
+  if(!select)return;
+
+  const previous=select.value;
+
+  select.replaceChildren(new Option("Select active location",""));
+
+  locationRecords
+    .filter(location=>location.status==="active")
+    .sort((a,b)=>safe(a.name).localeCompare(safe(b.name)))
+    .forEach(location=>{
+      const option=new Option(location.name,location.id);
+      option.dataset.name=location.name;
+      option.dataset.sports=JSON.stringify(
+        Array.isArray(location.sports)?location.sports:[]
+      );
+      select.add(option);
+    });
+
+  if(locationRecords.some(location=>
+    location.id===previous&&location.status==="active"
+  )){
+    select.value=previous;
+  }
+
+  filterBatchLocations();
+}
+
+function filterBatchLocations(){
+  const sport=el("batchSportInput")?.value||"";
+  const select=el("batchLocationInput");
+  if(!select)return;
+
+  Array.from(select.options).forEach((option,index)=>{
+    if(index===0)return;
+
+    let supported=[];
+    try{supported=JSON.parse(option.dataset.sports||"[]")}
+    catch(_){supported=[]}
+
+    option.hidden=!!sport&&!supported.includes(sport);
+  });
+
+  if(select.selectedOptions[0]?.hidden){
+    select.value="";
+  }
+}
+
+function validateBatchLocation(){
+  const select=el("batchLocationInput");
+  const sport=el("batchSportInput")?.value||"";
+  const option=select?.selectedOptions[0];
+
+  if(!option||!option.value)return;
+
+  let supported=[];
+  try{supported=JSON.parse(option.dataset.sports||"[]")}
+  catch(_){supported=[]}
+
+  if(!supported.includes(sport)){
+    select.value="";
+    el("batchFormMessage").textContent=
+      "The selected location does not support "+sport+
+      ". Please select another location.";
+  }else{
+    el("batchFormMessage").textContent="";
+  }
+}
+
+/* INTERCEPT THE OLD BATCH SAVE HANDLER */
+
+function installBatchValidation(){
+  const form=el("batchForm");
+  if(!form)return;
+
+  form.addEventListener("submit",async event=>{
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    if(!locationAuth.currentUser||
+       locationAuth.currentUser.uid!==LOCATION_ADMIN_UID){
+      alert("Admin authorization required.");
+      return;
+    }
+
+    const message=el("batchFormMessage");
+    const button=el("saveBatchButton");
+
+    const batchName=el("batchNameInput").value.trim();
+    const sport=el("batchSportInput").value;
+    const locationId=el("batchLocationInput").value;
+    const coachSelect=el("batchCoachInput");
+    const coachId=coachSelect.value;
+    const coachName=coachSelect.selectedOptions[0]?.dataset.name||"";
+    const status=el("batchStatusInput").value;
+
+    const location=locationRecords.find(item=>
+      item.id===locationId&&item.status==="active"
+    );
+
+    if(!batchName||!sport||!location||!coachId||!coachName){
+      message.textContent=
+        "Please complete all fields and select a valid active location and approved coach.";
+      return;
+    }
+
+    if(!Array.isArray(location.sports)||!location.sports.includes(sport)){
+      message.textContent=
+        "This location does not support the selected sport.";
+      return;
+    }
+
+    button.disabled=true;
+    button.textContent="Saving...";
+    message.textContent="Creating batch in Firebase...";
+
+    try{
+      const batchRef=doc(collection(locationDB,"batches"));
+
+      await setDoc(batchRef,{
+        batchId:batchRef.id,
+        batchName,
+        sport,
+        locationId:location.id,
+        locationName:location.name,
+        coachId,
+        coachName,
+        studentCount:0,
+        status,
+        createdAt:serverTimestamp(),
+        updatedAt:serverTimestamp()
+      });
+
+      form.reset();
+      el("batchFormPanel").style.display="none";
+      message.textContent="";
+
+      await Promise.all([
+        loadLocations(),
+        reloadBatchDirectory(),
+        reloadScheduleOptions(),
+        reloadOverview()
+      ]);
+
+      alert("Batch created successfully. Batch ID: "+batchRef.id);
+
+    }catch(error){
+      message.textContent="Could not create batch: "+error.message;
+    }finally{
+      button.disabled=false;
+      button.textContent="Save Batch";
+    }
+  },true);
+}
+
+async function reloadBatchDirectory(){
+  const snapshot=await getDocs(collection(locationDB,"batches"));
+  const body=el("batchesTableBody");
+  const message=el("batchesMessage");
+
+  body.replaceChildren();
+
+  const batches=snapshot.docs.map(item=>({
+    id:item.id,...item.data()
+  })).sort((a,b)=>safe(a.batchName).localeCompare(safe(b.batchName)));
+
+  if(!batches.length){
+    message.textContent="No batches created yet.";
+    return;
+  }
+
+  batches.forEach(batch=>{
+    const row=document.createElement("tr");
+    row.append(
+      locationCell(batch.batchId||batch.id),
+      locationCell(batch.batchName),
+      locationCell(batch.sport),
+      locationCell(batch.locationName),
+      locationCell(batch.coachName),
+      locationCell(Number.isInteger(batch.studentCount)?batch.studentCount:0)
+    );
+
+    const statusCell=document.createElement("td");
+    const badge=document.createElement("span");
+    badge.className="status "+(batch.status==="active"?"active":"inactive");
+    badge.textContent=batch.status||"inactive";
+    statusCell.appendChild(badge);
+    row.appendChild(statusCell);
+    body.appendChild(row);
+  });
+
+  message.textContent="Showing "+batches.length+" batch record(s) from Firebase.";
+}
+
+async function reloadScheduleOptions(){
+  const select=el("scheduleBatchInput");
+  if(!select)return;
+
+  const snapshot=await getDocs(query(
+    collection(locationDB,"batches"),
+    where("status","==","active")
+  ));
+
+  select.replaceChildren(new Option("Select active batch",""));
+
+  snapshot.docs.forEach(item=>{
+    const batch=item.data();
+    const option=new Option(
+      (batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),
+      item.id
+    );
+
+    option.dataset.batchName=batch.batchName||"";
+    option.dataset.sport=batch.sport||"";
+    option.dataset.locationId=batch.locationId||"";
+    option.dataset.locationName=batch.locationName||"";
+    option.dataset.coachId=batch.coachId||"";
+    option.dataset.coachName=batch.coachName||"";
+
+    select.add(option);
+  });
+}
+
+async function reloadOverview(){
+  const [coaches,students,batches]=await Promise.all([
+    getDocs(query(collection(locationDB,"users"),where("role","==","coach"))),
+    getDocs(collection(locationDB,"students")),
+    getDocs(collection(locationDB,"batches"))
+  ]);
+
+  el("overviewCoachCount").textContent=coaches.size;
+  el("overviewStudentCount").textContent=students.size;
+  el("overviewBatchCount").textContent=
+    batches.docs.filter(item=>item.data().status==="active").length;
+}
+
+/* INITIALIZE */
+
+buildLocationInterface();
+installBatchValidation();
+
+onAuthStateChanged(locationAuth,async user=>{
+  if(!user||user.uid!==LOCATION_ADMIN_UID)return;
+
+  try{
+    const admin=await getDoc(doc(locationDB,"users",user.uid));
+
+    if(!admin.exists()||admin.data().role!=="admin")return;
+
+    await loadLocations();
+
+  }catch(error){
+    const message=el("locationsMessage");
+    if(message)message.textContent=
+      "Location setup error: "+error.message;
+  }
+});
+
+</script>
+
 </body>
 </html>
