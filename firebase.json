@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "site": "shyam-sports-academy",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".*",
+      "**/.*",
+      "**/node_modules/**",
+      ".github/**"
+    ]
+  }
+}
