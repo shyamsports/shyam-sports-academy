@@ -104,6 +104,8 @@ body.auth-locked .layout{display:none}
 .day-options{display:flex;flex-wrap:wrap;gap:12px;padding:10px 0}
 .day-options label{display:flex;align-items:center;gap:5px;font-size:12px;color:#53677e}
 .day-options input{width:auto}
+.coach-action-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.coach-action-buttons .btn{padding:9px 12px}
 @media(max-width:1200px){
  .coach-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
@@ -643,8 +645,9 @@ async function loadCoachRequests(){
 
   snapshot.forEach(coachDoc=>{
    const coach=coachDoc.data();
+   const coachName=coach.name||coach.displayName||coach.email||"Unnamed coach";
    const row=document.createElement("tr");
-   row.append(makeCell(coach.name||coach.displayName),makeCell(coach.email));
+   row.append(makeCell(coachName),makeCell(coach.email));
    row.append(makeCell(coach.createdAt?.toDate?coach.createdAt.toDate().toLocaleString("en-IN"):"—"));
 
    const statusCell=document.createElement("td");
@@ -652,14 +655,30 @@ async function loadCoachRequests(){
    row.appendChild(statusCell);
 
    const actionCell=document.createElement("td");
+   const actionGroup=document.createElement("div");
+   actionGroup.className="coach-action-buttons";
+
    const approve=document.createElement("button");
-   approve.type="button";approve.className="btn green";approve.textContent="Approve";
+   approve.type="button";
+   approve.className="btn green";
+   approve.textContent="Approve";
+
    const reject=document.createElement("button");
-   reject.type="button";reject.className="btn red";reject.textContent="Reject";
-   reject.style.marginLeft="6px";
+   reject.type="button";
+   reject.className="btn red";
+   reject.textContent="Reject";
+
+   const remove=document.createElement("button");
+   remove.type="button";
+   remove.className="btn red";
+   remove.textContent="Remove";
+
    approve.addEventListener("click",()=>changeCoachStatus(coachDoc.id,"approved"));
    reject.addEventListener("click",()=>changeCoachStatus(coachDoc.id,"rejected"));
-   actionCell.append(approve,reject);
+   remove.addEventListener("click",()=>removeCoach(coachDoc.id,coachName,0));
+
+   actionGroup.append(approve,reject,remove);
+   actionCell.appendChild(actionGroup);
    row.appendChild(actionCell);
    requestsBody.appendChild(row);
   });
@@ -739,6 +758,8 @@ async function loadCoachDirectory(){
    row.appendChild(makeCell(batchCounts[coach.id]||0));
 
    const actionCell=document.createElement("td");
+   const actionGroup=document.createElement("div");
+   actionGroup.className="coach-action-buttons";
 
    if(coach.status==="approved"){
     const removeButton=document.createElement("button");
@@ -748,7 +769,23 @@ async function loadCoachDirectory(){
     removeButton.addEventListener("click",()=>removeCoach(
      coach.id,coach.name||coach.email||"this coach",batchCounts[coach.id]||0
     ));
-    actionCell.appendChild(removeButton);
+    actionGroup.appendChild(removeButton);
+   }else if(coach.status==="pending"){
+    const approveButton=document.createElement("button");
+    approveButton.type="button";
+    approveButton.className="btn green";
+    approveButton.textContent="Approve";
+    approveButton.addEventListener("click",()=>changeCoachStatus(coach.id,"approved"));
+
+    const removeButton=document.createElement("button");
+    removeButton.type="button";
+    removeButton.className="btn red";
+    removeButton.textContent="Remove";
+    removeButton.addEventListener("click",()=>removeCoach(
+     coach.id,coach.name||coach.email||"this coach",batchCounts[coach.id]||0
+    ));
+
+    actionGroup.append(approveButton,removeButton);
    }else if(coach.status==="removed"){
     const reopenButton=document.createElement("button");
     reopenButton.type="button";
@@ -757,11 +794,12 @@ async function loadCoachDirectory(){
     reopenButton.addEventListener("click",()=>reopenCoachRequest(
      coach.id,coach.name||coach.email||"this coach"
     ));
-    actionCell.appendChild(reopenButton);
+    actionGroup.appendChild(reopenButton);
    }else{
-    actionCell.textContent="—";
+    actionGroup.textContent="—";
    }
 
+   actionCell.appendChild(actionGroup);
    row.appendChild(actionCell);
    body.appendChild(row);
   });
@@ -787,7 +825,8 @@ async function removeCoach(coachId,coachName,assignedBatches){
 
  const confirmed=confirm(
   'Remove "'+coachName+'" from the academy?'+
-  "\n\nThe coach will immediately lose access to the coach dashboard."+
+  "\n\nThe coach profile status will change to Removed."+
+  "\n\nThe coach dashboard must check for status === approved to block access."+
   batchWarning+
   "\n\nThe Firebase Auth account, user profile, attendance, GPS and other historical records will NOT be deleted."
  );
@@ -800,7 +839,7 @@ async function removeCoach(coachId,coachName,assignedBatches){
    updatedAt:serverTimestamp()
   });
 
-  alert("Coach removed successfully. Dashboard access has been revoked. Historical records have been preserved.");
+  alert("Coach removed successfully. The profile status is now Removed. Historical records have been preserved.");
 
   await Promise.all([
    loadCoachDirectory(),
