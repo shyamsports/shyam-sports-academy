@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,6 +48,7 @@ a{text-decoration:none;color:inherit}
 .btn.green{background:#e6f6ed;color:#197344}
 .btn.red{background:#fff0f0;color:#b83d3d}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.coach-stats{grid-template-columns:repeat(5,minmax(0,1fr))}
 .stat-card,.panel,.card{background:white;border:1px solid #e8edf3;border-radius:13px}
 .stat-card{padding:19px}
 .stat-top{display:flex;justify-content:space-between;align-items:center}
@@ -104,8 +104,11 @@ body.auth-locked .layout{display:none}
 .day-options{display:flex;flex-wrap:wrap;gap:12px;padding:10px 0}
 .day-options label{display:flex;align-items:center;gap:5px;font-size:12px;color:#53677e}
 .day-options input{width:auto}
+@media(max-width:1200px){
+ .coach-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media(max-width:1050px){
- .stats{grid-template-columns:repeat(2,1fr)}
+ .stats,.coach-stats{grid-template-columns:repeat(2,1fr)}
  .grid-two{grid-template-columns:1fr}
 }
 @media(max-width:700px){
@@ -118,7 +121,7 @@ body.auth-locked .layout{display:none}
  .content{padding:22px 15px 35px}
  .page-heading h1{font-size:21px}
  .page-heading{flex-direction:column}
- .stats{gap:10px}
+ .stats,.coach-stats{gap:10px}
  .stat-card{padding:14px}
  .stat-value{font-size:23px}
  .quick-grid{grid-template-columns:repeat(2,1fr)}
@@ -194,7 +197,6 @@ body.auth-locked .layout{display:none}
 
 <div class="content">
 
-<!-- OVERVIEW -->
 <section class="page active" id="overview">
   <div class="page-heading">
     <div><h1>Dashboard Overview</h1><p>Welcome to Shyam Sports Academy management.</p></div>
@@ -235,21 +237,26 @@ body.auth-locked .layout{display:none}
   </div>
 </section>
 
-<!-- COACHES -->
 <section class="page" id="coaches">
   <div class="page-heading"><div><h1>Coach Management</h1><p>Manage coach profiles, approvals and class assignments.</p></div></div>
 
-  <div class="stats">
+  <div class="stats coach-stats">
     <div class="stat-card"><div class="stat-label">Total Coaches</div><div class="stat-value" id="coachTotalCount">—</div></div>
     <div class="stat-card"><div class="stat-label">Approved Coaches</div><div class="stat-value" id="coachApprovedCount">—</div></div>
     <div class="stat-card"><div class="stat-label">Pending Approvals</div><div class="stat-value" id="coachPendingCount">—</div></div>
     <div class="stat-card"><div class="stat-label">Rejected Accounts</div><div class="stat-value" id="coachRejectedCount">—</div></div>
+    <div class="stat-card"><div class="stat-label">Removed Coaches</div><div class="stat-value" id="coachRemovedCount">—</div></div>
   </div>
 
   <div class="panel">
     <div class="panel-heading"><div><h3>Coach Directory</h3><p>Coach details and account status from Firebase.</p></div><button class="btn light" id="refreshCoachDirectory" type="button">Refresh</button></div>
     <div id="coachDirectoryMessage" class="empty-note">Loading coach directory...</div>
-    <div class="table-wrap" id="coachDirectoryWrap" style="display:none"><table><thead><tr><th>Coach Name</th><th>Email</th><th>Coach ID</th><th>Status</th><th>Assigned Batches</th></tr></thead><tbody id="coachDirectoryBody"></tbody></table></div>
+    <div class="table-wrap" id="coachDirectoryWrap" style="display:none">
+      <table>
+        <thead><tr><th>Coach Name</th><th>Email</th><th>Coach ID</th><th>Status</th><th>Assigned Batches</th><th>Action</th></tr></thead>
+        <tbody id="coachDirectoryBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="panel">
@@ -259,7 +266,6 @@ body.auth-locked .layout{display:none}
   </div>
 </section>
 
-<!-- STUDENTS -->
 <section class="page" id="students">
   <div class="page-heading"><div><h1>Student Management</h1><p>Manage student profiles and batch assignments.</p></div><button class="btn" id="addStudentButton" type="button">+ Add Student</button></div>
   <div class="info-box">Student records are saved in Firebase and linked to their assigned batches.</div>
@@ -293,11 +299,9 @@ body.auth-locked .layout{display:none}
   </div>
 </section>
 
-<!-- SPORTS -->
 <section class="page" id="sports">
   <div class="page-heading"><div><h1>Sports Management</h1><p>Add and manage the academy's sports and learning programs.</p></div><button class="btn" id="addSportButton" type="button">+ Add Sport</button></div>
   <div class="info-box">Sports are saved in Firebase. A sport assigned to a batch cannot be removed from the active list.</div>
-
   <div class="panel" id="sportFormPanel" style="display:none">
     <div class="panel-heading"><h3>Add New Sport</h3></div>
     <form id="sportForm">
@@ -306,23 +310,19 @@ body.auth-locked .layout{display:none}
       <p id="sportFormMessage" class="empty-note" aria-live="polite"></p>
     </form>
   </div>
-
   <div id="sportsMessage" class="empty-note">Loading sports...</div>
   <div class="panel"><div class="panel-heading"><h3>Sports Directory</h3></div><div class="table-wrap"><table><thead><tr><th>Sport / Program</th><th>Status</th><th>Action</th></tr></thead><tbody id="sportsTableBody"></tbody></table></div></div>
 </section>
 
-<!-- LOCATIONS -->
 <section class="page" id="locations">
   <div class="page-heading"><div><h1>Location Management</h1><p>Manage academy locations, societies and training venues.</p></div></div>
   <div class="info-box">A single location can contain multiple sports and multiple batches. Each batch has its own unique Batch ID.</div>
   <div class="panel"><div class="panel-heading"><h3>Location Directory</h3></div><div class="empty-note">Location management has not been connected yet.</div></div>
 </section>
 
-<!-- BATCHES -->
 <section class="page" id="batches">
   <div class="page-heading"><div><h1>Batch & Class Management</h1><p>Create batches and assign one approved coach to each batch.</p></div><button class="btn" id="createBatchButton" type="button">+ Create Batch</button></div>
   <div class="info-box">Every batch receives a unique Firebase Batch ID. Student Count is updated when students are added to a batch.</div>
-
   <div class="panel" id="batchFormPanel" style="display:none">
     <div class="panel-heading"><h3>Create New Batch</h3></div>
     <form id="batchForm">
@@ -337,111 +337,55 @@ body.auth-locked .layout{display:none}
       <p id="batchFormMessage" class="empty-note" aria-live="polite"></p>
     </form>
   </div>
-
   <div id="batchesMessage" class="empty-note">Loading batches...</div>
   <div class="panel"><div class="panel-heading"><h3>Batch Directory</h3><button class="btn light" id="refreshBatchesButton" type="button">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Batch ID</th><th>Batch Name</th><th>Sport</th><th>Location</th><th>Coach</th><th>Students</th><th>Status</th></tr></thead><tbody id="batchesTableBody"></tbody></table></div></div>
 </section>
 
-<!-- SCHEDULE MANAGEMENT -->
 <section class="page" id="schedule">
-  <div class="page-heading">
-    <div><h1>Schedule Management</h1><p>Manage weekly recurring schedules and date-specific class changes.</p></div>
-    <button class="btn" id="addScheduleButton" type="button">+ Create Schedule</button>
-  </div>
-
-  <div class="info-box">
-    Create schedules for active batches. Each schedule is assigned to the coach already linked with that batch.
-  </div>
-
+  <div class="page-heading"><div><h1>Schedule Management</h1><p>Manage weekly recurring schedules and date-specific class changes.</p></div><button class="btn" id="addScheduleButton" type="button">+ Create Schedule</button></div>
+  <div class="info-box">Create schedules for active batches. Each schedule is assigned to the coach already linked with that batch.</div>
   <div class="panel" id="scheduleFormPanel" style="display:none">
     <div class="panel-heading"><h3>Create New Schedule</h3></div>
-
     <form id="scheduleForm">
       <div class="form-grid">
-        <div class="field">
-          <label for="scheduleTypeInput">Schedule Type</label>
-          <select id="scheduleTypeInput" required>
-            <option value="recurring">Weekly Recurring</option>
-            <option value="date-specific">Date-Specific</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="scheduleBatchInput">Active Batch</label>
-          <select id="scheduleBatchInput" required>
-            <option value="">Select active batch</option>
-          </select>
-        </div>
-
-        <div class="field" id="scheduleDaysField">
-          <label>Class Days</label>
-          <div class="day-options">
-            <label><input type="checkbox" name="scheduleDay" value="Monday"> Monday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Tuesday"> Tuesday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Wednesday"> Wednesday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Thursday"> Thursday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Friday"> Friday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Saturday"> Saturday</label>
-            <label><input type="checkbox" name="scheduleDay" value="Sunday"> Sunday</label>
-          </div>
-        </div>
-
-        <div class="field" id="scheduleDateField" style="display:none">
-          <label for="scheduleDateInput">Class Date</label>
-          <input id="scheduleDateInput" type="date">
-        </div>
-
-        <div class="field">
-          <label for="scheduleStartInput">Start Time</label>
-          <input id="scheduleStartInput" type="time" required>
-        </div>
-
-        <div class="field">
-          <label for="scheduleEndInput">End Time</label>
-          <input id="scheduleEndInput" type="time" required>
-        </div>
+        <div class="field"><label for="scheduleTypeInput">Schedule Type</label><select id="scheduleTypeInput" required><option value="recurring">Weekly Recurring</option><option value="date-specific">Date-Specific</option></select></div>
+        <div class="field"><label for="scheduleBatchInput">Active Batch</label><select id="scheduleBatchInput" required><option value="">Select active batch</option></select></div>
+        <div class="field" id="scheduleDaysField"><label>Class Days</label><div class="day-options">
+          <label><input type="checkbox" name="scheduleDay" value="Monday"> Monday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Tuesday"> Tuesday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Wednesday"> Wednesday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Thursday"> Thursday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Friday"> Friday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Saturday"> Saturday</label>
+          <label><input type="checkbox" name="scheduleDay" value="Sunday"> Sunday</label>
+        </div></div>
+        <div class="field" id="scheduleDateField" style="display:none"><label for="scheduleDateInput">Class Date</label><input id="scheduleDateInput" type="date"></div>
+        <div class="field"><label for="scheduleStartInput">Start Time</label><input id="scheduleStartInput" type="time" required></div>
+        <div class="field"><label for="scheduleEndInput">End Time</label><input id="scheduleEndInput" type="time" required></div>
       </div>
-
-      <div class="form-actions">
-        <button class="btn" id="saveScheduleButton" type="submit">Save Schedule</button>
-        <button class="btn light" id="cancelScheduleFormButton" type="button">Cancel</button>
-      </div>
+      <div class="form-actions"><button class="btn" id="saveScheduleButton" type="submit">Save Schedule</button><button class="btn light" id="cancelScheduleFormButton" type="button">Cancel</button></div>
       <p id="scheduleFormMessage" class="empty-note" aria-live="polite"></p>
     </form>
   </div>
-
   <div class="stats">
     <div class="stat-card"><div class="stat-label">Total Schedules</div><div class="stat-value" id="scheduleTotalCount">0</div></div>
     <div class="stat-card"><div class="stat-label">Recurring Schedules</div><div class="stat-value" id="scheduleRecurringCount">0</div></div>
     <div class="stat-card"><div class="stat-label">Date-Specific</div><div class="stat-value" id="scheduleSpecificCount">0</div></div>
     <div class="stat-card"><div class="stat-label">Active Schedules</div><div class="stat-value" id="scheduleActiveCount">0</div></div>
   </div>
-
   <div class="panel">
-    <div class="panel-heading">
-      <div><h3>Schedule Directory</h3><p>Schedules saved in Firebase.</p></div>
-      <button class="btn light" id="refreshSchedulesButton" type="button">Refresh</button>
-    </div>
+    <div class="panel-heading"><div><h3>Schedule Directory</h3><p>Schedules saved in Firebase.</p></div><button class="btn light" id="refreshSchedulesButton" type="button">Refresh</button></div>
     <div id="schedulesMessage" class="empty-note">Loading schedules...</div>
-    <div class="table-wrap" id="schedulesTableWrap" style="display:none">
-      <table>
-        <thead>
-          <tr><th>Type</th><th>Batch</th><th>Coach</th><th>Days / Date</th><th>Time</th><th>Status</th><th>Action</th></tr>
-        </thead>
-        <tbody id="schedulesTableBody"></tbody>
-      </table>
-    </div>
+    <div class="table-wrap" id="schedulesTableWrap" style="display:none"><table><thead><tr><th>Type</th><th>Batch</th><th>Coach</th><th>Days / Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead><tbody id="schedulesTableBody"></tbody></table></div>
   </div>
 </section>
 
-<!-- WHATSAPP GROUPS -->
 <section class="page" id="groups">
   <div class="page-heading"><div><h1>WhatsApp Group Management</h1><p>Map each academy batch to its existing parent group.</p></div></div>
   <div class="info-box">The academy system will store group labels and optional links. It will not automatically send messages to WhatsApp groups.</div>
   <div class="panel"><div class="panel-heading"><h3>Group Mapping Directory</h3></div><div class="empty-note">WhatsApp group mappings have not been connected yet.</div></div>
 </section>
 
-<!-- MESSAGE TEMPLATES -->
 <section class="page" id="templates">
   <div class="page-heading"><div><h1>Message Templates</h1><p>Manage arrival and departure messages for coaches.</p></div></div>
   <div class="info-box">Coaches will copy the prepared message and manually send it to the correct parent group.</div>
@@ -454,7 +398,6 @@ body.auth-locked .layout{display:none}
   </div>
 </section>
 
-<!-- ATTENDANCE -->
 <section class="page" id="attendance">
   <div class="page-heading"><div><h1>Attendance Management</h1><p>Review class-wise and student-wise attendance records.</p></div></div>
   <div class="info-box">Attendance records will be displayed here after the coach attendance module is connected.</div>
@@ -467,7 +410,6 @@ body.auth-locked .layout{display:none}
   <div class="panel"><div class="panel-heading"><h3>Attendance Records</h3></div><div class="empty-note">Attendance records have not been connected yet.</div></div>
 </section>
 
-<!-- GPS -->
 <section class="page" id="gps">
   <div class="page-heading"><div><h1>GPS Monitoring</h1><p>Monitor coach arrival and departure records.</p></div></div>
   <div class="info-box">GPS coordinates and accuracy are recorded when a coach checks in or completes a class. Map links open the recorded location.</div>
@@ -477,7 +419,6 @@ body.auth-locked .layout{display:none}
     <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value" id="gpsTotalCount">—</div></div>
     <div class="stat-card"><div class="stat-label">Other Events</div><div class="stat-value" id="gpsOtherCount">—</div></div>
   </div>
-
   <div class="panel">
     <div class="panel-heading"><div><h3>GPS Event History</h3><p>Arrival and departure locations recorded by approved coaches.</p></div><button class="btn light" id="refreshCoachActivity" type="button">Refresh Records</button></div>
     <div id="gpsActivityMessage" class="empty-note">Loading GPS records...</div>
@@ -485,14 +426,12 @@ body.auth-locked .layout{display:none}
   </div>
 </section>
 
-<!-- EXCEL -->
 <section class="page" id="excel">
   <div class="page-heading"><div><h1>Excel Management</h1><p>Organize batch-wise attendance and academy data exports.</p></div></div>
   <div class="info-box">Firebase remains the primary source of truth. Excel exports will be generated from database records.</div>
   <div class="panel"><div class="panel-heading"><h3>Batch-wise Excel Files</h3></div><div class="empty-note">Excel exports have not been connected yet.</div></div>
 </section>
 
-<!-- REPORTS -->
 <section class="page" id="reports">
   <div class="page-heading"><div><h1>Reports & Analytics</h1><p>Review daily, monthly and yearly academy performance.</p></div></div>
   <div class="panel">
@@ -507,7 +446,6 @@ body.auth-locked .layout{display:none}
   <div class="panel"><div class="panel-heading"><h3>Report Results</h3></div><div class="empty-note">Reports will appear here after reporting functionality is connected.</div></div>
 </section>
 
-<!-- CORRECTIONS -->
 <section class="page" id="corrections">
   <div class="page-heading"><div><h1>Correction Requests</h1><p>Review coach requests to correct submitted class records.</p></div></div>
   <div class="info-box">Only authorized Admin users can approve or reject correction requests. Original records and changes will be retained in the audit history.</div>
@@ -515,7 +453,6 @@ body.auth-locked .layout{display:none}
   <div class="panel"><div class="panel-heading"><h3>Audit History</h3></div><div class="empty-note">Record changes and admin actions will appear here.</div></div>
 </section>
 
-<!-- SETTINGS -->
 <section class="page" id="settings">
   <div class="page-heading"><div><h1>Admin Settings</h1><p>Configure authorized access and academy preferences.</p></div></div>
   <div class="info-box">Admin access is restricted to the authorized administrator account.</div>
@@ -529,66 +466,41 @@ body.auth-locked .layout{display:none}
 
 <script>
 const pageTitles={
- overview:"Overview",
- coaches:"Coach Management",
- students:"Student Management",
- sports:"Sports Management",
- locations:"Location Management",
- batches:"Batch & Class Management",
- schedule:"Schedule Management",
- groups:"WhatsApp Groups",
- templates:"Message Templates",
- attendance:"Attendance Management",
- gps:"GPS Monitoring",
- excel:"Excel Management",
- reports:"Reports & Analytics",
- corrections:"Correction Requests",
- settings:"Admin Settings"
+ overview:"Overview",coaches:"Coach Management",students:"Student Management",
+ sports:"Sports Management",locations:"Location Management",batches:"Batch & Class Management",
+ schedule:"Schedule Management",groups:"WhatsApp Groups",templates:"Message Templates",
+ attendance:"Attendance Management",gps:"GPS Monitoring",excel:"Excel Management",
+ reports:"Reports & Analytics",corrections:"Correction Requests",settings:"Admin Settings"
 };
 
 function showPage(id,button){
  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
  const target=document.getElementById(id);
  if(target)target.classList.add("active");
-
  document.querySelectorAll(".nav-link").forEach(b=>b.classList.remove("active"));
-
  if(button)button.classList.add("active");
- else{
-  document.querySelectorAll(".nav-link").forEach(b=>{
-   if(b.getAttribute("onclick")?.includes("'"+id+"'"))b.classList.add("active");
-  });
- }
-
+ else document.querySelectorAll(".nav-link").forEach(b=>{
+  if(b.getAttribute("onclick")?.includes("'"+id+"'"))b.classList.add("active");
+ });
  document.getElementById("topTitle").textContent=pageTitles[id]||"Dashboard";
  closeMenu();
  window.scrollTo({top:0,behavior:"smooth"});
 }
-
 function openMenu(){
  document.getElementById("sidebar").classList.add("open");
  document.getElementById("overlay").classList.add("show");
 }
-
 function closeMenu(){
  document.getElementById("sidebar").classList.remove("open");
  document.getElementById("overlay").classList.remove("show");
 }
-
-function demo(action){
- alert(action+" has not been connected yet.");
-}
+function demo(action){alert(action+" has not been connected yet.");}
 </script>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import {
- getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {
- getFirestore,doc,getDoc,collection,query,where,getDocs,
- updateDoc,setDoc,serverTimestamp
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig={
  apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
@@ -616,9 +528,7 @@ const requestsBody=document.getElementById("coachRequestsBody");
 let currentAdmin=null;
 let verificationPromise=null;
 
-function safeText(value){
- return value==null?"":String(value);
-}
+function safeText(value){return value==null?"":String(value)}
 
 function makeCell(value){
  const cell=document.createElement("td");
@@ -658,22 +568,13 @@ async function verifyAdmin(user){
  if(!user||user.uid!==ADMIN_UID){
   throw new Error("This account is not authorized to access the Admin Dashboard.");
  }
-
  const adminSnapshot=await getDoc(doc(db,"users",user.uid));
-
  if(!adminSnapshot.exists()||adminSnapshot.data().role!=="admin"){
   throw new Error("Admin permission could not be verified.");
  }
-
  currentAdmin=user;
  loginScreen.style.display="none";
  document.body.classList.remove("auth-locked");
-
- const profileInfo=document.querySelector(".profile-info");
- if(profileInfo){
-  profileInfo.innerHTML="<strong>Administrator</strong><small>Authorized Admin</small>";
- }
-
  await loadCoachRequests();
  await loadCoachDirectory();
  await loadCoachActivity();
@@ -690,33 +591,23 @@ async function verifyAdmin(user){
 
 async function safeVerify(user){
  if(verificationPromise)return verificationPromise;
-
  verificationPromise=verifyAdmin(user);
-
- try{
-  return await verificationPromise;
- }finally{
-  verificationPromise=null;
- }
+ try{return await verificationPromise}
+ finally{verificationPromise=null}
 }
 
 loginForm.addEventListener("submit",async event=>{
  event.preventDefault();
-
  loginButton.disabled=true;
  loginButton.textContent="Signing in...";
  loginMessage.textContent="";
-
  const email=document.getElementById("adminEmail").value.trim();
  const password=document.getElementById("adminPassword").value;
-
  try{
   const credential=await signInWithEmailAndPassword(auth,email,password);
   await safeVerify(credential.user);
  }catch(error){
-  if(auth.currentUser){
-   try{await signOut(auth)}catch(_){}
-  }
+  if(auth.currentUser){try{await signOut(auth)}catch(_){}}
   showLogin(error.message||"Login failed. Please try again.");
  }finally{
   loginButton.disabled=false;
@@ -725,14 +616,9 @@ loginForm.addEventListener("submit",async event=>{
 });
 
 onAuthStateChanged(auth,async user=>{
- if(!user){
-  showLogin();
-  return;
- }
-
- try{
-  await safeVerify(user);
- }catch(error){
+ if(!user){showLogin();return}
+ try{await safeVerify(user)}
+ catch(error){
   try{await signOut(auth)}catch(_){}
   showLogin(error.message);
  }
@@ -742,21 +628,14 @@ onAuthStateChanged(auth,async user=>{
 
 async function loadCoachRequests(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  requestMessage.style.display="block";
  requestMessage.textContent="Loading registration requests...";
  requestsTable.style.display="none";
  requestsBody.replaceChildren();
 
  try{
-  const pendingQuery=query(
-   collection(db,"users"),
-   where("role","==","coach"),
-   where("status","==","pending")
-  );
-
+  const pendingQuery=query(collection(db,"users"),where("role","==","coach"),where("status","==","pending"));
   const snapshot=await getDocs(pendingQuery);
-
   if(snapshot.empty){
    requestMessage.textContent="No pending coach registration requests.";
    return;
@@ -765,37 +644,21 @@ async function loadCoachRequests(){
   snapshot.forEach(coachDoc=>{
    const coach=coachDoc.data();
    const row=document.createElement("tr");
-
-   row.append(
-    makeCell(coach.name||coach.displayName),
-    makeCell(coach.email)
-   );
-
-   row.append(makeCell(
-    coach.createdAt?.toDate?
-    coach.createdAt.toDate().toLocaleString("en-IN"):"—"
-   ));
+   row.append(makeCell(coach.name||coach.displayName),makeCell(coach.email));
+   row.append(makeCell(coach.createdAt?.toDate?coach.createdAt.toDate().toLocaleString("en-IN"):"—"));
 
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge("pending"));
    row.appendChild(statusCell);
 
    const actionCell=document.createElement("td");
-
    const approve=document.createElement("button");
-   approve.type="button";
-   approve.className="btn green";
-   approve.textContent="Approve";
-
+   approve.type="button";approve.className="btn green";approve.textContent="Approve";
    const reject=document.createElement("button");
-   reject.type="button";
-   reject.className="btn red";
-   reject.textContent="Reject";
+   reject.type="button";reject.className="btn red";reject.textContent="Reject";
    reject.style.marginLeft="6px";
-
    approve.addEventListener("click",()=>changeCoachStatus(coachDoc.id,"approved"));
    reject.addEventListener("click",()=>changeCoachStatus(coachDoc.id,"rejected"));
-
    actionCell.append(approve,reject);
    row.appendChild(actionCell);
    requestsBody.appendChild(row);
@@ -803,33 +666,22 @@ async function loadCoachRequests(){
 
   requestMessage.style.display="none";
   requestsTable.style.display="block";
-
  }catch(error){
   requestMessage.textContent="Could not load requests: "+error.message;
  }
 }
 
 async function changeCoachStatus(coachId,status){
- if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
-  alert("Admin authorization required.");
-  return;
- }
-
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){alert("Admin authorization required.");return}
  if(!confirm("Are you sure you want to "+(status==="approved"?"approve":"reject")+" this coach?"))return;
 
  try{
-  await updateDoc(doc(db,"users",coachId),{
-   status,
-   updatedAt:serverTimestamp()
-  });
-
+  await updateDoc(doc(db,"users",coachId),{status,updatedAt:serverTimestamp()});
   alert("Coach request "+status+" successfully.");
-
   await loadCoachRequests();
   await loadCoachDirectory();
   await loadApprovedCoaches();
   await loadOverviewStats();
-
  }catch(error){
   alert("Could not update request: "+error.message);
  }
@@ -850,14 +702,11 @@ async function loadCoachDirectory(){
  body.replaceChildren();
 
  try{
-  const snapshot=await getDocs(
-   query(collection(db,"users"),where("role","==","coach"))
-  );
-
+  const snapshot=await getDocs(query(collection(db,"users"),where("role","==","coach")));
   const coaches=snapshot.docs.map(item=>({id:item.id,...item.data()}));
+
   const batchSnapshot=await getDocs(collection(db,"batches"));
   const batchCounts={};
-
   batchSnapshot.forEach(item=>{
    const coachId=item.data().coachId;
    if(coachId)batchCounts[coachId]=(batchCounts[coachId]||0)+1;
@@ -867,17 +716,17 @@ async function loadCoachDirectory(){
   document.getElementById("coachApprovedCount").textContent=coaches.filter(c=>c.status==="approved").length;
   document.getElementById("coachPendingCount").textContent=coaches.filter(c=>c.status==="pending").length;
   document.getElementById("coachRejectedCount").textContent=coaches.filter(c=>c.status==="rejected").length;
+  document.getElementById("coachRemovedCount").textContent=coaches.filter(c=>c.status==="removed").length;
 
   if(!coaches.length){
    message.textContent="No coach accounts found.";
    return;
   }
 
-  coaches.sort((a,b)=>safeText(a.name).localeCompare(safeText(b.name)));
+  coaches.sort((a,b)=>safeText(a.name||a.email).localeCompare(safeText(b.name||b.email)));
 
   coaches.forEach(coach=>{
    const row=document.createElement("tr");
-
    row.append(
     makeCell(coach.name||coach.displayName||"Unnamed coach"),
     makeCell(coach.email),
@@ -888,14 +737,112 @@ async function loadCoachDirectory(){
    statusCell.appendChild(makeStatusBadge(coach.status||"unknown"));
    row.appendChild(statusCell);
    row.appendChild(makeCell(batchCounts[coach.id]||0));
+
+   const actionCell=document.createElement("td");
+
+   if(coach.status==="approved"){
+    const removeButton=document.createElement("button");
+    removeButton.type="button";
+    removeButton.className="btn red";
+    removeButton.textContent="Remove";
+    removeButton.addEventListener("click",()=>removeCoach(
+     coach.id,coach.name||coach.email||"this coach",batchCounts[coach.id]||0
+    ));
+    actionCell.appendChild(removeButton);
+   }else if(coach.status==="removed"){
+    const reopenButton=document.createElement("button");
+    reopenButton.type="button";
+    reopenButton.className="btn green";
+    reopenButton.textContent="Reopen Request";
+    reopenButton.addEventListener("click",()=>reopenCoachRequest(
+     coach.id,coach.name||coach.email||"this coach"
+    ));
+    actionCell.appendChild(reopenButton);
+   }else{
+    actionCell.textContent="—";
+   }
+
+   row.appendChild(actionCell);
    body.appendChild(row);
   });
 
   message.style.display="none";
   wrap.style.display="block";
-
  }catch(error){
   message.textContent="Could not load coach directory: "+error.message;
+ }
+}
+
+/* SAFE COACH REMOVAL */
+
+async function removeCoach(coachId,coachName,assignedBatches){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
+  alert("Admin authorization required.");
+  return;
+ }
+
+ const batchWarning=assignedBatches>0
+  ?"\n\nThis coach currently has "+assignedBatches+" assigned batch(es). The batch records and historical data will remain unchanged. Please review and reassign batches separately if needed."
+  :"\n\nAll historical records will remain safe.";
+
+ const confirmed=confirm(
+  'Remove "'+coachName+'" from the academy?'+
+  "\n\nThe coach will immediately lose access to the coach dashboard."+
+  batchWarning+
+  "\n\nThe Firebase Auth account, user profile, attendance, GPS and other historical records will NOT be deleted."
+ );
+
+ if(!confirmed)return;
+
+ try{
+  await updateDoc(doc(db,"users",coachId),{
+   status:"removed",
+   updatedAt:serverTimestamp()
+  });
+
+  alert("Coach removed successfully. Dashboard access has been revoked. Historical records have been preserved.");
+
+  await Promise.all([
+   loadCoachDirectory(),
+   loadCoachRequests(),
+   loadApprovedCoaches(),
+   loadBatches(),
+   loadOverviewStats()
+  ]);
+ }catch(error){
+  alert("Could not remove coach: "+error.message);
+ }
+}
+
+/* REOPEN REMOVED COACH REQUEST */
+
+async function reopenCoachRequest(coachId,coachName){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
+  alert("Admin authorization required.");
+  return;
+ }
+
+ if(!confirm(
+  'Reopen the approval request for "'+coachName+
+  '"?\n\nThe coach will return to Pending status. Dashboard access will remain blocked until Admin approves the request again.'
+ ))return;
+
+ try{
+  await updateDoc(doc(db,"users",coachId),{
+   status:"pending",
+   updatedAt:serverTimestamp()
+  });
+
+  alert("Coach request reopened. It is now available in Approval Requests.");
+
+  await Promise.all([
+   loadCoachDirectory(),
+   loadCoachRequests(),
+   loadApprovedCoaches(),
+   loadOverviewStats()
+  ]);
+ }catch(error){
+  alert("Could not reopen coach request: "+error.message);
  }
 }
 
@@ -950,33 +897,19 @@ async function loadCoachActivity(){
    row.appendChild(makeCell(item.coachName||"Unknown coach"));
 
    const eventCell=document.createElement("td");
-   const badge=makeStatusBadge(
-    item.eventType==="arrival"?"active":
-    item.eventType==="departure"?"pending":"inactive"
-   );
-
-   badge.textContent=
-    item.eventType==="arrival"?"Arrival":
-    item.eventType==="departure"?"Departure":
-    item.eventType||"Activity";
-
+   const badge=makeStatusBadge(item.eventType==="arrival"?"active":item.eventType==="departure"?"pending":"inactive");
+   badge.textContent=item.eventType==="arrival"?"Arrival":item.eventType==="departure"?"Departure":item.eventType||"Activity";
    eventCell.appendChild(badge);
    row.appendChild(eventCell);
 
    row.appendChild(makeCell(formatActivityDate(item.recordedAt)));
-
    row.appendChild(makeCell(
     typeof item.latitude==="number"&&typeof item.longitude==="number"?
-    item.latitude.toFixed(6)+", "+item.longitude.toFixed(6):
-    "GPS unavailable"
+    item.latitude.toFixed(6)+", "+item.longitude.toFixed(6):"GPS unavailable"
    ));
-
-   row.appendChild(makeCell(
-    typeof item.accuracy==="number"?"±"+item.accuracy.toFixed(1)+" m":"—"
-   ));
+   row.appendChild(makeCell(typeof item.accuracy==="number"?"±"+item.accuracy.toFixed(1)+" m":"—"));
 
    const mapCell=document.createElement("td");
-
    if(typeof item.latitude==="number"&&typeof item.longitude==="number"){
     const link=document.createElement("a");
     link.href="https://www.google.com/maps?q="+encodeURIComponent(item.latitude+","+item.longitude);
@@ -986,9 +919,7 @@ async function loadCoachActivity(){
     link.style.color="#287cbd";
     link.style.fontWeight="700";
     mapCell.appendChild(link);
-   }else{
-    mapCell.textContent="—";
-   }
+   }else mapCell.textContent="—";
 
    row.appendChild(mapCell);
    body.appendChild(row);
@@ -996,33 +927,25 @@ async function loadCoachActivity(){
 
   message.style.display="none";
   wrap.style.display="block";
-
   feed.replaceChildren();
 
   records.slice(0,8).forEach(item=>{
    const entry=document.createElement("div");
    entry.className="activity";
-
    const dot=document.createElement("span");
    dot.className="dot";
-
    const content=document.createElement("div");
    const title=document.createElement("strong");
-
-   title.textContent=
-    (item.coachName||"A coach")+" "+
+   title.textContent=(item.coachName||"A coach")+" "+
     (item.eventType==="arrival"?"arrived at class":
      item.eventType==="departure"?"completed class and recorded departure":
      "recorded an activity");
-
    const detail=document.createElement("small");
    detail.textContent=formatActivityDate(item.recordedAt);
-
    content.append(title,detail);
    entry.append(dot,content);
    feed.appendChild(entry);
   });
-
  }catch(error){
   const text="Could not load coach activity: "+error.message;
   message.textContent=text;
@@ -1036,25 +959,17 @@ const defaultSports=["Skating","Badminton","Chess","Rubik's Cube"];
 
 async function loadSports(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const message=document.getElementById("sportsMessage");
  const body=document.getElementById("sportsTableBody");
-
  message.textContent="Loading sports...";
  body.replaceChildren();
 
  try{
   let snapshot=await getDocs(collection(db,"sports"));
-
   if(snapshot.empty){
    for(const name of defaultSports){
     const ref=doc(collection(db,"sports"));
-    await setDoc(ref,{
-     name,
-     status:"active",
-     createdAt:serverTimestamp(),
-     updatedAt:serverTimestamp()
-    });
+    await setDoc(ref,{name,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
    }
    snapshot=await getDocs(collection(db,"sports"));
   }
@@ -1064,206 +979,126 @@ async function loadSports(){
    .sort((a,b)=>safeText(a.name).localeCompare(safeText(b.name)));
 
   const batchSport=document.getElementById("batchSportInput");
-
   if(batchSport){
    const old=batchSport.value;
    batchSport.replaceChildren(new Option("Select sport",""));
-
-   sports.filter(s=>s.status==="active").forEach(s=>{
-    batchSport.add(new Option(s.name,s.name));
-   });
-
-   if(sports.some(s=>s.name===old&&s.status==="active")){
-    batchSport.value=old;
-   }
+   sports.filter(s=>s.status==="active").forEach(s=>batchSport.add(new Option(s.name,s.name)));
+   if(sports.some(s=>s.name===old&&s.status==="active"))batchSport.value=old;
   }
 
-  if(!sports.length){
-   message.textContent="No sports have been added yet.";
-   return;
-  }
+  if(!sports.length){message.textContent="No sports have been added yet.";return}
 
   sports.forEach(sport=>{
    const row=document.createElement("tr");
    row.appendChild(makeCell(sport.name||"Unnamed sport"));
-
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge(sport.status||"active"));
    row.appendChild(statusCell);
 
    const actionCell=document.createElement("td");
    const button=document.createElement("button");
-   button.type="button";
-   button.className="btn red";
-   button.textContent="Remove";
+   button.type="button";button.className="btn red";button.textContent="Remove";
    button.addEventListener("click",()=>removeSport(sport.id,sport.name));
-
    actionCell.appendChild(button);
    row.appendChild(actionCell);
    body.appendChild(row);
   });
-
   message.textContent="Sports are connected to Firebase.";
-
- }catch(error){
-  message.textContent="Could not load sports: "+error.message;
- }
+ }catch(error){message.textContent="Could not load sports: "+error.message}
 }
 
 async function removeSport(sportId,sportName){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
  if(!confirm('Remove "'+sportName+'" from the active sports list?'))return;
-
  try{
-  const used=await getDocs(
-   query(collection(db,"batches"),where("sport","==",sportName))
-  );
-
-  if(!used.empty){
-   alert("This sport is assigned to one or more batches. It cannot be removed.");
-   return;
-  }
-
-  await updateDoc(doc(db,"sports",sportId),{
-   status:"deleted",
-   updatedAt:serverTimestamp()
-  });
-
+  const used=await getDocs(query(collection(db,"batches"),where("sport","==",sportName)));
+  if(!used.empty){alert("This sport is assigned to one or more batches. It cannot be removed.");return}
+  await updateDoc(doc(db,"sports",sportId),{status:"deleted",updatedAt:serverTimestamp()});
   await loadSports();
   alert("Sport removed from the active list.");
-
- }catch(error){
-  alert("Could not remove sport: "+error.message);
- }
+ }catch(error){alert("Could not remove sport: "+error.message)}
 }
 
 document.getElementById("addSportButton").addEventListener("click",()=>{
  document.getElementById("sportFormPanel").style.display="block";
  document.getElementById("newSportName").focus();
 });
-
 document.getElementById("cancelSportButton").addEventListener("click",()=>{
  document.getElementById("sportFormPanel").style.display="none";
  document.getElementById("sportForm").reset();
  document.getElementById("sportFormMessage").textContent="";
 });
-
 document.getElementById("sportForm").addEventListener("submit",async event=>{
  event.preventDefault();
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const input=document.getElementById("newSportName");
  const message=document.getElementById("sportFormMessage");
  const button=document.getElementById("saveSportButton");
  const name=input.value.trim();
-
  if(!name)return;
-
  button.disabled=true;
  message.textContent="Saving sport...";
-
  try{
   const existing=await getDocs(collection(db,"sports"));
-
-  if(existing.docs.some(item=>
-   safeText(item.data().name).toLowerCase()===name.toLowerCase()&&
-   item.data().status!=="deleted"
-  )){
+  if(existing.docs.some(item=>safeText(item.data().name).toLowerCase()===name.toLowerCase()&&item.data().status!=="deleted")){
    throw new Error("This sport is already in the list.");
   }
-
   const ref=doc(collection(db,"sports"));
-
-  await setDoc(ref,{
-   name,
-   status:"active",
-   createdAt:serverTimestamp(),
-   updatedAt:serverTimestamp()
-  });
-
+  await setDoc(ref,{name,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
   document.getElementById("sportForm").reset();
   document.getElementById("sportFormPanel").style.display="none";
   await loadSports();
-
- }catch(error){
-  message.textContent="Could not save sport: "+error.message;
- }finally{
-  button.disabled=false;
- }
+ }catch(error){message.textContent="Could not save sport: "+error.message}
+ finally{button.disabled=false}
 });
 
 /* BATCH MANAGEMENT */
 
 function makeLocationId(name){
- const slug=name.trim().toLowerCase()
-  .replace(/[^a-z0-9]+/g,"-")
-  .replace(/^-|-$/g,"");
-
+ const slug=name.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
  return slug||("location-"+Date.now().toString(36));
 }
 
 async function loadApprovedCoaches(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const select=document.getElementById("batchCoachInput");
  if(!select)return;
-
  select.replaceChildren(new Option("Loading approved coaches...",""));
 
  try{
-  const snap=await getDocs(query(
-   collection(db,"users"),
-   where("role","==","coach"),
-   where("status","==","approved")
-  ));
-
+  const snap=await getDocs(query(collection(db,"users"),where("role","==","coach"),where("status","==","approved")));
   select.replaceChildren(new Option("Select approved coach",""));
-
   const coaches=snap.docs.map(item=>({
    id:item.id,
    name:item.data().name||item.data().displayName||item.data().email||"Unnamed coach"
   })).sort((a,b)=>a.name.localeCompare(b.name));
-
   coaches.forEach(coach=>{
    const option=new Option(coach.name,coach.id);
    option.dataset.name=coach.name;
    select.add(option);
   });
-
-  if(!coaches.length){
-   select.replaceChildren(new Option("No approved coaches found",""));
-  }
-
+  if(!coaches.length)select.replaceChildren(new Option("No approved coaches found",""));
  }catch(error){
   select.replaceChildren(new Option("Could not load coaches",""));
-  document.getElementById("batchFormMessage").textContent=
-   "Could not load approved coaches: "+error.message;
+  document.getElementById("batchFormMessage").textContent="Could not load approved coaches: "+error.message;
  }
 }
 
 async function loadBatches(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const message=document.getElementById("batchesMessage");
  const body=document.getElementById("batchesTableBody");
-
  message.textContent="Loading batches...";
  body.replaceChildren();
 
  try{
   const snap=await getDocs(collection(db,"batches"));
-
   const batches=snap.docs.map(item=>({id:item.id,...item.data()}))
    .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
-
-  if(!batches.length){
-   message.textContent="No batches created yet. Select + Create Batch to add the first batch.";
-   return;
-  }
+  if(!batches.length){message.textContent="No batches created yet. Select + Create Batch to add the first batch.";return}
 
   batches.forEach(batch=>{
    const row=document.createElement("tr");
-
    row.append(
     makeCell(batch.batchId||batch.id),
     makeCell(batch.batchName),
@@ -1272,19 +1107,13 @@ async function loadBatches(){
     makeCell(batch.coachName),
     makeCell(Number.isInteger(batch.studentCount)?batch.studentCount:0)
    );
-
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge(batch.status||"inactive"));
    row.appendChild(statusCell);
-
    body.appendChild(row);
   });
-
   message.textContent="Showing "+batches.length+" batch record(s) from Firebase.";
-
- }catch(error){
-  message.textContent="Could not load batches: "+error.message;
- }
+ }catch(error){message.textContent="Could not load batches: "+error.message}
 }
 
 document.getElementById("createBatchButton").addEventListener("click",async()=>{
@@ -1293,27 +1122,22 @@ document.getElementById("createBatchButton").addEventListener("click",async()=>{
  await loadApprovedCoaches();
  document.getElementById("batchNameInput").focus();
 });
-
 document.getElementById("cancelBatchButton").addEventListener("click",()=>{
  document.getElementById("batchFormPanel").style.display="none";
  document.getElementById("batchForm").reset();
  document.getElementById("batchFormMessage").textContent="";
 });
-
 document.getElementById("refreshBatchesButton").addEventListener("click",loadBatches);
 
 document.getElementById("batchForm").addEventListener("submit",async event=>{
  event.preventDefault();
-
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
 
  const message=document.getElementById("batchFormMessage");
  const button=document.getElementById("saveBatchButton");
-
  const batchName=document.getElementById("batchNameInput").value.trim();
  const sport=document.getElementById("batchSportInput").value;
  const locationName=document.getElementById("batchLocationInput").value.trim();
-
  const coachSelect=document.getElementById("batchCoachInput");
  const coachId=coachSelect.value;
  const coachName=coachSelect.selectedOptions[0]?.dataset.name||"";
@@ -1324,486 +1148,256 @@ document.getElementById("batchForm").addEventListener("submit",async event=>{
   return;
  }
 
- button.disabled=true;
- button.textContent="Saving...";
+ button.disabled=true;button.textContent="Saving...";
  message.textContent="Creating batch in Firebase...";
-
  try{
   const ref=doc(collection(db,"batches"));
-
   await setDoc(ref,{
-   batchId:ref.id,
-   batchName,
-   sport,
-   locationId:makeLocationId(locationName),
-   locationName,
-   coachId,
-   coachName,
-   studentCount:0,
-   status,
-   createdAt:serverTimestamp(),
-   updatedAt:serverTimestamp()
+   batchId:ref.id,batchName,sport,
+   locationId:makeLocationId(locationName),locationName,
+   coachId,coachName,studentCount:0,status,
+   createdAt:serverTimestamp(),updatedAt:serverTimestamp()
   });
-
   document.getElementById("batchForm").reset();
   document.getElementById("batchFormPanel").style.display="none";
-
   await loadBatches();
   await loadOverviewStats();
   await loadScheduleBatchOptions();
-
   alert("Batch created successfully. Batch ID: "+ref.id);
-
- }catch(error){
-  message.textContent="Could not create batch: "+error.message;
- }finally{
-  button.disabled=false;
-  button.textContent="Save Batch";
- }
+ }catch(error){message.textContent="Could not create batch: "+error.message}
+ finally{button.disabled=false;button.textContent="Save Batch"}
 });
 
 /* SCHEDULE MANAGEMENT */
 
 async function loadScheduleBatchOptions(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const select=document.getElementById("scheduleBatchInput");
  if(!select)return;
-
  const previousValue=select.value;
  select.replaceChildren(new Option("Loading active batches...",""));
 
  try{
-  const snap=await getDocs(query(
-   collection(db,"batches"),
-   where("status","==","active")
-  ));
-
+  const snap=await getDocs(query(collection(db,"batches"),where("status","==","active")));
   select.replaceChildren(new Option("Select active batch",""));
-
-  const batches=snap.docs.map(item=>({
-   id:item.id,
-   ...item.data()
-  })).sort((a,b)=>
-   safeText(a.batchName).localeCompare(safeText(b.batchName))
-  );
+  const batches=snap.docs.map(item=>({id:item.id,...item.data()}))
+   .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
 
   batches.forEach(batch=>{
-   const option=new Option(
-    (batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),
-    batch.id
-   );
-
+   const option=new Option((batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),batch.id);
    option.dataset.batchName=batch.batchName||"";
    option.dataset.sport=batch.sport||"";
    option.dataset.locationId=batch.locationId||"";
    option.dataset.locationName=batch.locationName||"";
    option.dataset.coachId=batch.coachId||"";
    option.dataset.coachName=batch.coachName||"";
-
    select.add(option);
   });
 
-  if(batches.some(batch=>batch.id===previousValue)){
-   select.value=previousValue;
-  }
-
-  if(!batches.length){
-   select.replaceChildren(new Option("No active batches available",""));
-  }
-
+  if(batches.some(batch=>batch.id===previousValue))select.value=previousValue;
+  if(!batches.length)select.replaceChildren(new Option("No active batches available",""));
  }catch(error){
   select.replaceChildren(new Option("Could not load batches",""));
-  document.getElementById("scheduleFormMessage").textContent=
-   "Could not load batches: "+error.message;
+  document.getElementById("scheduleFormMessage").textContent="Could not load batches: "+error.message;
  }
 }
 
 function toggleScheduleTypeFields(){
- const type=document.getElementById("scheduleTypeInput").value;
- const recurring=type==="recurring";
-
- document.getElementById("scheduleDaysField").style.display=
-  recurring?"block":"none";
-
- document.getElementById("scheduleDateField").style.display=
-  recurring?"none":"block";
-
+ const recurring=document.getElementById("scheduleTypeInput").value==="recurring";
+ document.getElementById("scheduleDaysField").style.display=recurring?"block":"none";
+ document.getElementById("scheduleDateField").style.display=recurring?"none":"block";
  document.getElementById("scheduleDateInput").required=!recurring;
 }
 
 async function loadSchedules(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const message=document.getElementById("schedulesMessage");
  const wrap=document.getElementById("schedulesTableWrap");
  const body=document.getElementById("schedulesTableBody");
-
- message.style.display="block";
- message.textContent="Loading schedules...";
- wrap.style.display="none";
- body.replaceChildren();
+ message.style.display="block";message.textContent="Loading schedules...";
+ wrap.style.display="none";body.replaceChildren();
 
  try{
   const snap=await getDocs(collection(db,"schedules"));
-
-  const schedules=snap.docs.map(item=>({
-   id:item.id,
-   ...item.data()
-  }));
-
+  const schedules=snap.docs.map(item=>({id:item.id,...item.data()}));
   document.getElementById("scheduleTotalCount").textContent=schedules.length;
+  document.getElementById("scheduleRecurringCount").textContent=schedules.filter(s=>s.scheduleType==="recurring").length;
+  document.getElementById("scheduleSpecificCount").textContent=schedules.filter(s=>s.scheduleType==="date-specific").length;
+  document.getElementById("scheduleActiveCount").textContent=schedules.filter(s=>s.status==="scheduled").length;
 
-  document.getElementById("scheduleRecurringCount").textContent=
-   schedules.filter(s=>s.scheduleType==="recurring").length;
-
-  document.getElementById("scheduleSpecificCount").textContent=
-   schedules.filter(s=>s.scheduleType==="date-specific").length;
-
-  document.getElementById("scheduleActiveCount").textContent=
-   schedules.filter(s=>s.status==="scheduled").length;
-
-  schedules.sort((a,b)=>
-   safeText(a.batchName).localeCompare(safeText(b.batchName))
-  );
-
-  if(!schedules.length){
-   message.textContent="No schedules created yet. Select + Create Schedule to begin.";
-   return;
-  }
+  schedules.sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
+  if(!schedules.length){message.textContent="No schedules created yet. Select + Create Schedule to begin.";return}
 
   schedules.forEach(schedule=>{
    const row=document.createElement("tr");
-
-   row.appendChild(makeCell(
-    schedule.scheduleType==="recurring"?"Weekly Recurring":"Date-Specific"
-   ));
-
-   row.appendChild(makeCell(
-    (schedule.batchName||"—")+" ("+(schedule.sport||"—")+")"
-   ));
-
+   row.appendChild(makeCell(schedule.scheduleType==="recurring"?"Weekly Recurring":"Date-Specific"));
+   row.appendChild(makeCell((schedule.batchName||"—")+" ("+(schedule.sport||"—")+")"));
    row.appendChild(makeCell(schedule.coachName||"—"));
-
-   const dayText=schedule.scheduleType==="recurring"?
-    (Array.isArray(schedule.daysOfWeek)?schedule.daysOfWeek.join(", "):"—"):
-    (schedule.classDate||"—");
-
-   row.appendChild(makeCell(dayText));
-
-   row.appendChild(makeCell(
-    (schedule.startTime||"—")+" - "+(schedule.endTime||"—")
-   ));
+   row.appendChild(makeCell(schedule.scheduleType==="recurring"?(Array.isArray(schedule.daysOfWeek)?schedule.daysOfWeek.join(", "):"—"):(schedule.classDate||"—")));
+   row.appendChild(makeCell((schedule.startTime||"—")+" - "+(schedule.endTime||"—")));
 
    const statusCell=document.createElement("td");
-   const badge=makeStatusBadge(
-    schedule.status==="scheduled"?"active":"inactive"
-   );
-
-   badge.textContent=
-    schedule.status==="scheduled"?"Scheduled":"Cancelled";
-
+   const badge=makeStatusBadge(schedule.status==="scheduled"?"active":"inactive");
+   badge.textContent=schedule.status==="scheduled"?"Scheduled":"Cancelled";
    statusCell.appendChild(badge);
    row.appendChild(statusCell);
 
    const actionCell=document.createElement("td");
-
    if(schedule.status==="scheduled"){
     const cancel=document.createElement("button");
-    cancel.type="button";
-    cancel.className="btn red";
-    cancel.textContent="Cancel";
+    cancel.type="button";cancel.className="btn red";cancel.textContent="Cancel";
     cancel.addEventListener("click",()=>cancelSchedule(schedule.id));
     actionCell.appendChild(cancel);
-   }else{
-    actionCell.textContent="—";
-   }
-
+   }else actionCell.textContent="—";
    row.appendChild(actionCell);
    body.appendChild(row);
   });
-
-  message.style.display="none";
-  wrap.style.display="block";
-
- }catch(error){
-  message.textContent="Could not load schedules: "+error.message;
- }
+  message.style.display="none";wrap.style.display="block";
+ }catch(error){message.textContent="Could not load schedules: "+error.message}
 }
 
 async function loadTodayScheduleOverview(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const message=document.getElementById("overviewScheduleMessage");
-
  try{
   const snap=await getDocs(collection(db,"schedules"));
   const today=new Date();
   const todayName=today.toLocaleDateString("en-US",{weekday:"long"});
-  const todayDate=[
-   today.getFullYear(),
-   String(today.getMonth()+1).padStart(2,"0"),
-   String(today.getDate()).padStart(2,"0")
-  ].join("-");
+  const todayDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
 
-  const todays=snap.docs.map(item=>({
-   id:item.id,
-   ...item.data()
-  })).filter(schedule=>{
+  const todays=snap.docs.map(item=>({id:item.id,...item.data()})).filter(schedule=>{
    if(schedule.status!=="scheduled")return false;
-
-   if(schedule.scheduleType==="recurring"){
-    return Array.isArray(schedule.daysOfWeek)&&
-     schedule.daysOfWeek.includes(todayName);
-   }
-
-   return schedule.scheduleType==="date-specific"&&
-    schedule.classDate===todayDate;
+   if(schedule.scheduleType==="recurring")return Array.isArray(schedule.daysOfWeek)&&schedule.daysOfWeek.includes(todayName);
+   return schedule.scheduleType==="date-specific"&&schedule.classDate===todayDate;
   });
 
-  if(!todays.length){
-   message.textContent="No classes scheduled for today.";
-   return;
-  }
-
+  if(!todays.length){message.textContent="No classes scheduled for today.";return}
   message.replaceChildren();
 
-  const list=document.createElement("div");
-  list.className="table-wrap";
-
+  const list=document.createElement("div");list.className="table-wrap";
   const table=document.createElement("table");
   const thead=document.createElement("thead");
   const headerRow=document.createElement("tr");
-
   ["Batch","Coach","Sport","Time"].forEach(label=>{
-   const th=document.createElement("th");
-   th.textContent=label;
-   headerRow.appendChild(th);
+   const th=document.createElement("th");th.textContent=label;headerRow.appendChild(th);
   });
-
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
+  thead.appendChild(headerRow);table.appendChild(thead);
   const tbody=document.createElement("tbody");
-
   todays.sort((a,b)=>safeText(a.startTime).localeCompare(safeText(b.startTime)));
-
   todays.forEach(schedule=>{
    const row=document.createElement("tr");
-   row.append(
-    makeCell(schedule.batchName),
-    makeCell(schedule.coachName),
-    makeCell(schedule.sport),
-    makeCell((schedule.startTime||"—")+" - "+(schedule.endTime||"—"))
-   );
+   row.append(makeCell(schedule.batchName),makeCell(schedule.coachName),makeCell(schedule.sport),makeCell((schedule.startTime||"—")+" - "+(schedule.endTime||"—")));
    tbody.appendChild(row);
   });
-
-  table.appendChild(tbody);
-  list.appendChild(table);
-  message.appendChild(list);
-
- }catch(error){
-  message.textContent="Could not load today's schedules: "+error.message;
- }
+  table.appendChild(tbody);list.appendChild(table);message.appendChild(list);
+ }catch(error){message.textContent="Could not load today's schedules: "+error.message}
 }
 
 async function cancelSchedule(scheduleId){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  if(!confirm("Cancel this schedule? The schedule record will be retained."))return;
-
  try{
-  await updateDoc(doc(db,"schedules",scheduleId),{
-   status:"cancelled",
-   updatedAt:serverTimestamp()
-  });
-
-  await loadSchedules();
-  await loadTodayScheduleOverview();
-
+  await updateDoc(doc(db,"schedules",scheduleId),{status:"cancelled",updatedAt:serverTimestamp()});
+  await loadSchedules();await loadTodayScheduleOverview();
   alert("Schedule cancelled successfully.");
-
- }catch(error){
-  alert("Could not cancel schedule: "+error.message);
- }
+ }catch(error){alert("Could not cancel schedule: "+error.message)}
 }
 
 document.getElementById("addScheduleButton").addEventListener("click",async()=>{
  document.getElementById("scheduleFormPanel").style.display="block";
  await loadScheduleBatchOptions();
  toggleScheduleTypeFields();
- document.getElementById("scheduleForm").scrollIntoView({
-  behavior:"smooth",
-  block:"start"
- });
+ document.getElementById("scheduleForm").scrollIntoView({behavior:"smooth",block:"start"});
 });
-
 document.getElementById("scheduleTypeInput").addEventListener("change",toggleScheduleTypeFields);
-
 document.getElementById("cancelScheduleFormButton").addEventListener("click",()=>{
  document.getElementById("scheduleForm").reset();
  document.getElementById("scheduleFormPanel").style.display="none";
  document.getElementById("scheduleFormMessage").textContent="";
  toggleScheduleTypeFields();
 });
-
 document.getElementById("refreshSchedulesButton").addEventListener("click",async()=>{
- await loadSchedules();
- await loadTodayScheduleOverview();
+ await loadSchedules();await loadTodayScheduleOverview();
 });
 
 document.getElementById("scheduleForm").addEventListener("submit",async event=>{
  event.preventDefault();
-
- if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
-  alert("Admin authorization required.");
-  return;
- }
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){alert("Admin authorization required.");return}
 
  const type=document.getElementById("scheduleTypeInput").value;
  const batchSelect=document.getElementById("scheduleBatchInput");
  const selected=batchSelect.selectedOptions[0];
-
  const startTime=document.getElementById("scheduleStartInput").value;
  const endTime=document.getElementById("scheduleEndInput").value;
  const classDate=document.getElementById("scheduleDateInput").value;
-
- const daysOfWeek=Array.from(
-  document.querySelectorAll('input[name="scheduleDay"]:checked')
- ).map(input=>input.value);
-
+ const daysOfWeek=Array.from(document.querySelectorAll('input[name="scheduleDay"]:checked')).map(input=>input.value);
  const message=document.getElementById("scheduleFormMessage");
  const button=document.getElementById("saveScheduleButton");
 
- if(!batchSelect.value||!selected?.dataset.coachId){
-  message.textContent="Please select an active batch with an assigned coach.";
-  return;
- }
+ if(!batchSelect.value||!selected?.dataset.coachId){message.textContent="Please select an active batch with an assigned coach.";return}
+ if(!startTime||!endTime||endTime<=startTime){message.textContent="Please enter a valid start time and an end time after it.";return}
+ if(type==="recurring"&&!daysOfWeek.length){message.textContent="Please select at least one class day.";return}
+ if(type==="date-specific"&&!classDate){message.textContent="Please select the class date.";return}
 
- if(!startTime||!endTime||endTime<=startTime){
-  message.textContent="Please enter a valid start time and an end time after it.";
-  return;
- }
-
- if(type==="recurring"&&!daysOfWeek.length){
-  message.textContent="Please select at least one class day.";
-  return;
- }
-
- if(type==="date-specific"&&!classDate){
-  message.textContent="Please select the class date.";
-  return;
- }
-
- button.disabled=true;
- button.textContent="Saving...";
+ button.disabled=true;button.textContent="Saving...";
  message.textContent="Saving schedule to Firebase...";
-
  try{
   const scheduleRef=doc(collection(db,"schedules"));
-
   await setDoc(scheduleRef,{
-   scheduleId:scheduleRef.id,
-   scheduleType:type,
-   batchId:batchSelect.value,
-   batchName:selected.dataset.batchName,
-   sport:selected.dataset.sport,
-   locationId:selected.dataset.locationId,
-   locationName:selected.dataset.locationName,
-   coachId:selected.dataset.coachId,
-   coachName:selected.dataset.coachName,
-   daysOfWeek:type==="recurring"?daysOfWeek:[],
-   classDate:type==="date-specific"?classDate:null,
-   startTime,
-   endTime,
-   status:"scheduled",
-   createdAt:serverTimestamp(),
-   updatedAt:serverTimestamp()
+   scheduleId:scheduleRef.id,scheduleType:type,
+   batchId:batchSelect.value,batchName:selected.dataset.batchName,
+   sport:selected.dataset.sport,locationId:selected.dataset.locationId,
+   locationName:selected.dataset.locationName,coachId:selected.dataset.coachId,
+   coachName:selected.dataset.coachName,daysOfWeek:type==="recurring"?daysOfWeek:[],
+   classDate:type==="date-specific"?classDate:null,startTime,endTime,
+   status:"scheduled",createdAt:serverTimestamp(),updatedAt:serverTimestamp()
   });
-
   document.getElementById("scheduleForm").reset();
   document.getElementById("scheduleFormPanel").style.display="none";
   toggleScheduleTypeFields();
-
-  await loadSchedules();
-  await loadTodayScheduleOverview();
-
+  await loadSchedules();await loadTodayScheduleOverview();
   alert("Schedule created successfully.");
-
- }catch(error){
-  message.textContent="Could not save schedule: "+error.message;
- }finally{
-  button.disabled=false;
-  button.textContent="Save Schedule";
- }
+ }catch(error){message.textContent="Could not save schedule: "+error.message}
+ finally{button.disabled=false;button.textContent="Save Schedule"}
 });
 
 /* STUDENT MANAGEMENT */
 
 async function loadStudentBatchOptions(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const select=document.getElementById("studentBatchInput");
  select.replaceChildren(new Option("Loading active batches...",""));
-
  try{
-  const snap=await getDocs(query(
-   collection(db,"batches"),
-   where("status","==","active")
-  ));
-
+  const snap=await getDocs(query(collection(db,"batches"),where("status","==","active")));
   select.replaceChildren(new Option("Select batch",""));
-
-  const batches=snap.docs.map(item=>({
-   id:item.id,
-   ...item.data()
-  })).sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
-
+  const batches=snap.docs.map(item=>({id:item.id,...item.data()}))
+   .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
   batches.forEach(batch=>{
-   const option=new Option(
-    (batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),
-    batch.id
-   );
-
+   const option=new Option((batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),batch.id);
    option.dataset.name=batch.batchName||"";
    option.dataset.sport=batch.sport||"";
    option.dataset.location=batch.locationName||"";
-
    select.add(option);
   });
-
-  if(!batches.length){
-   select.replaceChildren(new Option("No active batches available",""));
-  }
-
+  if(!batches.length)select.replaceChildren(new Option("No active batches available",""));
  }catch(error){
   select.replaceChildren(new Option("Could not load batches",""));
-  document.getElementById("studentFormMessage").textContent=
-   "Could not load batches: "+error.message;
+  document.getElementById("studentFormMessage").textContent="Could not load batches: "+error.message;
  }
 }
 
 async function loadStudents(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  const message=document.getElementById("studentsMessage");
  const wrap=document.getElementById("studentsTableWrap");
  const body=document.getElementById("studentsTableBody");
-
- message.style.display="block";
- message.textContent="Loading students...";
- wrap.style.display="none";
- body.replaceChildren();
+ message.style.display="block";message.textContent="Loading students...";
+ wrap.style.display="none";body.replaceChildren();
 
  try{
   const snap=await getDocs(collection(db,"students"));
-
-  const students=snap.docs.map(item=>({
-   id:item.id,
-   ...item.data()
-  })).sort((a,b)=>safeText(a.name).localeCompare(safeText(b.name)));
-
+  const students=snap.docs.map(item=>({id:item.id,...item.data()}))
+   .sort((a,b)=>safeText(a.name).localeCompare(safeText(b.name)));
   const active=students.filter(s=>s.status==="active").length;
   const assigned=students.filter(s=>!!s.batchId).length;
 
@@ -1813,36 +1407,22 @@ async function loadStudents(){
   document.getElementById("studentUnassignedCount").textContent=students.length-assigned;
   document.getElementById("overviewStudentCount").textContent=students.length;
 
-  if(!students.length){
-   message.textContent="No students added yet. Select + Add Student to add the first student.";
-   return;
-  }
+  if(!students.length){message.textContent="No students added yet. Select + Add Student to add the first student.";return}
 
   students.forEach(student=>{
    const row=document.createElement("tr");
-
    row.append(
-    makeCell(student.name),
-    makeCell(student.studentId||student.id),
-    makeCell(student.age),
-    makeCell(student.parentPhone),
-    makeCell(student.sport),
-    makeCell(student.batchName),
-    makeCell(student.locationName)
+    makeCell(student.name),makeCell(student.studentId||student.id),
+    makeCell(student.age),makeCell(student.parentPhone),makeCell(student.sport),
+    makeCell(student.batchName),makeCell(student.locationName)
    );
-
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge(student.status||"inactive"));
    row.appendChild(statusCell);
    body.appendChild(row);
   });
-
-  message.style.display="none";
-  wrap.style.display="block";
-
- }catch(error){
-  message.textContent="Could not load students: "+error.message;
- }
+  message.style.display="none";wrap.style.display="block";
+ }catch(error){message.textContent="Could not load students: "+error.message}
 }
 
 document.getElementById("addStudentButton").addEventListener("click",async()=>{
@@ -1850,36 +1430,27 @@ document.getElementById("addStudentButton").addEventListener("click",async()=>{
  await loadStudentBatchOptions();
  document.getElementById("studentNameInput").focus();
 });
-
 document.getElementById("cancelStudentButton").addEventListener("click",()=>{
  document.getElementById("studentFormPanel").style.display="none";
  document.getElementById("studentForm").reset();
  document.getElementById("studentFormMessage").textContent="";
 });
-
 document.getElementById("refreshStudentsButton").addEventListener("click",loadStudents);
 
 document.getElementById("studentForm").addEventListener("submit",async event=>{
  event.preventDefault();
-
- if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
-  alert("Admin authorization required.");
-  return;
- }
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){alert("Admin authorization required.");return}
 
  const name=document.getElementById("studentNameInput").value.trim();
  const age=Number(document.getElementById("studentAgeInput").value);
  const parentPhone=document.getElementById("studentPhoneInput").value.trim();
-
  const batchSelect=document.getElementById("studentBatchInput");
  const batchId=batchSelect.value;
  const selected=batchSelect.selectedOptions[0];
-
  const batchName=selected?.dataset.name||"";
  const sport=selected?.dataset.sport||"";
  const locationName=selected?.dataset.location||"";
  const status=document.getElementById("studentStatusInput").value;
-
  const message=document.getElementById("studentFormMessage");
  const button=document.getElementById("saveStudentButton");
 
@@ -1888,81 +1459,45 @@ document.getElementById("studentForm").addEventListener("submit",async event=>{
   return;
  }
 
- button.disabled=true;
- button.textContent="Saving...";
+ button.disabled=true;button.textContent="Saving...";
  message.textContent="Saving student to Firebase...";
-
  try{
   const studentRef=doc(collection(db,"students"));
-
   await setDoc(studentRef,{
-   studentId:studentRef.id,
-   name,
-   age,
-   parentPhone,
-   batchId,
-   batchName,
-   sport,
-   locationName,
-   status,
-   createdAt:serverTimestamp(),
-   updatedAt:serverTimestamp()
+   studentId:studentRef.id,name,age,parentPhone,batchId,batchName,sport,
+   locationName,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()
   });
 
   const batchRef=doc(db,"batches",batchId);
-
   const batchStudents=await getDocs(query(
-   collection(db,"students"),
-   where("batchId","==",batchId),
-   where("status","==","active")
+   collection(db,"students"),where("batchId","==",batchId),where("status","==","active")
   ));
-
-  await updateDoc(batchRef,{
-   studentCount:batchStudents.size,
-   updatedAt:serverTimestamp()
-  });
+  await updateDoc(batchRef,{studentCount:batchStudents.size,updatedAt:serverTimestamp()});
 
   document.getElementById("studentForm").reset();
   document.getElementById("studentFormPanel").style.display="none";
   message.textContent="Student saved successfully.";
-
-  await loadStudents();
-  await loadBatches();
-  await loadOverviewStats();
-
+  await loadStudents();await loadBatches();await loadOverviewStats();
   alert("Student added successfully.");
-
- }catch(error){
-  message.textContent="Could not save student: "+error.message;
- }finally{
-  button.disabled=false;
-  button.textContent="Save Student";
- }
+ }catch(error){message.textContent="Could not save student: "+error.message}
+ finally{button.disabled=false;button.textContent="Save Student"}
 });
 
 /* OVERVIEW COUNTS */
 
 async function loadOverviewStats(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
-
  try{
   const [coachesSnap,studentsSnap,batchesSnap]=await Promise.all([
    getDocs(query(collection(db,"users"),where("role","==","coach"))),
    getDocs(collection(db,"students")),
    getDocs(collection(db,"batches"))
   ]);
-
-  const activeBatches=batchesSnap.docs.filter(
-   item=>item.data().status==="active"
-  ).length;
-
+  const activeBatches=batchesSnap.docs.filter(item=>item.data().status==="active").length;
   document.getElementById("overviewCoachCount").textContent=coachesSnap.size;
   document.getElementById("overviewStudentCount").textContent=studentsSnap.size;
   document.getElementById("overviewBatchCount").textContent=activeBatches;
-
- }catch(error){
-  console.error("Overview count error:",error);
- }
+ }catch(error){console.error("Overview count error:",error)}
 }
 
 /* REFRESH BUTTONS */
