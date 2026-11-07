@@ -340,7 +340,7 @@ body.auth-locked .layout{display:none}
     </form>
   </div>
   <div id="batchesMessage" class="empty-note">Loading batches...</div>
-  <div class="panel"><div class="panel-heading"><h3>Batch Directory</h3><button class="btn light" id="refreshBatchesButton" type="button">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Batch ID</th><th>Batch Name</th><th>Sport</th><th>Location</th><th>Coach</th><th>Students</th><th>Status</th></tr></thead><tbody id="batchesTableBody"></tbody></table></div></div>
+  <div class="panel"><div class="panel-heading"><h3>Batch Directory</h3><button class="btn light" id="refreshBatchesButton" type="button">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Batch ID</th><th>Batch Name</th><th>Sport</th><th>Location</th><th>Coach</th><th>Students</th><th>Status</th><th>Actions</th></tr></thead><tbody id="batchesTableBody"></tbody></table></div></div>
 </section>
 
 <section class="page" id="schedule">
@@ -1673,7 +1673,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
   getFirestore,doc,getDoc,collection,query,where,getDocs,
-  setDoc,updateDoc,serverTimestamp
+  setDoc,updateDoc,deleteDoc,serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const locationApp=getApp();
@@ -1684,6 +1684,7 @@ const LOCATION_ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
 let locationRecords=[];
 let locationSports=[];
 let editingLocationId=null;
+let editingBatchId=null;
 
 const el=id=>document.getElementById(id);
 const safe=value=>value==null?"":String(value);
@@ -2252,6 +2253,49 @@ async function toggleLocationStatus(locationId){
   }
 }
 
+/* BATCH EDIT / DELETE */
+
+function openBatchEditor(batch){
+  editingBatchId=batch.id;
+  el("batchFormPanel").style.display="block";
+  el("batchFormPanel").querySelector("h3").textContent="Edit Batch";
+  el("batchNameInput").value=batch.batchName||"";
+  el("batchSportInput").value=batch.sport||"";
+  filterBatchLocations();
+  el("batchLocationInput").value=batch.locationId||"";
+  el("batchCoachInput").value=batch.coachId||"";
+  el("batchStatusInput").value=batch.status||"inactive";
+  el("batchFormMessage").textContent="Editing batch "+(batch.batchId||batch.id);
+  el("saveBatchButton").textContent="Update Batch";
+  el("batchFormPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function deleteBatch(batch){
+  if(!locationAuth.currentUser||locationAuth.currentUser.uid!==LOCATION_ADMIN_UID){
+    alert("Admin authorization required.");
+    return;
+  }
+  const label=batch.batchName||batch.batchId||batch.id;
+  if(!confirm('Remove batch "'+label+'"? This cannot be undone.'))return;
+  try{
+    const [students,schedules]=await Promise.all([
+      getDocs(query(collection(locationDB,"students"),where("batchId","==",batch.id))),
+      getDocs(query(collection(locationDB,"schedules"),where("batchId","==",batch.id)))
+    ]);
+    if(!students.empty||!schedules.empty){
+      alert("This batch cannot be removed because it has "+students.size+
+        " student record(s) and "+schedules.size+
+        " schedule record(s). Remove or reassign those records first.");
+      return;
+    }
+    await deleteDoc(doc(locationDB,"batches",batch.id));
+    await Promise.all([reloadBatchDirectory(),reloadScheduleOptions(),reloadOverview(),loadLocations()]);
+    alert("Batch removed successfully.");
+  }catch(error){
+    alert("Could not remove batch: "+error.message);
+  }
+}
+
 /* BATCH LOCATION DROPDOWN */
 
 function updateBatchLocationOptions(){
@@ -2369,43 +2413,46 @@ function installBatchValidation(){
 
     button.disabled=true;
     button.textContent="Saving...";
-    message.textContent="Creating batch in Firebase...";
+    const wasEditing=!!editingBatchId;
+    message.textContent=wasEditing?"Updating batch in Firebase...":"Creating batch in Firebase...";
 
     try{
-      const batchRef=doc(collection(locationDB,"batches"));
+      let batchId;
+      if(wasEditing){
+        batchId=editingBatchId;
+        const existing=await getDoc(doc(locationDB,"batches",batchId));
+        if(!existing.exists())throw new Error("This batch no longer exists. Refresh the directory.");
+        await updateDoc(doc(locationDB,"batches",batchId),{
+          batchName,sport,locationId:location.id,locationName:location.name,
+          coachId,coachName,status,updatedAt:serverTimestamp()
+        });
+      }else{
+        const batchRef=doc(collection(locationDB,"batches"));
+        batchId=batchRef.id;
+        await setDoc(batchRef,{
+          batchId,batchName,sport,locationId:location.id,locationName:location.name,
+          coachId,coachName,studentCount:0,status,
+          createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+        });
+      }
 
-      await setDoc(batchRef,{
-        batchId:batchRef.id,
-        batchName,
-        sport,
-        locationId:location.id,
-        locationName:location.name,
-        coachId,
-        coachName,
-        studentCount:0,
-        status,
-        createdAt:serverTimestamp(),
-        updatedAt:serverTimestamp()
-      });
-
+      editingBatchId=null;
       form.reset();
       el("batchFormPanel").style.display="none";
+      el("batchFormPanel").querySelector("h3").textContent="Create New Batch";
       message.textContent="";
+      button.textContent="Save Batch";
 
       await Promise.all([
-        loadLocations(),
-        reloadBatchDirectory(),
-        reloadScheduleOptions(),
-        reloadOverview()
+        loadLocations(),reloadBatchDirectory(),reloadScheduleOptions(),reloadOverview()
       ]);
-
-      alert("Batch created successfully. Batch ID: "+batchRef.id);
+      alert(wasEditing?"Batch updated successfully.":"Batch created successfully. Batch ID: "+batchId);
 
     }catch(error){
-      message.textContent="Could not create batch: "+error.message;
+      message.textContent="Could not "+(wasEditing?"update":"create")+" batch: "+error.message;
     }finally{
       button.disabled=false;
-      button.textContent="Save Batch";
+      button.textContent=editingBatchId?"Update Batch":"Save Batch";
     }
   },true);
 }
@@ -2443,6 +2490,15 @@ async function reloadBatchDirectory(){
     badge.textContent=batch.status||"inactive";
     statusCell.appendChild(badge);
     row.appendChild(statusCell);
+
+    const actionsCell=document.createElement("td");
+    actionsCell.style.whiteSpace="nowrap";
+    const editButton=locationButton("Edit","light",()=>openBatchEditor(batch));
+    editButton.style.marginRight="6px";
+    const removeButton=locationButton("Remove","danger",()=>deleteBatch(batch));
+    removeButton.style.marginRight="0";
+    actionsCell.append(editButton,removeButton);
+    row.appendChild(actionsCell);
     body.appendChild(row);
   });
 
