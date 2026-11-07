@@ -674,7 +674,7 @@ async function loadGroupBatchOptions(selectedId=""){
  try{
   const snapshot=await getDocs(collection(db,"batches"));
   groupBatchRecords=snapshot.docs.map(item=>({id:item.id,...item.data()}))
-   .filter(batch=>batch.status==="active")
+   .filter(batch=>batch.status==="active"||batch.id===selectedId)
    .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
   groupBatchRecords.forEach(batch=>{
    const option=new Option((batch.batchName||"Unnamed Batch")+" — "+(batch.sport||"Sport"),batch.id);
@@ -797,6 +797,7 @@ groupElement("refreshGroupMappingsButton").addEventListener("click",loadGroupMap
 groupElement("groupMappingForm").addEventListener("submit",async event=>{
  event.preventDefault();
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ const wasEditing=Boolean(editingGroupBatchId);
  const batchDocId=groupElement("groupBatchInput").value;
  const batch=groupBatchRecords.find(item=>item.id===batchDocId);
  const groupName=groupElement("groupNameInput").value.trim();
@@ -838,12 +839,12 @@ groupElement("groupMappingForm").addEventListener("submit",async event=>{
   groupElement("groupMappingFormPanel").style.display="none";
   resetGroupMappingForm();
   await loadGroupMappings();
-  alert(editingGroupBatchId?"WhatsApp group mapping updated successfully.":"WhatsApp group mapped successfully.");
+  alert(wasEditing?"WhatsApp group mapping updated successfully.":"WhatsApp group mapped successfully.");
  }catch(error){
   message.textContent="Could not save group mapping: "+error.message;
  }finally{
   button.disabled=false;
-  button.textContent=editingGroupBatchId?"Update Group Mapping":"Save Group Mapping";
+  button.textContent=wasEditing?"Update Group Mapping":"Save Group Mapping";
  }
 });
 
