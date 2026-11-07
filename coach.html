@@ -202,6 +202,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <section class="section" id="messages">
     <div class="section-heading"><h3>Parent Group Messages</h3></div>
     <div class="notice">Messages contain class updates only. GPS coordinates and location information are never included in these messages. You must select the correct parent group and send the message yourself.</div>
+    <div class="card">
+      <label class="field-label" for="messageBatchSelect">Select Batch / Sport</label>
+      <select id="messageBatchSelect" class="field-select"><option value="">Loading assigned batches...</option></select>
+      <p class="info" id="messageTemplateLoadStatus">Choose an assigned batch to load its messages.</p>
+    </div>
 
     <div class="message-box">
       <h4>Arrival Message</h4>
@@ -603,6 +608,7 @@ async function loadAssignedBatches() {
 
   renderBatches();
   populateAttendanceBatchSelect();
+  populateMessageBatchSelect();
   updateSummary();
 }
 
@@ -1048,6 +1054,61 @@ document.getElementById("batchList").addEventListener("click", event => {
     button.dataset.batch,
     button
   );
+});
+
+/* LOAD SPORT-WISE MESSAGE TEMPLATES FROM ADMIN */
+function messageTemplateDocId(sport){
+ return String(sport||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function fillMessagePlaceholders(template,batch){
+ const now=new Date();
+ const values={
+  coachName:currentProfile?.name||"Coach",
+  batchName:batch?.batchName||"Class",
+  sport:batch?.sport||"Sport",
+  locationName:batch?.locationName||"Academy",
+  time:now.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})
+ };
+ return String(template||"").replace(/\{(coachName|batchName|sport|locationName|time)\}/g,(match,key)=>values[key]||"");
+}
+async function loadCoachMessageTemplates(batchId){
+ const batch=assignedBatches.find(item=>item.id===batchId);
+ const status=document.getElementById("messageTemplateLoadStatus");
+ const arrival=document.getElementById("arrivalMessage");
+ const departure=document.getElementById("departureMessage");
+ if(!batch){
+  status.textContent="Select an assigned batch to load its messages.";
+  return;
+ }
+ status.textContent="Loading "+(batch.sport||"sport")+" message templates...";
+ try{
+  const snapshot=await getDoc(doc(db,"messageTemplates",messageTemplateDocId(batch.sport)));
+  const data=snapshot.exists()?snapshot.data():{};
+  const arrivalTemplate=data.arrivalMessage||"Hello Parents! The Coach has arrived for today's class. Thank you! Shyam Sports Academy";
+  const departureTemplate=data.departureMessage||"Hello Parents! Today's class has been completed. The Coach is now leaving. Thank you! Shyam Sports Academy";
+  arrival.textContent=fillMessagePlaceholders(arrivalTemplate,batch);
+  departure.textContent=fillMessagePlaceholders(departureTemplate,batch);
+  status.textContent=snapshot.exists()?"Loaded Admin's "+batch.sport+" templates for "+batch.batchName+".":"No custom "+batch.sport+" templates found. Showing default messages.";
+ }catch(error){
+  status.textContent="Could not load Admin templates: "+getFriendlyError(error);
+ }
+}
+function populateMessageBatchSelect(){
+ const select=document.getElementById("messageBatchSelect");
+ if(!select)return;
+ select.replaceChildren(new Option("Select an assigned batch",""));
+ assignedBatches.forEach(batch=>{
+  select.add(new Option((batch.batchName||"Batch")+" — "+(batch.sport||"Sport"),batch.id));
+ });
+ if(assignedBatches.length){
+  select.value=assignedBatches[0].id;
+  loadCoachMessageTemplates(assignedBatches[0].id);
+ }else{
+  document.getElementById("messageTemplateLoadStatus").textContent="No active batches are assigned to your account.";
+ }
+}
+document.getElementById("messageBatchSelect").addEventListener("change",event=>{
+ loadCoachMessageTemplates(event.target.value);
 });
 
 /* Parent messages are separate from GPS actions. */
