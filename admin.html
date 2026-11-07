@@ -1153,6 +1153,9 @@ async function loadBatches(){
   });
   message.textContent="Showing "+batches.length+" batch record(s) from Firebase.";
  }catch(error){message.textContent="Could not load batches: "+error.message}
+ finally{
+  document.dispatchEvent(new Event("batch-directory-updated"));
+ }
 }
 
 document.getElementById("createBatchButton").addEventListener("click",async()=>{
@@ -2563,6 +2566,14 @@ el("cancelBatchButton")?.addEventListener("click",()=>{
   el("batchFormPanel").querySelector("h3").textContent="Create New Batch";
   el("saveBatchButton").textContent="Save Batch";
   el("batchFormMessage").textContent="";
+});
+
+/* KEEP BATCH DIRECTORY ACTIONS IN SYNC WITH THE LEGACY LOADER */
+
+document.addEventListener("batch-directory-updated",()=>{
+  if(locationAuth.currentUser&&locationAuth.currentUser.uid===LOCATION_ADMIN_UID){
+    reloadBatchDirectory().catch(error=>console.error("Batch directory refresh error:",error));
+  }
 });
 
 /* INITIALIZE */
