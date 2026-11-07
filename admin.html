@@ -2273,29 +2273,29 @@ function openBatchEditor(batch){
   el("batchFormPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
-async function deleteBatch(batch){
+async function toggleBatchStatus(batch){
   if(!locationAuth.currentUser||locationAuth.currentUser.uid!==LOCATION_ADMIN_UID){
     alert("Admin authorization required.");
     return;
   }
+  const nextStatus=batch.status==="active"?"inactive":"active";
   const label=batch.batchName||batch.batchId||batch.id;
-  if(!confirm('Remove batch "'+label+'"? This cannot be undone.'))return;
+  const action=nextStatus==="inactive"?"deactivate":"activate";
+  const message=nextStatus==="inactive"
+    ?'Deactivate batch "'+label+'"? Student and schedule history will be preserved.'
+    :'Activate batch "'+label+'"?';
+  if(!confirm(message))return;
   try{
-    const [students,schedules]=await Promise.all([
-      getDocs(query(collection(locationDB,"students"),where("batchId","==",batch.id))),
-      getDocs(query(collection(locationDB,"schedules"),where("batchId","==",batch.id)))
+    await updateDoc(doc(locationDB,"batches",batch.id),{
+      status:nextStatus,
+      updatedAt:serverTimestamp()
+    });
+    await Promise.all([
+      reloadBatchDirectory(),reloadScheduleOptions(),reloadOverview(),loadLocations()
     ]);
-    if(!students.empty||!schedules.empty){
-      alert("This batch cannot be removed because it has "+students.size+
-        " student record(s) and "+schedules.size+
-        " schedule record(s). Remove or reassign those records first.");
-      return;
-    }
-    await deleteDoc(doc(locationDB,"batches",batch.id));
-    await Promise.all([reloadBatchDirectory(),reloadScheduleOptions(),reloadOverview(),loadLocations()]);
-    alert("Batch removed successfully.");
+    alert("Batch "+(nextStatus==="inactive"?"deactivated":"activated")+" successfully.");
   }catch(error){
-    alert("Could not remove batch: "+error.message);
+    alert("Could not "+action+" batch: "+error.message);
   }
 }
 
@@ -2498,9 +2498,11 @@ async function reloadBatchDirectory(){
     actionsCell.style.whiteSpace="nowrap";
     const editButton=locationButton("Edit","light",()=>openBatchEditor(batch));
     editButton.style.marginRight="6px";
-    const removeButton=locationButton("Remove","danger",()=>deleteBatch(batch));
-    removeButton.style.marginRight="0";
-    actionsCell.append(editButton,removeButton);
+    const statusButton=batch.status==="active"
+      ?locationButton("Deactivate","danger",()=>toggleBatchStatus(batch))
+      :locationButton("Activate","success",()=>toggleBatchStatus(batch));
+    statusButton.style.marginRight="0";
+    actionsCell.append(editButton,statusButton);
     row.appendChild(actionsCell);
     body.appendChild(row);
   });
