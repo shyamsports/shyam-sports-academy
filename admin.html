@@ -765,8 +765,7 @@ function attendanceShowStudentDetails(recordId){
   row.appendChild(makeCell(student.studentName||"Unnamed Student"));
   row.appendChild(makeCell(student.studentId||"—"));
   const statusCell=document.createElement("td");
-  statusCell.appendChild(makeStatusBadge(student.status==="present"?"active":"absent"));
-  if(student.status!=="present")statusCell.lastChild.textContent="Absent";
+  statusCell.appendChild(makeStatusBadge(student.status==="present"?"present":"absent"));
   row.appendChild(statusCell);
   body.appendChild(row);
  });
