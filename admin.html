@@ -1285,12 +1285,17 @@ async function loadSchedules(){
    row.appendChild(statusCell);
 
    const actionCell=document.createElement("td");
-   if(schedule.status==="scheduled"){
-    const cancel=document.createElement("button");
-    cancel.type="button";cancel.className="btn red";cancel.textContent="Cancel";
-    cancel.addEventListener("click",()=>cancelSchedule(schedule.id));
-    actionCell.appendChild(cancel);
-   }else actionCell.textContent="—";
+   const edit=document.createElement("button");
+   edit.type="button";edit.className="btn light";edit.textContent="Edit";
+   edit.addEventListener("click",()=>editSchedule(schedule));
+   actionCell.appendChild(edit);
+   const statusAction=document.createElement("button");
+   statusAction.type="button";
+   statusAction.className=schedule.status==="scheduled"?"btn red":"btn";
+   statusAction.style.marginLeft="6px";
+   statusAction.textContent=schedule.status==="scheduled"?"Cancel":"Activate";
+   statusAction.addEventListener("click",()=>schedule.status==="scheduled"?cancelSchedule(schedule.id):activateSchedule(schedule.id));
+   actionCell.appendChild(statusAction);
    row.appendChild(actionCell);
    body.appendChild(row);
   });
@@ -1335,6 +1340,8 @@ async function loadTodayScheduleOverview(){
  }catch(error){message.textContent="Could not load today's schedules: "+error.message}
 }
 
+let editingScheduleId=null;
+
 async function cancelSchedule(scheduleId){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
  if(!confirm("Cancel this schedule? The schedule record will be retained."))return;
@@ -1345,7 +1352,41 @@ async function cancelSchedule(scheduleId){
  }catch(error){alert("Could not cancel schedule: "+error.message)}
 }
 
+async function activateSchedule(scheduleId){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ if(!confirm("Activate this schedule again?"))return;
+ try{
+  await updateDoc(doc(db,"schedules",scheduleId),{status:"scheduled",updatedAt:serverTimestamp()});
+  await loadSchedules();await loadTodayScheduleOverview();
+  alert("Schedule activated successfully.");
+ }catch(error){alert("Could not activate schedule: "+error.message)}
+}
+
+async function editSchedule(schedule){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ editingScheduleId=schedule.id;
+ await loadScheduleBatchOptions();
+ document.getElementById("scheduleTypeInput").value=schedule.scheduleType||"recurring";
+ document.getElementById("scheduleBatchInput").value=schedule.batchId||"";
+ document.getElementById("scheduleStartInput").value=schedule.startTime||"";
+ document.getElementById("scheduleEndInput").value=schedule.endTime||"";
+ document.getElementById("scheduleDateInput").value=schedule.classDate||"";
+ document.querySelectorAll('input[name="scheduleDay"]').forEach(input=>{
+  input.checked=Array.isArray(schedule.daysOfWeek)&&schedule.daysOfWeek.includes(input.value);
+ });
+ document.querySelector("#scheduleFormPanel .panel-heading h3").textContent="Edit Schedule";
+ document.getElementById("saveScheduleButton").textContent="Update Schedule";
+ document.getElementById("scheduleFormMessage").textContent="Editing existing schedule.";
+ document.getElementById("scheduleFormPanel").style.display="block";
+ toggleScheduleTypeFields();
+ document.getElementById("scheduleForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
 document.getElementById("addScheduleButton").addEventListener("click",async()=>{
+ editingScheduleId=null;
+ document.getElementById("scheduleForm").reset();
+ document.querySelector("#scheduleFormPanel .panel-heading h3").textContent="Create New Schedule";
+ document.getElementById("saveScheduleButton").textContent="Save Schedule";
  document.getElementById("scheduleFormPanel").style.display="block";
  await loadScheduleBatchOptions();
  toggleScheduleTypeFields();
@@ -1353,9 +1394,12 @@ document.getElementById("addScheduleButton").addEventListener("click",async()=>{
 });
 document.getElementById("scheduleTypeInput").addEventListener("change",toggleScheduleTypeFields);
 document.getElementById("cancelScheduleFormButton").addEventListener("click",()=>{
+ editingScheduleId=null;
  document.getElementById("scheduleForm").reset();
  document.getElementById("scheduleFormPanel").style.display="none";
  document.getElementById("scheduleFormMessage").textContent="";
+ document.querySelector("#scheduleFormPanel .panel-heading h3").textContent="Create New Schedule";
+ document.getElementById("saveScheduleButton").textContent="Save Schedule";
  toggleScheduleTypeFields();
 });
 document.getElementById("refreshSchedulesButton").addEventListener("click",async()=>{
@@ -1384,23 +1428,40 @@ document.getElementById("scheduleForm").addEventListener("submit",async event=>{
  button.disabled=true;button.textContent="Saving...";
  message.textContent="Saving schedule to Firebase...";
  try{
-  const scheduleRef=doc(collection(db,"schedules"));
-  await setDoc(scheduleRef,{
-   scheduleId:scheduleRef.id,scheduleType:type,
-   batchId:batchSelect.value,batchName:selected.dataset.batchName,
+  const existingSnap=await getDocs(query(collection(db,"schedules"),where("batchId","==",batchSelect.value)));
+  const normalizedDays=daysOfWeek.slice().sort().join("|");
+  const duplicate=existingSnap.docs.map(item=>({id:item.id,...item.data()})).find(existing=>{
+   if(existing.id===editingScheduleId||existing.status!=="scheduled")return false;
+   if(existing.scheduleType!==type||existing.startTime!==startTime||existing.endTime!==endTime)return false;
+   if(type==="date-specific")return existing.classDate===classDate;
+   return Array.isArray(existing.daysOfWeek)&&existing.daysOfWeek.slice().sort().join("|")===normalizedDays;
+  });
+  if(duplicate){message.textContent="An identical active schedule already exists for this batch.";return}
+
+  const scheduleData={
+   scheduleType:type,batchId:batchSelect.value,batchName:selected.dataset.batchName,
    sport:selected.dataset.sport,locationId:selected.dataset.locationId,
    locationName:selected.dataset.locationName,coachId:selected.dataset.coachId,
    coachName:selected.dataset.coachName,daysOfWeek:type==="recurring"?daysOfWeek:[],
    classDate:type==="date-specific"?classDate:null,startTime,endTime,
-   status:"scheduled",createdAt:serverTimestamp(),updatedAt:serverTimestamp()
-  });
+   status:"scheduled",updatedAt:serverTimestamp()
+  };
+  if(editingScheduleId){
+   await updateDoc(doc(db,"schedules",editingScheduleId),scheduleData);
+  }else{
+   const scheduleRef=doc(collection(db,"schedules"));
+   await setDoc(scheduleRef,{...scheduleData,scheduleId:scheduleRef.id,createdAt:serverTimestamp()});
+  }
+  editingScheduleId=null;
   document.getElementById("scheduleForm").reset();
   document.getElementById("scheduleFormPanel").style.display="none";
+  document.querySelector("#scheduleFormPanel .panel-heading h3").textContent="Create New Schedule";
+  document.getElementById("saveScheduleButton").textContent="Save Schedule";
   toggleScheduleTypeFields();
   await loadSchedules();await loadTodayScheduleOverview();
-  alert("Schedule created successfully.");
+  alert("Schedule saved successfully.");
  }catch(error){message.textContent="Could not save schedule: "+error.message}
- finally{button.disabled=false;button.textContent="Save Schedule"}
+ finally{button.disabled=false;button.textContent=editingScheduleId?"Update Schedule":"Save Schedule"}
 });
 
 /* STUDENT MANAGEMENT */
