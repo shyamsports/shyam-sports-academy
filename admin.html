@@ -383,9 +383,33 @@ body.auth-locked .layout{display:none}
 </section>
 
 <section class="page" id="groups">
-  <div class="page-heading"><div><h1>WhatsApp Group Management</h1><p>Map each academy batch to its existing parent group.</p></div></div>
-  <div class="info-box">The academy system will store group labels and optional links. It will not automatically send messages to WhatsApp groups.</div>
-  <div class="panel"><div class="panel-heading"><h3>Group Mapping Directory</h3></div><div class="empty-note">WhatsApp group mappings have not been connected yet.</div></div>
+  <div class="page-heading">
+    <div><h1>WhatsApp Group Management</h1><p>Connect each academy batch with its parent WhatsApp group.</p></div>
+    <button class="btn" id="createGroupMappingButton" type="button">+ Add Group Mapping</button>
+  </div>
+  <div class="info-box">Save the parent group name and optional WhatsApp invite link for each batch. Messages are never sent automatically. Coaches or Admin must send messages manually.</div>
+  <div class="panel" id="groupMappingFormPanel" style="display:none">
+    <div class="panel-heading"><h3 id="groupMappingFormTitle">Add WhatsApp Group</h3></div>
+    <form id="groupMappingForm">
+      <div class="form-grid">
+        <div class="field"><label for="groupBatchInput">Active Batch</label><select id="groupBatchInput" required><option value="">Loading active batches...</option></select></div>
+        <div class="field"><label for="groupNameInput">WhatsApp Group Name</label><input id="groupNameInput" maxlength="100" placeholder="Example: Skating Parents Group" required></div>
+        <div class="field" style="grid-column:1/-1"><label for="groupInviteLinkInput">WhatsApp Invite Link (Optional)</label><input id="groupInviteLinkInput" type="url" maxlength="500" placeholder="https://chat.whatsapp.com/..."></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="saveGroupMappingButton" type="submit">Save Group Mapping</button>
+        <button class="btn light" id="cancelGroupMappingButton" type="button">Cancel</button>
+      </div>
+      <p id="groupMappingFormMessage" class="empty-note" aria-live="polite"></p>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Group Mapping Directory</h3><p>One parent group mapping per batch.</p></div><button class="btn light" id="refreshGroupMappingsButton" type="button">Refresh</button></div>
+    <div id="groupMappingsMessage" class="empty-note">Loading WhatsApp group mappings...</div>
+    <div class="table-wrap" id="groupMappingsTableWrap" style="display:none">
+      <table><thead><tr><th>Batch</th><th>Sport</th><th>Group Name</th><th>Invite Link</th><th>Status</th><th>Action</th></tr></thead><tbody id="groupMappingsTableBody"></tbody></table>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="templates">
@@ -589,6 +613,7 @@ async function verifyAdmin(user){
  await loadStudentBatchOptions();
  await loadStudents();
  await loadOverviewStats();
+ await loadGroupMappings();
 }
 
 async function safeVerify(user){
@@ -623,6 +648,202 @@ onAuthStateChanged(auth,async user=>{
  catch(error){
   try{await signOut(auth)}catch(_){}
   showLogin(error.message);
+ }
+});
+
+/* WHATSAPP GROUP MANAGEMENT */
+
+let groupBatchRecords=[];
+let editingGroupBatchId=null;
+
+function groupElement(id){return document.getElementById(id)}
+
+function groupActionButton(label,className,handler){
+ const button=document.createElement("button");
+ button.type="button";
+ button.className="btn "+className;
+ button.textContent=label;
+ button.addEventListener("click",handler);
+ return button;
+}
+
+async function loadGroupBatchOptions(selectedId=""){
+ const select=groupElement("groupBatchInput");
+ if(!select)return;
+ select.replaceChildren(new Option("Select active batch",""));
+ try{
+  const snapshot=await getDocs(collection(db,"batches"));
+  groupBatchRecords=snapshot.docs.map(item=>({id:item.id,...item.data()}))
+   .filter(batch=>batch.status==="active")
+   .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
+  groupBatchRecords.forEach(batch=>{
+   const option=new Option((batch.batchName||"Unnamed Batch")+" — "+(batch.sport||"Sport"),batch.id);
+   select.add(option);
+  });
+  if(selectedId)select.value=selectedId;
+  if(!groupBatchRecords.length)select.replaceChildren(new Option("No active batches available",""));
+ }catch(error){
+  select.replaceChildren(new Option("Could not load active batches",""));
+  groupElement("groupMappingFormMessage").textContent="Could not load batches: "+error.message;
+ }
+}
+
+function resetGroupMappingForm(){
+ editingGroupBatchId=null;
+ groupElement("groupMappingForm").reset();
+ groupElement("groupMappingFormTitle").textContent="Add WhatsApp Group";
+ groupElement("saveGroupMappingButton").textContent="Save Group Mapping";
+ groupElement("groupBatchInput").disabled=false;
+ groupElement("groupMappingFormMessage").textContent="";
+}
+
+function openGroupMappingForm(mapping=null){
+ resetGroupMappingForm();
+ groupElement("groupMappingFormPanel").style.display="block";
+ groupElement("groupMappingFormTitle").textContent=mapping?"Edit WhatsApp Group":"Add WhatsApp Group";
+ groupElement("saveGroupMappingButton").textContent=mapping?"Update Group Mapping":"Save Group Mapping";
+ loadGroupBatchOptions(mapping?.batchDocId||"").then(()=>{
+  if(mapping){
+   editingGroupBatchId=mapping.batchDocId;
+   groupElement("groupBatchInput").value=mapping.batchDocId;
+   groupElement("groupBatchInput").disabled=true;
+   groupElement("groupNameInput").value=mapping.groupName||"";
+   groupElement("groupInviteLinkInput").value=mapping.inviteLink||"";
+  }
+ });
+}
+
+async function loadGroupMappings(){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ const message=groupElement("groupMappingsMessage");
+ const wrap=groupElement("groupMappingsTableWrap");
+ const body=groupElement("groupMappingsTableBody");
+ if(!message||!wrap||!body)return;
+ message.style.display="block";
+ message.textContent="Loading WhatsApp group mappings...";
+ wrap.style.display="none";
+ body.replaceChildren();
+ try{
+  const [batchSnapshot,groupSnapshot]=await Promise.all([
+   getDocs(collection(db,"batches")),
+   getDocs(collection(db,"whatsappGroups"))
+  ]);
+  const batches=new Map(batchSnapshot.docs.map(item=>[item.id,{id:item.id,...item.data()}]));
+  const mappings=groupSnapshot.docs.map(item=>({batchDocId:item.id,...item.data()}))
+   .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
+  if(!mappings.length){
+   message.textContent="No WhatsApp group mappings yet. Select + Add Group Mapping to connect a batch.";
+   return;
+  }
+  mappings.forEach(mapping=>{
+   const batch=batches.get(mapping.batchDocId)||{};
+   const row=document.createElement("tr");
+   const batchCell=makeCell(mapping.batchName||batch.batchName||mapping.batchDocId);
+   row.append(batchCell,makeCell(mapping.sport||batch.sport),makeCell(mapping.groupName));
+   const linkCell=document.createElement("td");
+   if(mapping.inviteLink){
+    const link=document.createElement("a");
+    link.href=mapping.inviteLink;
+    link.target="_blank";
+    link.rel="noopener noreferrer";
+    link.textContent="Open Invite Link";
+    link.style.color="#287cbd";
+    link.style.fontWeight="700";
+    linkCell.appendChild(link);
+   }else linkCell.textContent="—";
+   row.appendChild(linkCell);
+   const statusCell=document.createElement("td");
+   statusCell.appendChild(makeStatusBadge(mapping.status||"active"));
+   row.appendChild(statusCell);
+   const actions=document.createElement("td");
+   const group=document.createElement("div");
+   group.className="coach-action-buttons";
+   group.appendChild(groupActionButton("Edit","light",()=>openGroupMappingForm(mapping)));
+   group.appendChild(groupActionButton(mapping.status==="active"?"Deactivate":"Activate",
+    mapping.status==="active"?"red":"green",
+    ()=>toggleGroupMappingStatus(mapping)));
+   actions.appendChild(group);
+   row.appendChild(actions);
+   body.appendChild(row);
+  });
+  message.textContent="Showing "+mappings.length+" WhatsApp group mapping(s).";
+ }catch(error){
+  message.textContent="Could not load WhatsApp group mappings: "+error.message;
+ }
+}
+
+async function toggleGroupMappingStatus(mapping){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ const nextStatus=mapping.status==="active"?"inactive":"active";
+ const confirmed=window.confirm((nextStatus==="inactive"?"Deactivate":"Activate")+" the WhatsApp group mapping for "+(mapping.batchName||"this batch")+"?");
+ if(!confirmed)return;
+ try{
+  await updateDoc(doc(db,"whatsappGroups",mapping.batchDocId),{
+   status:nextStatus,updatedAt:serverTimestamp()
+  });
+  await loadGroupMappings();
+ }catch(error){
+  alert("Could not update group mapping: "+error.message);
+ }
+}
+
+groupElement("createGroupMappingButton").addEventListener("click",()=>openGroupMappingForm());
+groupElement("cancelGroupMappingButton").addEventListener("click",()=>{
+ groupElement("groupMappingFormPanel").style.display="none";
+ resetGroupMappingForm();
+});
+groupElement("refreshGroupMappingsButton").addEventListener("click",loadGroupMappings);
+
+groupElement("groupMappingForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
+ const batchDocId=groupElement("groupBatchInput").value;
+ const batch=groupBatchRecords.find(item=>item.id===batchDocId);
+ const groupName=groupElement("groupNameInput").value.trim();
+ const inviteLink=groupElement("groupInviteLinkInput").value.trim();
+ const message=groupElement("groupMappingFormMessage");
+ const button=groupElement("saveGroupMappingButton");
+ if(!batchDocId||!batch||!groupName){
+  message.textContent="Select an active batch and enter the WhatsApp group name.";
+  return;
+ }
+ if(inviteLink){
+  try{
+   const parsed=new URL(inviteLink);
+   if(parsed.protocol!=="https:"||parsed.hostname!=="chat.whatsapp.com"){
+    message.textContent="Please enter a valid WhatsApp invite link beginning with https://chat.whatsapp.com/";
+    return;
+   }
+  }catch(_){
+   message.textContent="Please enter a valid WhatsApp invite link.";
+   return;
+  }
+ }
+ button.disabled=true;
+ button.textContent=editingGroupBatchId?"Updating...":"Saving...";
+ message.textContent="Saving group mapping to Firebase...";
+ try{
+  const existing=await getDoc(doc(db,"whatsappGroups",batchDocId));
+  if(!editingGroupBatchId&&existing.exists()){
+   throw new Error("A WhatsApp group is already mapped to this batch. Use Edit to update it.");
+  }
+  const payload={
+   batchDocId,batchId:batch.batchId||batchDocId,
+   batchName:batch.batchName||"",sport:batch.sport||"",
+   groupName,inviteLink,status:existing.exists()?(existing.data().status||"active"):"active",
+   updatedAt:serverTimestamp()
+  };
+  if(!existing.exists())payload.createdAt=serverTimestamp();
+  await setDoc(doc(db,"whatsappGroups",batchDocId),payload,{merge:true});
+  groupElement("groupMappingFormPanel").style.display="none";
+  resetGroupMappingForm();
+  await loadGroupMappings();
+  alert(editingGroupBatchId?"WhatsApp group mapping updated successfully.":"WhatsApp group mapped successfully.");
+ }catch(error){
+  message.textContent="Could not save group mapping: "+error.message;
+ }finally{
+  button.disabled=false;
+  button.textContent=editingGroupBatchId?"Update Group Mapping":"Save Group Mapping";
  }
 });
 
