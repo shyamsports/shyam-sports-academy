@@ -2547,6 +2547,24 @@ async function reloadOverview(){
     batches.docs.filter(item=>item.data().status==="active").length;
 }
 
+/* BATCH FORM RESET HANDLERS */
+
+el("createBatchButton")?.addEventListener("click",()=>{
+  editingBatchId=null;
+  el("batchForm").reset();
+  el("batchFormPanel").querySelector("h3").textContent="Create New Batch";
+  el("saveBatchButton").textContent="Save Batch";
+  el("batchFormMessage").textContent="";
+});
+
+el("cancelBatchButton")?.addEventListener("click",()=>{
+  editingBatchId=null;
+  el("batchForm").reset();
+  el("batchFormPanel").querySelector("h3").textContent="Create New Batch";
+  el("saveBatchButton").textContent="Save Batch";
+  el("batchFormMessage").textContent="";
+});
+
 /* INITIALIZE */
 
 buildLocationInterface();
