@@ -752,6 +752,7 @@ async function loadGroupMappings(){
    row.appendChild(actions);
    body.appendChild(row);
   });
+  wrap.style.display="block";
   message.textContent="Showing "+mappings.length+" WhatsApp group mapping(s).";
  }catch(error){
   message.textContent="Could not load WhatsApp group mappings: "+error.message;
