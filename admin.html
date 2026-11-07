@@ -416,10 +416,13 @@ body.auth-locked .layout{display:none}
   <div class="info-box">Coaches will copy the prepared message and manually send it to the correct parent group.</div>
   <div class="panel">
     <div class="field"><label for="templateSport">Sport</label><select id="templateSport"><option>Skating</option><option>Badminton</option><option>Chess</option><option>Rubik's Cube</option></select></div>
+    <p class="info-box" style="margin-top:14px">Available placeholders: {coachName}, {batchName}, {sport}, {locationName}, {time}. These are filled automatically in the Coach Dashboard.</p>
     <h3 class="section-title">Arrival Message</h3>
-    <div class="field"><textarea style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" placeholder="Enter arrival message template"></textarea></div>
+    <div class="field"><textarea id="arrivalTemplateInput" style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" maxlength="2000" placeholder="Enter arrival message template"></textarea></div>
     <h3 class="section-title">Departure Message</h3>
-    <div class="field"><textarea style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" placeholder="Enter departure message template"></textarea></div>
+    <div class="field"><textarea id="departureTemplateInput" style="width:100%;min-height:105px;padding:12px;border:1px solid #dfe6ee;border-radius:8px" maxlength="2000" placeholder="Enter departure message template"></textarea></div>
+    <div class="form-actions"><button class="btn" id="saveMessageTemplatesButton" type="button">Save Templates</button><button class="btn light" id="reloadMessageTemplatesButton" type="button">Reload Saved Templates</button></div>
+    <p id="messageTemplatesStatus" class="empty-note" aria-live="polite">Select a sport to load its saved templates.</p>
   </div>
 </section>
 
@@ -613,6 +616,7 @@ async function verifyAdmin(user){
  await loadStudents();
  await loadOverviewStats();
  await loadGroupMappings();
+ await loadMessageTemplateForAdmin();
 }
 
 async function safeVerify(user){
@@ -649,6 +653,59 @@ onAuthStateChanged(auth,async user=>{
   showLogin(error.message);
  }
 });
+
+/* SPORT-WISE MESSAGE TEMPLATES */
+const defaultArrivalTemplate="Hello Parents! Coach {coachName} has arrived for the {sport} class ({batchName}) at {time}. Thank you! Shyam Sports Academy";
+const defaultDepartureTemplate="Hello Parents! The {sport} class ({batchName}) has been completed. Coach {coachName} is leaving at {time}. Thank you! Shyam Sports Academy";
+function templateDocumentId(sport){
+ return String(sport||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+async function loadMessageTemplateForAdmin(){
+ const sport=groupElement("templateSport").value;
+ const status=groupElement("messageTemplatesStatus");
+ status.textContent="Loading "+sport+" templates from Firebase...";
+ try{
+  const snapshot=await getDoc(doc(db,"messageTemplates",templateDocumentId(sport)));
+  const data=snapshot.exists()?snapshot.data():{};
+  groupElement("arrivalTemplateInput").value=data.arrivalMessage||defaultArrivalTemplate;
+  groupElement("departureTemplateInput").value=data.departureMessage||defaultDepartureTemplate;
+  status.textContent=snapshot.exists()?"Loaded saved templates for "+sport+".":"No saved templates yet for "+sport+". Default messages are shown; save to publish them to coaches.";
+ }catch(error){
+  status.textContent="Could not load templates: "+error.message;
+ }
+}
+async function saveMessageTemplates(){
+ const sport=groupElement("templateSport").value;
+ const arrivalMessage=groupElement("arrivalTemplateInput").value.trim();
+ const departureMessage=groupElement("departureTemplateInput").value.trim();
+ const status=groupElement("messageTemplatesStatus");
+ const button=groupElement("saveMessageTemplatesButton");
+ if(!arrivalMessage||!departureMessage){
+  status.textContent="Please enter both arrival and departure messages.";
+  return;
+ }
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){
+  status.textContent="Admin authorization required.";
+  return;
+ }
+ button.disabled=true;
+ button.textContent="Saving...";
+ status.textContent="Saving "+sport+" templates to Firebase...";
+ try{
+  await setDoc(doc(db,"messageTemplates",templateDocumentId(sport)),{
+   sport,arrivalMessage,departureMessage,updatedAt:serverTimestamp(),updatedBy:currentAdmin.uid
+  });
+  status.textContent=sport+" templates saved successfully. Coaches will receive them when they refresh their dashboard.";
+ }catch(error){
+  status.textContent="Could not save templates: "+error.message;
+ }finally{
+  button.disabled=false;
+  button.textContent="Save Templates";
+ }
+}
+groupElement("templateSport").addEventListener("change",loadMessageTemplateForAdmin);
+groupElement("saveMessageTemplatesButton").addEventListener("click",saveMessageTemplates);
+groupElement("reloadMessageTemplatesButton").addEventListener("click",loadMessageTemplateForAdmin);
 
 /* WHATSAPP GROUP MANAGEMENT */
 
