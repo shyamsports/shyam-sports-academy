@@ -387,14 +387,13 @@ body.auth-locked .layout{display:none}
     <div><h1>WhatsApp Group Management</h1><p>Connect each academy batch with its parent WhatsApp group.</p></div>
     <button class="btn" id="createGroupMappingButton" type="button">+ Add Group Mapping</button>
   </div>
-  <div class="info-box">Save the parent group name and optional WhatsApp invite link for each batch. Messages are never sent automatically. Coaches or Admin must send messages manually.</div>
+  <div class="info-box">Save the parent WhatsApp group name for each batch. Messages are never sent automatically. Coaches or Admin must send messages manually.</div>
   <div class="panel" id="groupMappingFormPanel" style="display:none">
     <div class="panel-heading"><h3 id="groupMappingFormTitle">Add WhatsApp Group</h3></div>
     <form id="groupMappingForm">
       <div class="form-grid">
         <div class="field"><label for="groupBatchInput">Active Batch</label><select id="groupBatchInput" required><option value="">Loading active batches...</option></select></div>
         <div class="field"><label for="groupNameInput">WhatsApp Group Name</label><input id="groupNameInput" maxlength="100" placeholder="Example: Skating Parents Group" required></div>
-        <div class="field" style="grid-column:1/-1"><label for="groupInviteLinkInput">WhatsApp Invite Link (Optional)</label><input id="groupInviteLinkInput" type="url" maxlength="500" placeholder="https://chat.whatsapp.com/..."></div>
       </div>
       <div class="form-actions">
         <button class="btn" id="saveGroupMappingButton" type="submit">Save Group Mapping</button>
@@ -407,7 +406,7 @@ body.auth-locked .layout{display:none}
     <div class="panel-heading"><div><h3>Group Mapping Directory</h3><p>One parent group mapping per batch.</p></div><button class="btn light" id="refreshGroupMappingsButton" type="button">Refresh</button></div>
     <div id="groupMappingsMessage" class="empty-note">Loading WhatsApp group mappings...</div>
     <div class="table-wrap" id="groupMappingsTableWrap" style="display:none">
-      <table><thead><tr><th>Batch</th><th>Sport</th><th>Group Name</th><th>Invite Link</th><th>Status</th><th>Action</th></tr></thead><tbody id="groupMappingsTableBody"></tbody></table>
+      <table><thead><tr><th>Batch</th><th>Sport</th><th>Group Name</th><th>Status</th><th>Action</th></tr></thead><tbody id="groupMappingsTableBody"></tbody></table>
     </div>
   </div>
 </section>
@@ -708,7 +707,6 @@ function openGroupMappingForm(mapping=null){
    groupElement("groupBatchInput").value=mapping.batchDocId;
    groupElement("groupBatchInput").disabled=true;
    groupElement("groupNameInput").value=mapping.groupName||"";
-   groupElement("groupInviteLinkInput").value=mapping.inviteLink||"";
   }
  });
 }
@@ -740,18 +738,6 @@ async function loadGroupMappings(){
    const row=document.createElement("tr");
    const batchCell=makeCell(mapping.batchName||batch.batchName||mapping.batchDocId);
    row.append(batchCell,makeCell(mapping.sport||batch.sport),makeCell(mapping.groupName));
-   const linkCell=document.createElement("td");
-   if(mapping.inviteLink){
-    const link=document.createElement("a");
-    link.href=mapping.inviteLink;
-    link.target="_blank";
-    link.rel="noopener noreferrer";
-    link.textContent="Open Invite Link";
-    link.style.color="#287cbd";
-    link.style.fontWeight="700";
-    linkCell.appendChild(link);
-   }else linkCell.textContent="—";
-   row.appendChild(linkCell);
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge(mapping.status||"active"));
    row.appendChild(statusCell);
@@ -801,24 +787,11 @@ groupElement("groupMappingForm").addEventListener("submit",async event=>{
  const batchDocId=groupElement("groupBatchInput").value;
  const batch=groupBatchRecords.find(item=>item.id===batchDocId);
  const groupName=groupElement("groupNameInput").value.trim();
- const inviteLink=groupElement("groupInviteLinkInput").value.trim();
  const message=groupElement("groupMappingFormMessage");
  const button=groupElement("saveGroupMappingButton");
  if(!batchDocId||!batch||!groupName){
   message.textContent="Select an active batch and enter the WhatsApp group name.";
   return;
- }
- if(inviteLink){
-  try{
-   const parsed=new URL(inviteLink);
-   if(parsed.protocol!=="https:"||parsed.hostname!=="chat.whatsapp.com"){
-    message.textContent="Please enter a valid WhatsApp invite link beginning with https://chat.whatsapp.com/";
-    return;
-   }
-  }catch(_){
-   message.textContent="Please enter a valid WhatsApp invite link.";
-   return;
-  }
  }
  button.disabled=true;
  button.textContent=editingGroupBatchId?"Updating...":"Saving...";
@@ -831,7 +804,7 @@ groupElement("groupMappingForm").addEventListener("submit",async event=>{
   const payload={
    batchDocId,batchId:batch.batchId||batchDocId,
    batchName:batch.batchName||"",sport:batch.sport||"",
-   groupName,inviteLink,status:existing.exists()?(existing.data().status||"active"):"active",
+   groupName,status:existing.exists()?(existing.data().status||"active"):"active",
    updatedAt:serverTimestamp()
   };
   if(!existing.exists())payload.createdAt=serverTimestamp();
