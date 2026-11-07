@@ -273,7 +273,7 @@ body.auth-locked .layout{display:none}
   <div class="info-box">Student records are saved in Firebase and linked to their assigned batches.</div>
 
   <div class="panel" id="studentFormPanel" style="display:none">
-    <div class="panel-heading"><h3>Add New Student</h3></div>
+    <div class="panel-heading"><h3 id="studentFormTitle">Add New Student</h3></div>
     <form id="studentForm">
       <div class="form-grid">
         <div class="field"><label for="studentNameInput">Student Name</label><input id="studentNameInput" type="text" maxlength="100" required placeholder="Enter student name"></div>
@@ -297,7 +297,7 @@ body.auth-locked .layout{display:none}
   <div class="panel">
     <div class="panel-heading"><div><h3>Student Directory</h3><p>Live student records from Firebase.</p></div><button class="btn light" id="refreshStudentsButton" type="button">Refresh</button></div>
     <div id="studentsMessage" class="empty-note">Loading students...</div>
-    <div class="table-wrap" id="studentsTableWrap" style="display:none"><table><thead><tr><th>Student Name</th><th>Student ID</th><th>Age</th><th>Phone</th><th>Sport</th><th>Batch</th><th>Location</th><th>Status</th></tr></thead><tbody id="studentsTableBody"></tbody></table></div>
+    <div class="table-wrap" id="studentsTableWrap" style="display:none"><table><thead><tr><th>Student Name</th><th>Student ID</th><th>Age</th><th>Phone</th><th>Sport</th><th>Batch</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody id="studentsTableBody"></tbody></table></div>
   </div>
 </section>
 
@@ -502,7 +502,7 @@ function demo(action){alert(action+" has not been connected yet.");}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,deleteDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig={
  apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
@@ -1402,15 +1402,18 @@ document.getElementById("scheduleForm").addEventListener("submit",async event=>{
 
 /* STUDENT MANAGEMENT */
 
-async function loadStudentBatchOptions(){
+let editingStudentId=null;
+let editingStudentData=null;
+
+async function loadStudentBatchOptions(currentStudent=null){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
  const select=document.getElementById("studentBatchInput");
  select.replaceChildren(new Option("Loading active batches...",""));
  try{
   const snap=await getDocs(query(collection(db,"batches"),where("status","==","active")));
-  select.replaceChildren(new Option("Select batch",""));
   const batches=snap.docs.map(item=>({id:item.id,...item.data()}))
    .sort((a,b)=>safeText(a.batchName).localeCompare(safeText(b.batchName)));
+  select.replaceChildren(new Option("Select batch",""));
   batches.forEach(batch=>{
    const option=new Option((batch.batchName||"Unnamed batch")+" — "+(batch.sport||"Sport"),batch.id);
    option.dataset.name=batch.batchName||"";
@@ -1418,10 +1421,89 @@ async function loadStudentBatchOptions(){
    option.dataset.location=batch.locationName||"";
    select.add(option);
   });
-  if(!batches.length)select.replaceChildren(new Option("No active batches available",""));
+
+  if(currentStudent?.batchId&&!batches.some(batch=>batch.id===currentStudent.batchId)){
+   const option=new Option(
+    (currentStudent.batchName||"Previously assigned batch")+" — "+(currentStudent.sport||"Sport")+" (inactive)",
+    currentStudent.batchId
+   );
+   option.dataset.name=currentStudent.batchName||"";
+   option.dataset.sport=currentStudent.sport||"";
+   option.dataset.location=currentStudent.locationName||"";
+   select.add(option);
+  }
+  if(currentStudent?.batchId)select.value=currentStudent.batchId;
+  if(!select.options.length||select.options.length===1){
+   select.replaceChildren(new Option("No active batches available",""));
+  }
  }catch(error){
   select.replaceChildren(new Option("Could not load batches",""));
   document.getElementById("studentFormMessage").textContent="Could not load batches: "+error.message;
+ }
+}
+
+async function updateBatchStudentCount(batchId){
+ if(!batchId)return;
+ const batchRef=doc(db,"batches",batchId);
+ const batchSnapshot=await getDoc(batchRef);
+ if(!batchSnapshot.exists())return;
+ const batchStudents=await getDocs(query(
+  collection(db,"students"),
+  where("batchId","==",batchId),
+  where("status","==","active")
+ ));
+ await updateDoc(batchRef,{
+  studentCount:batchStudents.size,
+  updatedAt:serverTimestamp()
+ });
+}
+
+function closeStudentForm(){
+ document.getElementById("studentFormPanel").style.display="none";
+ document.getElementById("studentForm").reset();
+ document.getElementById("studentFormMessage").textContent="";
+ document.getElementById("studentFormTitle").textContent="Add New Student";
+ document.getElementById("saveStudentButton").textContent="Save Student";
+ editingStudentId=null;
+ editingStudentData=null;
+}
+
+async function editStudent(studentId){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){alert("Admin authorization required.");return}
+ const snapshot=await getDoc(doc(db,"students",studentId));
+ if(!snapshot.exists()){alert("This student record no longer exists. Refresh the directory.");await loadStudents();return}
+ const student={id:snapshot.id,...snapshot.data()};
+ editingStudentId=studentId;
+ editingStudentData=student;
+
+ const form=document.getElementById("studentForm");
+ form.reset();
+ document.getElementById("studentFormTitle").textContent="Edit Student";
+ document.getElementById("studentNameInput").value=student.name||"";
+ document.getElementById("studentAgeInput").value=student.age??"";
+ document.getElementById("studentPhoneInput").value=student.parentPhone||"";
+ document.getElementById("studentStatusInput").value=student.status||"active";
+ document.getElementById("studentFormPanel").style.display="block";
+ document.getElementById("saveStudentButton").textContent="Update Student";
+ document.getElementById("studentFormMessage").textContent="";
+
+ await loadStudentBatchOptions(student);
+ document.getElementById("studentNameInput").focus();
+ document.getElementById("studentFormPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function deleteStudent(studentId,studentName,batchId){
+ if(!currentAdmin||currentAdmin.uid!==ADMIN_UID){alert("Admin authorization required.");return}
+ if(!confirm('Permanently delete the student record for "'+studentName+'"? This action cannot be undone.'))return;
+ try{
+  await deleteDoc(doc(db,"students",studentId));
+  await updateBatchStudentCount(batchId);
+  await loadStudents();
+  await loadBatches();
+  await loadOverviewStats();
+  alert("Student deleted successfully.");
+ }catch(error){
+  alert("Could not delete student: "+error.message);
  }
 }
 
@@ -1458,6 +1540,28 @@ async function loadStudents(){
    const statusCell=document.createElement("td");
    statusCell.appendChild(makeStatusBadge(student.status||"inactive"));
    row.appendChild(statusCell);
+
+   const actionCell=document.createElement("td");
+   const actions=document.createElement("div");
+   actions.className="coach-action-buttons";
+
+   const editButton=document.createElement("button");
+   editButton.type="button";
+   editButton.className="btn light";
+   editButton.textContent="Edit";
+   editButton.addEventListener("click",()=>editStudent(student.id));
+
+   const deleteButton=document.createElement("button");
+   deleteButton.type="button";
+   deleteButton.className="btn red";
+   deleteButton.textContent="Delete";
+   deleteButton.addEventListener("click",()=>deleteStudent(
+    student.id,student.name||"this student",student.batchId
+   ));
+
+   actions.append(editButton,deleteButton);
+   actionCell.appendChild(actions);
+   row.appendChild(actionCell);
    body.appendChild(row);
   });
   message.style.display="none";wrap.style.display="block";
@@ -1465,15 +1569,17 @@ async function loadStudents(){
 }
 
 document.getElementById("addStudentButton").addEventListener("click",async()=>{
+ editingStudentId=null;
+ editingStudentData=null;
+ document.getElementById("studentForm").reset();
+ document.getElementById("studentFormTitle").textContent="Add New Student";
+ document.getElementById("saveStudentButton").textContent="Save Student";
  document.getElementById("studentFormPanel").style.display="block";
+ document.getElementById("studentFormMessage").textContent="";
  await loadStudentBatchOptions();
  document.getElementById("studentNameInput").focus();
 });
-document.getElementById("cancelStudentButton").addEventListener("click",()=>{
- document.getElementById("studentFormPanel").style.display="none";
- document.getElementById("studentForm").reset();
- document.getElementById("studentFormMessage").textContent="";
-});
+document.getElementById("cancelStudentButton").addEventListener("click",closeStudentForm);
 document.getElementById("refreshStudentsButton").addEventListener("click",loadStudents);
 
 document.getElementById("studentForm").addEventListener("submit",async event=>{
@@ -1498,31 +1604,44 @@ document.getElementById("studentForm").addEventListener("submit",async event=>{
   return;
  }
 
- button.disabled=true;button.textContent="Saving...";
- message.textContent="Saving student to Firebase...";
+ button.disabled=true;
+ const wasEditing=!!editingStudentId;
+ button.textContent=wasEditing?"Updating...":"Saving...";
+ message.textContent=wasEditing?"Updating student in Firebase...":"Saving student to Firebase...";
+
  try{
-  const studentRef=doc(collection(db,"students"));
-  await setDoc(studentRef,{
-   studentId:studentRef.id,name,age,parentPhone,batchId,batchName,sport,
-   locationName,status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()
-  });
+  const studentData={
+   name,age,parentPhone,batchId,batchName,sport,locationName,status,
+   updatedAt:serverTimestamp()
+  };
 
-  const batchRef=doc(db,"batches",batchId);
-  const batchStudents=await getDocs(query(
-   collection(db,"students"),where("batchId","==",batchId),where("status","==","active")
-  ));
-  await updateDoc(batchRef,{studentCount:batchStudents.size,updatedAt:serverTimestamp()});
+  if(wasEditing){
+   const oldBatchId=editingStudentData?.batchId||"";
+   await updateDoc(doc(db,"students",editingStudentId),studentData);
+   await updateBatchStudentCount(oldBatchId);
+   if(batchId!==oldBatchId)await updateBatchStudentCount(batchId);
+  }else{
+   const studentRef=doc(collection(db,"students"));
+   await setDoc(studentRef,{
+    studentId:studentRef.id,...studentData,createdAt:serverTimestamp()
+   });
+   await updateBatchStudentCount(batchId);
+  }
 
-  document.getElementById("studentForm").reset();
-  document.getElementById("studentFormPanel").style.display="none";
-  message.textContent="Student saved successfully.";
-  await loadStudents();await loadBatches();await loadOverviewStats();
-  alert("Student added successfully.");
- }catch(error){message.textContent="Could not save student: "+error.message}
- finally{button.disabled=false;button.textContent="Save Student"}
+  closeStudentForm();
+  await loadStudents();
+  await loadBatches();
+  await loadOverviewStats();
+  alert(wasEditing?"Student updated successfully.":"Student added successfully.");
+ }catch(error){
+  message.textContent="Could not "+(wasEditing?"update":"save")+" student: "+error.message;
+ }finally{
+  button.disabled=false;
+  button.textContent=editingStudentId?"Update Student":"Save Student";
+ }
 });
 
-/* OVERVIEW COUNTS */
+/* OVERVIEW COUNTS *//* OVERVIEW COUNTS */
 
 async function loadOverviewStats(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
