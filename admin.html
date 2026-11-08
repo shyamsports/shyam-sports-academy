@@ -3142,6 +3142,7 @@ function installBatchValidation(){
     const wasEditing=!!editingBatchId;
     message.textContent=wasEditing?"Updating batch in Firebase...":"Creating batch in Firebase...";
 
+    let scheduleSyncWarning="";
     try{
       let batchId;
       if(wasEditing){
@@ -3152,6 +3153,29 @@ function installBatchValidation(){
           batchName,sport,locationId:location.id,locationName:location.name,
           coachId,coachName,status,updatedAt:serverTimestamp()
         });
+
+        // Keep the coach and batch details on existing active schedules in sync.
+        // Historical cancelled schedules are intentionally left unchanged.
+        try{
+          const scheduleSnapshot=await getDocs(query(
+            collection(locationDB,"schedules"),
+            where("batchId","==",batchId)
+          ));
+          const activeSchedules=scheduleSnapshot.docs.filter(item=>{
+            const scheduleStatus=String(item.data().status||"scheduled").toLowerCase();
+            return !["cancelled","canceled","inactive","deleted"].includes(scheduleStatus);
+          });
+          await Promise.all(activeSchedules.map(item=>updateDoc(
+            doc(locationDB,"schedules",item.id),
+            {
+              batchName,sport,locationId:location.id,locationName:location.name,
+              coachId,coachName,updatedAt:serverTimestamp()
+            }
+          )));
+        }catch(syncError){
+          console.error("Schedule assignment sync error:",syncError);
+          scheduleSyncWarning=" The batch was saved, but one or more existing schedules could not be synchronized. Please review Schedule Management.";
+        }
       }else{
         const batchRef=doc(collection(locationDB,"batches"));
         batchId=batchRef.id;
@@ -3172,7 +3196,7 @@ function installBatchValidation(){
       await Promise.all([
         loadLocations(),reloadBatchDirectory(),reloadScheduleOptions(),reloadOverview()
       ]);
-      alert(wasEditing?"Batch updated successfully.":"Batch created successfully. Batch ID: "+batchId);
+      alert((wasEditing?"Batch updated successfully.":"Batch created successfully. Batch ID: "+batchId)+scheduleSyncWarning);
 
     }catch(error){
       message.textContent="Could not "+(wasEditing?"update":"create")+" batch: "+error.message;
