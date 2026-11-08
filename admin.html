@@ -3329,7 +3329,7 @@ onAuthStateChanged(excelAuth,user=>{
 
 
 <script type="module">
-import {initializeApp,getApps} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {getApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
@@ -3343,7 +3343,7 @@ const REPORT_FIREBASE_CONFIG={
  appId:"1:204237173149:web:84f0e36a4981e6adbf3f74",
  measurementId:"G-548JZ1L682"
 };
-const reportApp=getApps().find(app=>app.name==="reportsAnalytics")||initializeApp(REPORT_FIREBASE_CONFIG,"reportsAnalytics");
+const reportApp=getApp();
 const reportAuth=getAuth(reportApp);
 const reportDb=getFirestore(reportApp);
 const reportEl=id=>document.getElementById(id);
