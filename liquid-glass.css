@@ -336,3 +336,76 @@ input,select,textarea{box-shadow:inset 0 2px 6px rgba(20,83,130,.055),0 5px 14px
 @media(prefers-reduced-motion:reduce){
   body:after,.hero:before,.hero:after,.login-card,.section.active{animation:none!important}
 }
+
+
+/* Adaptive appearance — refined Apple-inspired light/dark glass */
+@media(prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --ssa-ink:#edf6ff;
+    --ssa-navy:#071b31;
+    --ssa-glass:rgba(20,35,53,.72);
+    --ssa-line:rgba(180,215,244,.16);
+    --ssa-shadow:0 20px 54px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.09);
+  }
+  body{
+    color:#e5eff9!important;
+    background:
+      radial-gradient(ellipse at 8% 4%,rgba(32,112,165,.25),transparent 36%),
+      radial-gradient(ellipse at 92% 18%,rgba(34,86,145,.2),transparent 34%),
+      linear-gradient(145deg,#081321 0%,#102338 52%,#0a1726 100%)!important;
+  }
+  body:before{background:radial-gradient(circle at 70% 80%,rgba(62,154,205,.12),transparent 32%)}
+  header{
+    background:rgba(10,25,42,.78)!important;
+    border-bottom-color:rgba(190,220,245,.12)!important;
+    box-shadow:0 8px 28px rgba(0,0,0,.22);
+  }
+  .sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,.profile,.profile-card,.panel,.stat-card,.quick,.section,.summary-card,.date-box,.notice,.message-box,.table-wrap,.contact{
+    background:rgba(19,37,56,.76)!important;
+    border-color:rgba(173,211,241,.17)!important;
+    box-shadow:0 22px 54px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.08)!important;
+    color:#e6f1fb!important;
+  }
+  .topbar,.coach .header,.app>.header,.bottom-nav{
+    background:rgba(15,33,51,.78)!important;
+    border-color:rgba(173,211,241,.16)!important;
+    color:#e6f1fb!important;
+  }
+  .login-card h1,.brand h2,.page-heading h1,.section-heading h2,
+  .stat-card h2,.stat-card h3,.panel h2,.panel h3,.card h2,.card h3,
+  .section h2,.section h3,.profile h1,.profile h2{
+    color:#f0f7ff!important;
+  }
+  p,small,.sub,.muted,.description,.helper-text{color:#b4c7d9}
+  label,.field label,.login-card label{color:#d5e5f4!important}
+  input,select,textarea,.field-select{
+    background:rgba(7,20,34,.78)!important;
+    border-color:rgba(154,194,225,.25)!important;
+    color:#edf6ff!important;
+  }
+  input::placeholder,textarea::placeholder{color:#8fa7bd!important}
+  input:focus,select:focus,textarea:focus,.field-select:focus{
+    background:rgba(9,26,43,.96)!important;
+    border-color:#55aee5!important;
+  }
+  th{background:rgba(38,75,105,.82)!important;color:#e5f3ff!important}
+  td,th{border-bottom-color:rgba(163,198,225,.14)!important;color:#dce9f5}
+  tbody tr:hover td{background:rgba(65,130,177,.16)!important}
+  footer,.footer-credit{color:#91a9bf!important}
+  .sidebar{
+    background-image:radial-gradient(ellipse at 15% 0%,rgba(88,186,242,.2),transparent 42%),linear-gradient(160deg,rgba(4,19,36,.99),rgba(7,45,76,.97) 65%,rgba(8,65,98,.96))!important;
+  }
+  .status.success,.status.approved,.status.present,.status.done,.success,.approved,.present,.completed{
+    background:rgba(22,163,97,.18)!important;color:#75e0ad!important;border-color:rgba(67,211,145,.28)!important;
+  }
+  .status.error,.status.rejected,.status.absent,.error,.rejected,.absent{
+    background:rgba(220,58,75,.17)!important;color:#ff9ba5!important;border-color:rgba(255,112,126,.28)!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  body:after,.hero:before,.hero:after,.login-card,.section.active{animation:none!important}
+  button,.btn,.nav-button,.portal-link,.contact,.quick,.nav-link,.sport-card,.feature-card,.portal-card,.developer-card,.card,.panel,.stat-card,.section{
+    transition:none!important;
+  }
+}
