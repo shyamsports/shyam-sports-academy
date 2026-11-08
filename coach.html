@@ -197,6 +197,20 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <div id="attendancePanel">
       <div class="empty">Select an assigned batch to view its students.</div>
     </div>
+    <div class="card" style="margin-top:16px">
+      <div class="section-heading"><h3>Request Attendance Correction</h3></div>
+      <p class="info">Use this only for a submitted attendance record that contains a mistake. GPS arrival and departure records cannot be changed.</p>
+      <label class="field-label" for="correctionDate">Attendance Date</label>
+      <input id="correctionDate" class="field-select" type="date" style="margin-bottom:10px">
+      <button class="btn btn-primary" id="loadCorrectionRecordBtn" type="button">Load Submitted Attendance</button>
+      <p class="info" id="correctionLoadStatus" aria-live="polite">Select a batch and date to load its submitted attendance.</p>
+      <div id="correctionEditor" style="display:none">
+        <div id="correctionStudentList"></div>
+        <label class="field-label" for="correctionReason">Reason for Correction</label>
+        <textarea id="correctionReason" class="field-select" rows="3" maxlength="500" placeholder="Explain what was entered incorrectly and what needs to be corrected."></textarea>
+        <button class="btn btn-primary" id="submitCorrectionRequestBtn" type="button" style="margin-top:12px">Send Correction Request</button>
+      </div>
+    </div>
   </section>
 
   <section class="section" id="messages">
@@ -305,6 +319,8 @@ let arrivalRecords = new Set();
 let completedRecords = new Set();
 let attendanceRecords = new Map();
 let attendanceSaving = false;
+let loadedCorrectionAttendance = null;
+let correctionSubmitting = false;
 
 function showLoginMessage(message, type = "error") {
   loginMessage.textContent = message;
@@ -932,6 +948,172 @@ async function submitAttendance() {
       submitButton.disabled = false;
       submitButton.textContent = "Submit Attendance";
     }
+  }
+}
+
+
+/* Attendance corrections: GPS records are deliberately not read or modified here. */
+document.getElementById("correctionDate").value = todayKey();
+
+document.getElementById("loadCorrectionRecordBtn").addEventListener("click", loadAttendanceForCorrection);
+document.getElementById("submitCorrectionRequestBtn").addEventListener("click", submitAttendanceCorrectionRequest);
+
+async function loadAttendanceForCorrection() {
+  const batchId = document.getElementById("attendanceBatch").value;
+  const date = document.getElementById("correctionDate").value;
+  const status = document.getElementById("correctionLoadStatus");
+  const editor = document.getElementById("correctionEditor");
+  editor.style.display = "none";
+  loadedCorrectionAttendance = null;
+
+  if (!auth.currentUser || !batchId || !date) {
+    status.textContent = "Please select an assigned batch and attendance date.";
+    return;
+  }
+
+  const batch = assignedBatches.find(item => item.id === batchId);
+  if (!batch) {
+    status.textContent = "This batch is not assigned to your account.";
+    return;
+  }
+
+  const attendanceId = auth.currentUser.uid + "_" + batchId + "_" + date;
+  status.textContent = "Loading submitted attendance...";
+  try {
+    const attendanceSnap = await getDoc(doc(db, "studentAttendance", attendanceId));
+    if (!attendanceSnap.exists()) {
+      status.textContent = "No submitted attendance was found for this batch and date.";
+      return;
+    }
+
+    const attendance = attendanceSnap.data();
+    if (attendance.coachUid !== auth.currentUser.uid) {
+      status.textContent = "You can only request corrections for your own attendance records.";
+      return;
+    }
+
+    const pendingQuery = query(
+      collection(db, "correctionRequests"),
+      where("attendanceId", "==", attendanceId)
+    );
+    const pendingSnap = await getDocs(pendingQuery);
+    const pendingRequest = pendingSnap.docs.find(item => item.data().status === "pending");
+
+    loadedCorrectionAttendance = {
+      id: attendanceId,
+      batchId,
+      date,
+      data: attendance,
+      pending: Boolean(pendingRequest)
+    };
+
+    if (!Array.isArray(attendance.students) || !attendance.students.length) {
+      status.textContent = "This attendance record has no student details to correct.";
+      return;
+    }
+
+    renderAttendanceCorrectionEditor();
+    editor.style.display = "block";
+    status.textContent = pendingRequest
+      ? "A correction request is already pending for this attendance. You can review the record, but cannot send another request."
+      : "Review the submitted statuses, select the corrected statuses, and explain the reason.";
+    document.getElementById("submitCorrectionRequestBtn").disabled = Boolean(pendingRequest);
+  } catch (error) {
+    console.error("Attendance correction load error:", error);
+    status.textContent = "Could not load attendance: " + getFriendlyError(error);
+  }
+}
+
+function renderAttendanceCorrectionEditor() {
+  const attendance = loadedCorrectionAttendance?.data;
+  if (!attendance) return;
+  const list = document.getElementById("correctionStudentList");
+  list.replaceChildren();
+
+  attendance.students.forEach((student, index) => {
+    const row = document.createElement("div");
+    row.className = "student-row";
+    row.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #edf0f4";
+    const name = document.createElement("strong");
+    name.textContent = student.studentName || "Unnamed Student";
+    name.style.cssText = "font-size:13px;color:#173b61";
+    const select = document.createElement("select");
+    select.className = "field-select";
+    select.style.maxWidth = "130px";
+    select.dataset.correctionIndex = String(index);
+    select.innerHTML = '<option value="present">Present</option><option value="absent">Absent</option>';
+    select.value = student.status === "present" ? "present" : "absent";
+    row.append(name, select);
+    list.appendChild(row);
+  });
+}
+
+async function submitAttendanceCorrectionRequest() {
+  if (correctionSubmitting || !loadedCorrectionAttendance || loadedCorrectionAttendance.pending) return;
+  const user = auth.currentUser;
+  const reason = document.getElementById("correctionReason").value.trim();
+  const status = document.getElementById("correctionLoadStatus");
+  if (!user) {
+    status.textContent = "Please sign in again before sending a request.";
+    return;
+  }
+  if (reason.length < 8) {
+    status.textContent = "Please provide a clear reason (at least 8 characters).";
+    return;
+  }
+
+  const originalStudents = loadedCorrectionAttendance.data.students.map(item => ({...item}));
+  const proposedStudents = originalStudents.map((student, index) => {
+    const select = document.querySelector('[data-correction-index="' + index + '"]');
+    return {...student, status: select?.value === "present" ? "present" : "absent"};
+  });
+  if (JSON.stringify(originalStudents) === JSON.stringify(proposedStudents)) {
+    status.textContent = "No attendance changes were made. Please change at least one student status.";
+    return;
+  }
+
+  correctionSubmitting = true;
+  const button = document.getElementById("submitCorrectionRequestBtn");
+  button.disabled = true;
+  button.textContent = "Sending Request...";
+  status.textContent = "Submitting your correction request...";
+  try {
+    const duplicateQuery = query(
+      collection(db, "correctionRequests"),
+      where("attendanceId", "==", loadedCorrectionAttendance.id)
+    );
+    const duplicateSnap = await getDocs(duplicateQuery);
+    if (duplicateSnap.docs.some(item => item.data().status === "pending")) {
+      throw new Error("A correction request is already pending for this attendance.");
+    }
+
+    const batch = assignedBatches.find(item => item.id === loadedCorrectionAttendance.batchId);
+    await addDoc(collection(db, "correctionRequests"), {
+      requestType: "studentAttendance",
+      attendanceId: loadedCorrectionAttendance.id,
+      coachUid: user.uid,
+      coachName: currentProfile?.name || user.displayName || "Coach",
+      batchId: loadedCorrectionAttendance.batchId,
+      batchName: loadedCorrectionAttendance.data.batchName || batch?.batchName || "",
+      sport: loadedCorrectionAttendance.data.sport || batch?.sport || "",
+      date: loadedCorrectionAttendance.date,
+      originalStudents,
+      proposedStudents,
+      reason,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    loadedCorrectionAttendance.pending = true;
+    status.textContent = "Correction request sent successfully. The Admin will review it.";
+    document.getElementById("correctionReason").value = "";
+  } catch (error) {
+    console.error("Attendance correction request error:", error);
+    status.textContent = "Request could not be sent: " + getFriendlyError(error);
+    button.disabled = false;
+  } finally {
+    correctionSubmitting = false;
+    button.textContent = "Send Correction Request";
   }
 }
 
