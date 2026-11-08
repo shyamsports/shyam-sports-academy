@@ -645,3 +645,86 @@ body:not(:has(#adminLoginScreen)) .sidebar .sidebar-bottom{
   background:linear-gradient(145deg,#62c8f4 0%,#258bd0 55%,#176eb5 100%)!important;
   box-shadow:0 4px 0 #125b99,0 0 16px rgba(45,155,220,.22),0 10px 22px rgba(10,91,157,.16),inset 0 1px 0 rgba(255,255,255,.62)!important;
 }
+
+
+/* FINAL READABILITY PASS — consistent, legible typography across every page */
+:root{
+  --ssa-body-text:#25445f;
+  --ssa-heading-text:#123653;
+  --ssa-muted-text:#58748b;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  color:var(--ssa-body-text)!important;
+  font-size:14px!important;
+  line-height:1.6!important;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+p,li,dd,dt,td,.info,.notice,.message-box p,.empty,.empty-note{
+  color:var(--ssa-body-text);
+  line-height:1.6!important;
+}
+h1,h2,h3,h4,h5,h6,
+.page-heading h1,.section-heading h2,.section-heading h3,
+.panel-heading h3,.login-card h1,.welcome h2{
+  color:var(--ssa-heading-text)!important;
+  line-height:1.28!important;
+  letter-spacing:-.015em;
+  font-weight:750!important;
+}
+small,.muted,.stat-note,.quick small,.activity small,
+.page-heading p,.panel-heading p,.welcome p,.section-heading small,
+.brand small,.footer,.footer-credit,.profile small{
+  color:var(--ssa-muted-text)!important;
+  line-height:1.5!important;
+  opacity:1!important;
+}
+label,.field label,.field-label,.login-card label,
+.day-options label,.reject-label{
+  color:#294d69!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  line-height:1.45!important;
+}
+input,select,textarea,.field-select{
+  color:#183b57!important;
+  font-size:14px!important;
+  line-height:1.45!important;
+}
+input::placeholder,textarea::placeholder{color:#71899d!important;opacity:1!important}
+button,.btn,.nav-button,.portal-link,.contact{
+  font-size:13px;
+  font-weight:700;
+  line-height:1.35;
+}
+th{font-size:11px!important;font-weight:750!important;color:#315873!important}
+td{font-size:13px!important;color:#294b65!important;line-height:1.5!important}
+.status,.badge,.status-badge{font-size:11px!important;font-weight:750!important;line-height:1.35!important}
+.stat-label{font-size:12px!important;color:#58748b!important}
+.stat-value{font-weight:800!important;color:#123e63!important}
+.quick strong,.activity strong,.detail strong,.student-name{
+  color:#1d405d!important;font-size:13px!important;font-weight:750!important;
+}
+.quick small,.activity small,.detail small,.student-id{font-size:11px!important}
+.sidebar .nav-link,.sidebar .nav-link *,
+.sidebar .brand,.sidebar .brand *,
+.sidebar .sidebar-bottom{
+  color:#fff!important;
+  opacity:1!important;
+}
+.sidebar .nav-label{color:rgba(255,255,255,.82)!important;font-size:10px!important;font-weight:750!important}
+.sidebar .nav-link{font-size:13px!important;font-weight:650!important;line-height:1.4!important}
+.nav-item{font-size:11px!important;font-weight:700!important}
+.nav-item.active{color:#126ba7!important}
+.hero,.hero *,.btn-primary,.btn-primary *,.nav-button,.nav-button *,
+.portal-link,.portal-link *, .contact.primary,.contact.primary *{
+  color:#fff!important;
+}
+#loginMessage,.alert,.toast{font-size:13px!important;line-height:1.55!important}
+@media(max-width:600px){
+  body{font-size:14px!important}
+  p,li,td{font-size:13px}
+  .page-heading h1,.welcome h2{font-size:22px!important}
+  .nav-item{font-size:10px!important}
+}
