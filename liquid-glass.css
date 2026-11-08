@@ -279,7 +279,7 @@ body:after{
   box-shadow:var(--ssa-glow),inset 0 1px 0 #fff!important;
   border-color:rgba(115,197,239,.75)!important;
 }
-.login-card{animation:ssa-card-arrive .65s cubic-bezier(.2,.8,.2,1) both}
+.login-card{position:relative;animation:ssa-card-arrive .65s cubic-bezier(.2,.8,.2,1) both}
 .login-card:after{
   content:"";position:absolute;inset:0 12% auto;height:1px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.98),transparent);
