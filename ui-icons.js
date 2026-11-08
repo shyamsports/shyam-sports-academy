@@ -111,6 +111,37 @@
       paint(mark, rule[1], rule[2]);
       heading.prepend(mark);
     });
+    const panelRules = [
+      ["quick actions", "zap", "orange"],
+      ["management activity", "activity", "blue"],
+      ["today's class monitoring", "calendar-check", "green"],
+      ["coach directory", "users", "green"],
+      ["coach approval requests", "user-round-check", "orange"],
+      ["student directory", "graduation-cap", "blue"],
+      ["sports directory", "trophy", "orange"],
+      ["location directory", "map-pin", "orange"],
+      ["batch directory", "layers", "blue"],
+      ["schedule directory", "calendar-days", "blue"],
+      ["group mapping directory", "messages-square", "green"],
+      ["class-wise attendance records", "clipboard-check", "green"],
+      ["gps event history", "map-pinned", "orange"],
+      ["batch-wise excel files", "file-spreadsheet", "green"],
+      ["academy data exports", "download", "blue"],
+      ["pending requests", "clock-3", "orange"],
+      ["audit history", "history", "red"],
+      ["administrator access", "shield-check", "blue"],
+      ["academy preferences", "sliders-horizontal", "orange"]
+    ];
+    document.querySelectorAll(".panel-heading h3,.section-title").forEach((heading) => {
+      if (heading.querySelector("[data-lucide]")) return;
+      const label = (heading.textContent || "").trim().toLowerCase();
+      const rule = panelRules.find((item) => label.includes(item[0]));
+      if (!rule) return;
+      const mark = document.createElement("span");
+      mark.className = "section-heading-icon";
+      paint(mark, rule[1], rule[2]);
+      heading.prepend(mark);
+    });
     document.querySelectorAll(".sport-name").forEach((heading) => {
       if (heading.querySelector("[data-lucide]")) return;
       const label = (heading.textContent || "").trim().toLowerCase();
