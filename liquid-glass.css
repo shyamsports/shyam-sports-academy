@@ -841,3 +841,87 @@ small,.muted,.stat-note,.quick small,.activity small,.page-heading p,
 .btn-primary:hover,.nav-button:hover,.portal-link:hover,.contact.primary:hover{
   box-shadow:0 4px 0 #246fa5,0 0 24px rgba(255,255,255,.82),0 13px 26px rgba(37,126,181,.2),inset 0 1px 0 #fff!important;
 }
+
+
+/* FINAL ICE-GLASS FINISH — true sky blue, restrained white/blue glow, soft charcoal depth */
+:root{
+  --ssa-ink:#173b59;
+  --ssa-glass:rgba(237,246,252,.76);
+  --ssa-line:rgba(220,237,248,.82);
+  --ssa-shadow:0 14px 34px rgba(8,31,48,.085),0 5px 16px rgba(22,91,132,.07),inset 0 1px 0 rgba(255,255,255,.78);
+}
+/* Richer sky blue: no pale-cyan wash and no heavy navy blocks */
+.hero{
+  background:linear-gradient(125deg,#65bee2 0%,#3699ca 56%,#267db2 100%)!important;
+  border-color:rgba(226,245,255,.62)!important;
+  box-shadow:0 18px 42px rgba(10,57,88,.13),0 0 18px rgba(218,244,255,.34),inset 0 1px 0 rgba(255,255,255,.52)!important;
+}
+.sidebar{
+  background:linear-gradient(155deg,#3998c6 0%,#2e88ba 58%,#2476a9 100%)!important;
+  border-right:1px solid rgba(219,241,252,.48)!important;
+  box-shadow:7px 0 26px rgba(8,31,48,.10),0 0 14px rgba(208,238,252,.22)!important;
+}
+.sidebar .nav-link{color:rgba(255,255,255,.97)!important}
+.sidebar .nav-link.active,.sidebar .nav-link:hover{
+  color:#fff!important;
+  background:linear-gradient(110deg,rgba(230,248,255,.24),rgba(255,255,255,.09))!important;
+  border-color:rgba(226,245,255,.32)!important;
+  box-shadow:0 0 12px rgba(198,237,255,.16),inset 0 1px 0 rgba(255,255,255,.34)!important;
+}
+/* Glass should look like cool clear ice, not a solid white card */
+.sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,
+.profile,.profile-card,.panel,.stat-card,.quick,.section,.summary-card,
+.date-box,.notice,.message-box,.table-wrap,.contact,.topbar,header,
+.bottom-nav,.coach .header,.app>.header{
+  background:linear-gradient(145deg,rgba(239,248,253,.82),rgba(219,235,246,.72))!important;
+  border:1px solid rgba(223,240,250,.78)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(142%)!important;
+  backdrop-filter:blur(22px) saturate(142%)!important;
+  box-shadow:0 12px 30px rgba(7,29,45,.075),0 4px 12px rgba(25,94,133,.055),0 0 13px rgba(220,243,255,.24),inset 0 1px 0 rgba(255,255,255,.78)!important;
+}
+.stat-card,.panel,.quick,.table-wrap,.section,.summary-card,.date-box{
+  background:linear-gradient(145deg,rgba(241,249,254,.86),rgba(224,238,247,.78))!important;
+}
+.sport-card:hover,.feature-card:hover,.portal-card:hover,.developer-card:hover,
+.stat-card:hover,.quick:hover,.class-grid .card:hover{
+  box-shadow:0 16px 34px rgba(7,29,45,.10),0 7px 18px rgba(25,94,133,.075),0 0 17px rgba(216,241,253,.32),inset 0 1px 0 rgba(255,255,255,.86)!important;
+}
+/* Button glow is a small blend of white and sky-blue, with a quiet dark shadow */
+.btn-primary,.btn-primary:visited,.nav-button,.portal-link,.contact.primary{
+  background:linear-gradient(145deg,#68c4e7 0%,#399dce 55%,#287fb5 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(220,244,255,.64)!important;
+  box-shadow:0 3px 0 rgba(20,79,116,.42),0 7px 15px rgba(5,32,50,.10),0 0 12px rgba(228,247,255,.42),0 0 10px rgba(78,177,222,.18),inset 0 1px 0 rgba(255,255,255,.52)!important;
+}
+.btn-primary:hover,.nav-button:hover,.portal-link:hover,.contact.primary:hover{
+  box-shadow:0 3px 0 rgba(20,79,116,.42),0 9px 18px rgba(5,32,50,.12),0 0 17px rgba(228,247,255,.58),0 0 14px rgba(78,177,222,.24),inset 0 1px 0 rgba(255,255,255,.62)!important;
+}
+.btn-secondary,.btn-light,.contact:not(.primary){
+  background:linear-gradient(145deg,rgba(241,248,252,.86),rgba(218,234,245,.76))!important;
+  border-color:rgba(215,234,246,.82)!important;
+  box-shadow:0 5px 13px rgba(5,32,50,.075),0 0 10px rgba(230,247,255,.32),inset 0 1px 0 rgba(255,255,255,.78)!important;
+}
+/* Keep labels and numbers crisp against the cooler glass */
+body,.main,.content,.page,.section,.panel,.card,.login-card,.stat-card,
+.summary-card,.date-box,.notice,.message-box,.table-wrap,.profile,.profile-card,
+.sport-card,.feature-card,.portal-card,.developer-card{color:#24465e!important}
+h1,h2,h3,h4,h5,h6,.page-heading,.section-heading,.panel-heading,
+.stat-value,.stat-label,.card-title,.summary-title{color:#143b59!important;text-shadow:none!important}
+small,.muted,.stat-note,.quick small,.activity small,.page-heading p,
+.panel-heading p,.welcome p,.section-heading small,.footer-credit{color:#526f83!important}
+.hero,.hero h1,.hero h2,.hero h3,.hero p,.hero span,.hero strong,.hero small,
+.btn-primary,.btn-primary *, .nav-button,.nav-button *, .portal-link,.portal-link *,
+.contact.primary,.contact.primary *, .sidebar,.sidebar *{color:#fff!important}
+input,select,textarea,.field-select{
+  background:rgba(246,251,254,.88)!important;
+  border-color:rgba(157,190,211,.48)!important;
+  box-shadow:inset 0 1px 3px rgba(7,29,45,.055),0 3px 9px rgba(7,29,45,.035)!important;
+}
+@media(prefers-reduced-transparency:reduce){
+  .sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,
+  .profile,.panel,.stat-card,.quick,.section,.summary-card,.date-box,
+  .notice,.message-box,.table-wrap,.contact,.topbar,header,.bottom-nav{
+    background:#edf5fa!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  }
+}
