@@ -538,8 +538,18 @@ body.auth-locked .layout{display:none}
 <section class="page" id="corrections">
   <div class="page-heading"><div><h1>Correction Requests</h1><p>Review coach requests to correct submitted class records.</p></div></div>
   <div class="info-box">Only authorized Admin users can approve or reject correction requests. Original records and changes will be retained in the audit history.</div>
-  <div class="panel"><div class="panel-heading"><h3>Pending Requests</h3></div><div class="empty-note">Correction requests have not been connected yet.</div></div>
-  <div class="panel"><div class="panel-heading"><h3>Audit History</h3></div><div class="empty-note">Record changes and admin actions will appear here.</div></div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Pending Requests</h3><p>Review the original and requested attendance values.</p></div><button class="btn light" id="refreshCorrectionRequests" type="button">Refresh</button></div>
+    <div id="correctionPendingMessage" class="empty-note">Loading correction requests...</div>
+    <div id="correctionPendingList"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Audit History</h3><p>Approved and rejected requests are recorded here.</p></div><button class="btn light" id="refreshCorrectionAudit" type="button">Refresh</button></div>
+    <div id="correctionAuditMessage" class="empty-note">Loading audit history...</div>
+    <div class="table-wrap" id="correctionAuditWrap" style="display:none">
+      <table><thead><tr><th>Date</th><th>Coach</th><th>Batch</th><th>Action</th><th>Admin</th><th>Reason</th></tr></thead><tbody id="correctionAuditBody"></tbody></table>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="settings">
@@ -589,7 +599,7 @@ function demo(action){alert(action+" has not been connected yet.");}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,deleteDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,deleteDoc,serverTimestamp,runTransaction} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig={
  apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
@@ -679,6 +689,8 @@ async function verifyAdmin(user){
  await loadGroupMappings();
  await loadMessageTemplateForAdmin();
  await loadAttendanceRecords();
+ await loadCorrectionRequests();
+ await loadCorrectionAuditHistory();
 }
 
 async function safeVerify(user){
@@ -715,6 +727,186 @@ onAuthStateChanged(auth,async user=>{
   showLogin(error.message);
  }
 });
+
+
+/* Correction workflow is limited to coach-submitted attendance.
+   GPS / coachActivity documents are never read or written by these handlers. */
+function correctionFormatDate(value) {
+ if(value && typeof value.toDate==="function") return value.toDate().toLocaleString("en-IN");
+ return safeText(value)||"—";
+}
+function correctionStudentSummary(items) {
+ return (Array.isArray(items)?items:[]).map(item=>
+  safeText(item.studentName)+" — "+(item.status==="present"?"Present":"Absent")
+ ).join("\\n");
+}
+async function loadCorrectionRequests(){
+ const message=document.getElementById("correctionPendingMessage");
+ const list=document.getElementById("correctionPendingList");
+ if(!currentAdmin)return;
+ message.textContent="Loading pending correction requests...";
+ list.replaceChildren();
+ try{
+  const snapshot=await getDocs(collection(db,"correctionRequests"));
+  const requests=snapshot.docs.map(item=>({id:item.id,...item.data()}))
+   .filter(item=>item.status==="pending")
+   .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  if(!requests.length){message.textContent="There are no pending correction requests.";return;}
+  message.textContent=requests.length+" pending request(s) found.";
+  requests.forEach(request=>{
+   const card=document.createElement("div");
+   card.className="panel";
+   card.style.cssText="border:1px solid #e5ebf2;margin-top:14px;background:#fbfcfe";
+   const heading=document.createElement("div");
+   heading.className="panel-heading";
+   const title=document.createElement("h3");
+   title.textContent=(request.coachName||"Coach")+" — "+(request.batchName||"Batch");
+   heading.appendChild(title);
+   const date=document.createElement("span");
+   date.className="status pending";
+   date.textContent=(request.date||"")+" · Pending";
+   heading.appendChild(date);
+   const meta=document.createElement("p");
+   meta.style.cssText="font-size:11px;color:#8290a1;margin-bottom:12px";
+   meta.textContent="Sport: "+(request.sport||"—")+" | Submitted: "+correctionFormatDate(request.createdAt);
+   const reason=document.createElement("p");
+   reason.style.cssText="font-size:12px;color:#42566e;margin:10px 0";
+   reason.textContent="Coach reason: "+(request.reason||"—");
+   const comparison=document.createElement("div");
+   comparison.style.cssText="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px";
+   const original=document.createElement("div");
+   const proposed=document.createElement("div");
+   [original,proposed].forEach(el=>{el.style.cssText="background:white;border:1px solid #e8edf3;border-radius:9px;padding:12px;white-space:pre-wrap;font-size:11px;color:#42566e"});
+   original.textContent="ORIGINAL ATTENDANCE\\n"+correctionStudentSummary(request.originalStudents);
+   proposed.textContent="REQUESTED ATTENDANCE\\n"+correctionStudentSummary(request.proposedStudents);
+   comparison.append(original,proposed);
+   const rejectLabel=document.createElement("label");
+   rejectLabel.textContent="Rejection reason (required only if rejecting)";
+   rejectLabel.style.cssText="display:block;font-size:11px;font-weight:700;margin:14px 0 6px;color:#53677e";
+   const rejectReason=document.createElement("textarea");
+   rejectReason.rows=2;rejectReason.maxLength=500;
+   rejectReason.placeholder="Explain why this request is rejected";
+   rejectReason.style.cssText="width:100%;padding:10px;border:1px solid #dfe6ee;border-radius:8px";
+   const actions=document.createElement("div");
+   actions.className="form-actions";
+   const approve=document.createElement("button");
+   approve.className="btn green";approve.type="button";approve.textContent="Approve Correction";
+   approve.addEventListener("click",()=>reviewCorrectionRequest(request.id,"approved",""));
+   const reject=document.createElement("button");
+   reject.className="btn red";reject.type="button";reject.textContent="Reject Request";
+   reject.addEventListener("click",()=>reviewCorrectionRequest(request.id,"rejected",rejectReason.value.trim()));
+   actions.append(approve,reject);
+   card.append(heading,meta,reason,comparison,rejectLabel,rejectReason,actions);
+   list.appendChild(card);
+  });
+ }catch(error){
+  console.error("Correction requests load error:",error);
+  message.textContent="Could not load correction requests: "+(error.message||"Unknown error");
+ }
+}
+async function reviewCorrectionRequest(requestId,decision,rejectionReason){
+ if(!currentAdmin||!currentAdmin.uid)return;
+ if(decision==="rejected"&&rejectionReason.length<5){
+  alert("Please enter a clear rejection reason (at least 5 characters).");
+  return;
+ }
+ const requestRef=doc(db,"correctionRequests",requestId);
+ const auditRef=doc(collection(db,"correctionAuditHistory"));
+ try{
+  await runTransaction(db,async transaction=>{
+   const requestSnap=await transaction.get(requestRef);
+   if(!requestSnap.exists())throw new Error("This correction request no longer exists.");
+   const request=requestSnap.data();
+   if(request.status!=="pending")throw new Error("This request has already been reviewed.");
+   const attendanceRef=doc(db,"studentAttendance",request.attendanceId);
+   let currentAttendance=null;
+   if(decision==="approved"){
+    const attendanceSnap=await transaction.get(attendanceRef);
+    if(!attendanceSnap.exists())throw new Error("The original attendance record no longer exists.");
+    currentAttendance=attendanceSnap.data();
+    if(currentAttendance.coachUid!==request.coachUid)throw new Error("Coach ownership check failed. No changes were made.");
+    if(JSON.stringify(currentAttendance.students||[])!==JSON.stringify(request.originalStudents||[])){
+     throw new Error("The attendance record has changed since this request was submitted. Refresh and ask the coach to submit a new request.");
+    }
+    const nextStudents=request.proposedStudents||[];
+    const presentCount=nextStudents.filter(item=>item.status==="present").length;
+    const absentCount=nextStudents.length-presentCount;
+    transaction.update(attendanceRef,{
+     students:nextStudents,
+     totalStudents:nextStudents.length,
+     presentCount,
+     absentCount,
+     updatedAt:serverTimestamp(),
+     correctedAt:serverTimestamp(),
+     lastCorrectionRequestId:requestId
+    });
+   }
+   transaction.update(requestRef,{
+    status:decision,
+    reviewedAt:serverTimestamp(),
+    reviewedByUid:currentAdmin.uid,
+    reviewedByName:currentAdmin.email||"Administrator",
+    rejectionReason:decision==="rejected"?rejectionReason:"",
+    updatedAt:serverTimestamp()
+   });
+   transaction.set(auditRef,{
+    requestId,
+    requestType:"studentAttendance",
+    attendanceId:request.attendanceId,
+    coachUid:request.coachUid,
+    coachName:request.coachName||"",
+    batchId:request.batchId||"",
+    batchName:request.batchName||"",
+    date:request.date||"",
+    action:decision,
+    reason:request.reason||"",
+    rejectionReason:decision==="rejected"?rejectionReason:"",
+    originalStudents:request.originalStudents||[],
+    proposedStudents:request.proposedStudents||[],
+    reviewedByUid:currentAdmin.uid,
+    reviewedByName:currentAdmin.email||"Administrator",
+    reviewedAt:serverTimestamp()
+   });
+  });
+  alert(decision==="approved"?"Correction approved. Attendance has been updated and audit history saved.":"Request rejected. Original attendance remains unchanged and audit history saved.");
+  await loadCorrectionRequests();
+  await loadCorrectionAuditHistory();
+ }catch(error){
+  console.error("Correction review error:",error);
+  alert("Could not review this request: "+(error.message||"Unknown error"));
+ }
+}
+async function loadCorrectionAuditHistory(){
+ const message=document.getElementById("correctionAuditMessage");
+ const wrap=document.getElementById("correctionAuditWrap");
+ const body=document.getElementById("correctionAuditBody");
+ if(!currentAdmin)return;
+ message.textContent="Loading audit history...";
+ wrap.style.display="none";body.replaceChildren();
+ try{
+  const snapshot=await getDocs(collection(db,"correctionAuditHistory"));
+  const rows=snapshot.docs.map(item=>({id:item.id,...item.data()}))
+   .sort((a,b)=>(b.reviewedAt?.seconds||0)-(a.reviewedAt?.seconds||0));
+  if(!rows.length){message.textContent="No correction actions have been recorded yet.";return;}
+  rows.forEach(item=>{
+   const tr=document.createElement("tr");
+   [correctionFormatDate(item.reviewedAt),item.coachName,item.batchName,
+    item.action,item.reviewedByName,
+    item.action==="rejected"?(item.rejectionReason||item.reason):(item.reason||"—")
+   ].forEach(value=>{
+    const td=document.createElement("td");td.textContent=safeText(value)||"—";tr.appendChild(td);
+   });
+   body.appendChild(tr);
+  });
+  message.textContent=rows.length+" audit record(s). Original and requested student statuses are retained in each audit record.";
+  wrap.style.display="block";
+ }catch(error){
+  console.error("Correction audit load error:",error);
+  message.textContent="Could not load audit history: "+(error.message||"Unknown error");
+ }
+}
+document.getElementById("refreshCorrectionRequests").addEventListener("click",loadCorrectionRequests);
+document.getElementById("refreshCorrectionAudit").addEventListener("click",loadCorrectionAuditHistory);
 
 /* SPORT-WISE MESSAGE TEMPLATES */
 const defaultArrivalTemplate="Hello Parents! Coach {coachName} has arrived for the {sport} class ({batchName}) at {time}. Thank you! Shyam Sports Academy";
