@@ -728,3 +728,82 @@ td{font-size:13px!important;color:#294b65!important;line-height:1.5!important}
   .page-heading h1,.welcome h2{font-size:22px!important}
   .nav-item{font-size:10px!important}
 }
+
+
+/* FINAL LIGHT-BLUE LIQUID GLASS + SOFT WHITE GLOW THEME */
+:root{
+  --ssa-ink:#173d5c;
+  --ssa-blue:#328fc7;
+  --ssa-sky:#8bd8f7;
+  --ssa-glass:rgba(255,255,255,.72);
+  --ssa-line:rgba(255,255,255,.92);
+  --ssa-shadow:0 16px 42px rgba(54,126,173,.12),0 0 22px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.98);
+}
+/* Replace heavy navy blocks with brighter, airy blue */
+.hero{
+  background:linear-gradient(125deg,#69c4ed 0%,#399ed4 54%,#287fbd 100%)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  box-shadow:0 22px 52px rgba(44,137,190,.2),0 0 28px rgba(255,255,255,.52),inset 0 1px 0 rgba(255,255,255,.62)!important;
+}
+.sidebar{
+  background:linear-gradient(155deg,#55b4e3 0%,#399bd0 56%,#287fb9 100%)!important;
+  border-right:1px solid rgba(255,255,255,.65)!important;
+  box-shadow:8px 0 34px rgba(48,137,187,.14),0 0 24px rgba(255,255,255,.35)!important;
+}
+.sidebar .nav-link{
+  color:rgba(255,255,255,.98)!important;
+  border-color:transparent!important;
+}
+.sidebar .nav-link.active,.sidebar .nav-link:hover{
+  color:#fff!important;
+  background:linear-gradient(110deg,rgba(255,255,255,.32),rgba(255,255,255,.15))!important;
+  border-color:rgba(255,255,255,.48)!important;
+  box-shadow:0 0 20px rgba(255,255,255,.28),inset 0 1px 0 rgba(255,255,255,.52)!important;
+}
+/* Soft white glass blur on cards, panels, menus and controls */
+.sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,
+.profile,.profile-card,.panel,.stat-card,.quick,.section,.summary-card,
+.date-box,.notice,.message-box,.table-wrap,.contact,.topbar,header,
+.bottom-nav,.coach .header,.app>.header{
+  -webkit-backdrop-filter:blur(22px) saturate(155%)!important;
+  backdrop-filter:blur(22px) saturate(155%)!important;
+  box-shadow:0 15px 38px rgba(53,111,157,.105),0 0 22px rgba(255,255,255,.62),inset 0 1px 0 rgba(255,255,255,.98)!important;
+  border-color:rgba(255,255,255,.94)!important;
+}
+.sport-card:hover,.feature-card:hover,.portal-card:hover,.developer-card:hover,
+.stat-card:hover,.quick:hover,.class-grid .card:hover{
+  box-shadow:0 20px 44px rgba(53,111,157,.14),0 0 28px rgba(255,255,255,.82),inset 0 1px 0 #fff!important;
+}
+/* Blue buttons become lighter and gain a restrained white halo */
+.btn-primary,.btn-primary:visited,.nav-button,.portal-link,.contact.primary{
+  background:linear-gradient(145deg,#83d9f7 0%,#43a9dc 54%,#2d86c2 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.86)!important;
+  box-shadow:0 4px 0 #2476ad,0 0 0 1px rgba(255,255,255,.36),0 0 22px rgba(255,255,255,.72),0 12px 25px rgba(37,126,181,.2),inset 0 1px 0 rgba(255,255,255,.82)!important;
+}
+.btn-primary:hover,.nav-button:hover,.portal-link:hover,.contact.primary:hover{
+  box-shadow:0 4px 0 #2476ad,0 0 30px rgba(255,255,255,.9),0 15px 30px rgba(37,126,181,.24),inset 0 1px 0 #fff!important;
+}
+.btn-secondary,.btn-light,.btn-whatsapp,.contact{
+  -webkit-backdrop-filter:blur(18px) saturate(155%);
+  backdrop-filter:blur(18px) saturate(155%);
+  box-shadow:0 8px 20px rgba(53,111,157,.09),0 0 18px rgba(255,255,255,.72),inset 0 1px 0 #fff!important;
+}
+/* Slightly stronger surface separation keeps every word and number crisp */
+.stat-card,.panel,.quick,.table-wrap,.section,.summary-card,.date-box{
+  background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(238,248,255,.84))!important;
+}
+th{background:rgba(220,241,254,.96)!important;color:#214f70!important}
+td,td *{color:#244861!important}
+small,.muted,.stat-note,.quick small,.activity small,.page-heading p,
+.panel-heading p,.welcome p,.section-heading small,.footer-credit{
+  color:#526f86!important;opacity:1!important;
+}
+@media(prefers-reduced-transparency:reduce){
+  .sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,
+  .profile,.panel,.stat-card,.quick,.section,.summary-card,.date-box,
+  .notice,.message-box,.table-wrap,.contact,.topbar,header,.bottom-nav{
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+    background:rgba(255,255,255,.97)!important;
+  }
+}
