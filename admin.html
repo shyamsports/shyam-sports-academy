@@ -130,7 +130,15 @@ body.auth-locked .layout{display:none}
  .form-grid{grid-template-columns:1fr}
  .profile .profile-info{display:none}
 }
+
+.excel-batch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:16px}
+.excel-batch-card{border:1px solid #e5ebf2;border-radius:12px;padding:16px;background:#fbfcfe;display:flex;flex-direction:column;gap:9px}
+.excel-batch-card h4{font-size:14px;color:#173b61;overflow-wrap:anywhere}
+.excel-batch-card p{font-size:11px;color:#8290a1;line-height:1.5}
+.excel-batch-card .btn{margin-top:4px;width:100%}
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 
 <body class="auth-locked">
@@ -482,9 +490,26 @@ body.auth-locked .layout{display:none}
 </section>
 
 <section class="page" id="excel">
-  <div class="page-heading"><div><h1>Excel Management</h1><p>Organize batch-wise attendance and academy data exports.</p></div></div>
-  <div class="info-box">Firebase remains the primary source of truth. Excel exports will be generated from database records.</div>
-  <div class="panel"><div class="panel-heading"><h3>Batch-wise Excel Files</h3></div><div class="empty-note">Excel exports have not been connected yet.</div></div>
+  <div class="page-heading"><div><h1>Excel Management</h1><p>Download batch-wise student lists and attendance records.</p></div><button class="btn light" id="refreshExcelData" type="button">Refresh Data</button></div>
+  <div class="info-box">Exports are generated directly from Firebase. Your Firebase records and Google Sheets backups are not changed.</div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Batch-wise Excel Files</h3><p>Each workbook contains batch details, its students and attendance history.</p></div></div>
+    <div id="excelBatchStatus" class="empty-note">Loading batch records from Firebase...</div>
+    <div id="excelBatchGrid" class="excel-batch-grid"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Academy Data Exports</h3><p>Download complete student records or attendance for a selected period.</p></div></div>
+    <div class="form-grid">
+      <div class="field"><label for="excelAttendanceStart">Attendance Start Date</label><input type="date" id="excelAttendanceStart"></div>
+      <div class="field"><label for="excelAttendanceEnd">Attendance End Date</label><input type="date" id="excelAttendanceEnd"></div>
+      <div class="field"><label for="excelAttendanceBatch">Batch Filter</label><select id="excelAttendanceBatch"><option value="">All Batches</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="downloadAllStudentsExcel" type="button">Download All Students</button>
+      <button class="btn blue" id="downloadAttendanceExcel" type="button">Download Attendance Excel</button>
+    </div>
+    <p id="excelExportStatus" class="empty-note" aria-live="polite">Choose an export to download an Excel workbook.</p>
+  </div>
 </section>
 
 <section class="page" id="reports">
@@ -3080,6 +3105,217 @@ onAuthStateChanged(locationAuth,async user=>{
   }
 });
 
+</script>
+
+
+<!-- ACADEMY EXCEL EXPORT MODULE -->
+
+<script type="module">
+import {getApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+const excelAuth=getAuth(getApp());
+const excelDB=getFirestore(getApp());
+const EXCEL_ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
+let excelBatches=[];
+let excelStudents=[];
+let excelAttendance=[];
+
+const excelEl=id=>document.getElementById(id);
+const excelText=value=>value==null?"":String(value);
+const excelSafeName=value=>excelText(value).trim().replace(/[^a-z0-9_-]+/gi,"_").replace(/^_+|_+$/g,"")||"Academy";
+const excelDateToday=()=>{
+ const d=new Date();
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
+const excelFirstDay=()=>{
+ const d=new Date();
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";
+};
+function excelStatus(message){
+ const box=excelEl("excelExportStatus");
+ if(box)box.textContent=message;
+}
+function excelMakeSheet(workbook,rows,name,headers){
+ const sheet=XLSX.utils.json_to_sheet(rows,{header:headers});
+ if(!rows.length)XLSX.utils.sheet_add_aoa(sheet,[headers],{origin:"A1"});
+ XLSX.utils.book_append_sheet(workbook,sheet,name);
+}
+function excelDownload(workbook,fileName){
+ if(!window.XLSX)throw new Error("Excel library could not load. Refresh the page and try again.");
+ XLSX.writeFile(workbook,fileName,{compression:true});
+}
+function excelAttendanceRows(records){
+ const summary=[];
+ const details=[];
+ records.forEach(record=>{
+  const people=Array.isArray(record.students)?record.students:[];
+  summary.push({
+   Attendance_ID:record.id||record.attendanceId||"",
+   Date:record.date||"",
+   Batch:record.batchName||"",
+   Batch_ID:record.batchId||"",
+   Sport:record.sport||"",
+   Coach:record.coachName||"",
+   Total_Students:Number(record.totalStudents)||people.length||0,
+   Present:Number(record.presentCount)||0,
+   Absent:Number(record.absentCount)||0,
+   Submitted_At:record.submittedAt||record.createdAt||""
+  });
+  people.forEach(person=>details.push({
+   Date:record.date||"",
+   Batch:record.batchName||"",
+   Sport:record.sport||"",
+   Coach:record.coachName||"",
+   Student_Name:person.studentName||person.name||"",
+   Student_ID:person.studentId||person.id||"",
+   Attendance_Status:person.status||""
+  }));
+ });
+ return {summary,details};
+}
+async function loadExcelData(){
+ if(!excelAuth.currentUser||excelAuth.currentUser.uid!==EXCEL_ADMIN_UID)return;
+ const status=excelEl("excelBatchStatus");
+ const grid=excelEl("excelBatchGrid");
+ status.style.display="block";
+ status.textContent="Loading batches, students and attendance from Firebase...";
+ grid.replaceChildren();
+ try{
+  const [batchSnap,studentSnap,attendanceSnap]=await Promise.all([
+   getDocs(collection(excelDB,"batches")),
+   getDocs(collection(excelDB,"students")),
+   getDocs(collection(excelDB,"studentAttendance"))
+  ]);
+  excelBatches=batchSnap.docs.map(d=>({id:d.id,...d.data()}))
+   .sort((a,b)=>excelText(a.batchName).localeCompare(excelText(b.batchName)));
+  excelStudents=studentSnap.docs.map(d=>({id:d.id,...d.data()}));
+  excelAttendance=attendanceSnap.docs.map(d=>({id:d.id,...d.data()}))
+   .sort((a,b)=>excelText(a.date).localeCompare(excelText(b.date)));
+  const filter=excelEl("excelAttendanceBatch");
+  const previous=filter.value;
+  filter.replaceChildren(new Option("All Batches",""));
+  excelBatches.forEach(batch=>filter.add(new Option(batch.batchName||batch.id,batch.id)));
+  if(excelBatches.some(batch=>batch.id===previous))filter.value=previous;
+
+  excelBatches.forEach(batch=>{
+   const students=excelStudents.filter(s=>s.batchId===batch.id||s.batchId===batch.batchId);
+   const attendance=excelAttendance.filter(a=>a.batchId===batch.id||a.batchId===batch.batchId);
+   const card=document.createElement("div");
+   card.className="excel-batch-card";
+   const title=document.createElement("h4");
+   title.textContent=batch.batchName||"Unnamed Batch";
+   const meta=document.createElement("p");
+   meta.textContent=(batch.sport||"Sport")+" · "+(batch.locationName||"Location not set")+" · "+students.length+" student(s) · "+attendance.length+" attendance record(s)";
+   const button=document.createElement("button");
+   button.type="button";
+   button.className="btn";
+   button.textContent="Download Batch Excel";
+   button.addEventListener("click",()=>downloadSingleBatchExcel(batch));
+   card.append(title,meta,button);
+   grid.appendChild(card);
+  });
+  status.textContent=excelBatches.length
+   ? "Loaded "+excelBatches.length+" batch(es), "+excelStudents.length+" student(s) and "+excelAttendance.length+" attendance record(s) from Firebase."
+   : "No batch records found in Firebase yet.";
+  if(!excelBatches.length)grid.replaceChildren();
+ }catch(error){
+  console.error("Excel data loading error:",error);
+  status.textContent="Could not load Excel data: "+error.message;
+ }
+}
+function downloadSingleBatchExcel(batch){
+ try{
+  if(!window.XLSX)throw new Error("Excel library could not load. Refresh the page and try again.");
+  const students=excelStudents.filter(s=>s.batchId===batch.id||s.batchId===batch.batchId);
+  const attendance=excelAttendance.filter(a=>a.batchId===batch.id||a.batchId===batch.batchId);
+  const {summary,details}=excelAttendanceRows(attendance);
+  const workbook=XLSX.utils.book_new();
+  excelMakeSheet(workbook,[{
+   Batch_ID:batch.batchId||batch.id,
+   Batch_Name:batch.batchName||"",
+   Sport:batch.sport||"",
+   Location:batch.locationName||"",
+   Coach:batch.coachName||"",
+   Status:batch.status||"",
+   Student_Count:students.length
+  }],"Batch Details",["Batch_ID","Batch_Name","Sport","Location","Coach","Status","Student_Count"]);
+  excelMakeSheet(workbook,students.map(s=>({
+   Student_ID:s.studentId||s.id,
+   Student_Name:s.name||"",
+   Age:s.age??"",
+   Parent_Phone:s.parentPhone||"",
+   Sport:s.sport||batch.sport||"",
+   Batch:s.batchName||batch.batchName||"",
+   Location:s.locationName||batch.locationName||"",
+   Status:s.status||""
+  })),"Students",["Student_ID","Student_Name","Age","Parent_Phone","Sport","Batch","Location","Status"]);
+  excelMakeSheet(workbook,summary,"Attendance Summary",["Attendance_ID","Date","Batch","Batch_ID","Sport","Coach","Total_Students","Present","Absent","Submitted_At"]);
+  excelMakeSheet(workbook,details,"Attendance Details",["Date","Batch","Sport","Coach","Student_Name","Student_ID","Attendance_Status"]);
+  excelDownload(workbook,excelSafeName(batch.batchName||batch.id)+"_Academy_Records.xlsx");
+  excelStatus("Downloaded "+(batch.batchName||"batch")+" Excel workbook successfully.");
+ }catch(error){
+  excelStatus("Excel download failed: "+error.message);
+ }
+}
+function downloadAllStudentsExcel(){
+ try{
+  if(!window.XLSX)throw new Error("Excel library could not load. Refresh the page and try again.");
+  const workbook=XLSX.utils.book_new();
+  const rows=excelStudents.map(s=>({
+   Student_ID:s.studentId||s.id,
+   Student_Name:s.name||"",
+   Age:s.age??"",
+   Parent_Phone:s.parentPhone||"",
+   Sport:s.sport||"",
+   Batch:s.batchName||"",
+   Batch_ID:s.batchId||"",
+   Location:s.locationName||"",
+   Status:s.status||"",
+   Created_At:s.createdAt||""
+  }));
+  excelMakeSheet(workbook,rows,"All Students",["Student_ID","Student_Name","Age","Parent_Phone","Sport","Batch","Batch_ID","Location","Status","Created_At"]);
+  excelDownload(workbook,"Shyam_Sports_Academy_All_Students.xlsx");
+  excelStatus("Downloaded "+rows.length+" student record(s).");
+ }catch(error){
+  excelStatus("Student Excel download failed: "+error.message);
+ }
+}
+function downloadAttendanceExcel(){
+ try{
+  if(!window.XLSX)throw new Error("Excel library could not load. Refresh the page and try again.");
+  const start=excelEl("excelAttendanceStart").value;
+  const end=excelEl("excelAttendanceEnd").value;
+  const batchId=excelEl("excelAttendanceBatch").value;
+  if(start&&end&&start>end)throw new Error("Start Date cannot be later than End Date.");
+  const filtered=excelAttendance.filter(record=>{
+   const date=excelText(record.date);
+   return (!start||date>=start)&&(!end||date<=end)&&(!batchId||record.batchId===batchId);
+  });
+  const {summary,details}=excelAttendanceRows(filtered);
+  const workbook=XLSX.utils.book_new();
+  excelMakeSheet(workbook,summary,"Attendance Summary",["Attendance_ID","Date","Batch","Batch_ID","Sport","Coach","Total_Students","Present","Absent","Submitted_At"]);
+  excelMakeSheet(workbook,details,"Student Details",["Date","Batch","Sport","Coach","Student_Name","Student_ID","Attendance_Status"]);
+  const suffix=(start||"All_Dates")+"_"+(end||"All_Dates");
+  excelDownload(workbook,"Shyam_Sports_Academy_Attendance_"+suffix+".xlsx");
+  excelStatus("Downloaded "+filtered.length+" attendance record(s) and "+details.length+" student attendance row(s).");
+ }catch(error){
+  excelStatus("Attendance Excel download failed: "+error.message);
+ }
+}
+excelEl("refreshExcelData").addEventListener("click",loadExcelData);
+excelEl("downloadAllStudentsExcel").addEventListener("click",downloadAllStudentsExcel);
+excelEl("downloadAttendanceExcel").addEventListener("click",downloadAttendanceExcel);
+excelEl("excelAttendanceStart").value=excelFirstDay();
+excelEl("excelAttendanceEnd").value=excelDateToday();
+onAuthStateChanged(excelAuth,user=>{
+ if(user&&user.uid===EXCEL_ADMIN_UID)loadExcelData();
+ else{
+  excelEl("excelBatchStatus").textContent="Sign in with the authorized Admin account to load export records.";
+  excelEl("excelBatchGrid").replaceChildren();
+ }
+});
 </script>
 
 </body>
