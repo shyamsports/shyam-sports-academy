@@ -600,3 +600,48 @@ body:not(:has(#adminLoginScreen)) .sidebar .brand small,
 body:not(:has(#adminLoginScreen)) .sidebar .sidebar-bottom{
   color:rgba(244,250,255,.78)!important;
 }
+
+
+/* Refined navigation icon system — compact, consistent white icons */
+.sidebar{
+  background:linear-gradient(155deg,#176ca5 0%,#2185bb 58%,#35a1d0 100%)!important;
+}
+.sidebar .nav-icon{
+  width:22px!important;height:22px!important;flex:0 0 22px;
+  display:inline-grid!important;place-items:center;
+  color:#fff!important;font-size:15px!important;line-height:1;
+  opacity:1!important;text-shadow:0 1px 3px rgba(0,40,75,.22);
+  filter:grayscale(1) brightness(0) invert(1);
+}
+.sidebar .nav-link{
+  gap:11px!important;padding:10px 12px!important;
+}
+.sidebar .nav-link.active .nav-icon,
+.sidebar .nav-link:hover .nav-icon{filter:grayscale(1) brightness(0) invert(1);opacity:1}
+.quick span{
+  width:38px;height:38px;display:inline-grid!important;place-items:center;
+  border-radius:12px;background:linear-gradient(145deg,#48b5e8,#1679b9)!important;
+  color:#fff!important;font-size:17px!important;font-weight:700;
+  box-shadow:0 5px 13px rgba(23,121,185,.2),inset 0 1px 0 rgba(255,255,255,.42);
+  filter:grayscale(1) brightness(0) invert(1);
+}
+.quick span{filter:none!important}
+.bottom-nav .nav-item span{
+  width:30px;height:30px;margin:0 auto 4px!important;
+  display:grid!important;place-items:center;
+  border-radius:10px;
+  background:linear-gradient(145deg,#42b0e5,#1679b9)!important;
+  color:#fff!important;font-size:15px!important;line-height:1;
+  box-shadow:0 4px 10px rgba(23,121,185,.18),inset 0 1px 0 rgba(255,255,255,.4);
+}
+.bottom-nav .nav-item{color:#57758d!important}
+.bottom-nav .nav-item.active{color:#126ba7!important}
+.bottom-nav .nav-item.active span{
+  background:linear-gradient(145deg,#248fca,#1267a6)!important;
+  box-shadow:0 0 0 3px rgba(51,155,211,.12),0 5px 13px rgba(23,121,185,.2);
+}
+/* A lighter, brighter blue accent without changing the light content surfaces */
+.btn-primary,.btn-primary:visited,.nav-button,.portal-link,.contact.primary{
+  background:linear-gradient(145deg,#62c8f4 0%,#258bd0 55%,#176eb5 100%)!important;
+  box-shadow:0 4px 0 #125b99,0 0 16px rgba(45,155,220,.22),0 10px 22px rgba(10,91,157,.16),inset 0 1px 0 rgba(255,255,255,.62)!important;
+}
