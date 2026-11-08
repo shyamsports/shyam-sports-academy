@@ -22,7 +22,7 @@
   const sportIcons = {
     "skating": ["person-standing", "blue"],
     "badminton": ["trophy", "green"],
-    "chess": ["chess", "purple"],
+    "chess": ["brain", "purple"],
     "rubik's cube": ["blocks", "orange"],
     "robotics": ["bot", "blue"]
   };
