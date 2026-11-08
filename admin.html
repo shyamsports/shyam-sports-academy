@@ -1922,8 +1922,44 @@ async function loadSchedules(){
  wrap.style.display="none";body.replaceChildren();
 
  try{
-  const snap=await getDocs(collection(db,"schedules"));
+  const [snap,batchSnap]=await Promise.all([
+   getDocs(collection(db,"schedules")),
+   getDocs(collection(db,"batches"))
+  ]);
+  const batchesById=new Map(batchSnap.docs.map(item=>[item.id,{id:item.id,...item.data()}]));
   const schedules=snap.docs.map(item=>({id:item.id,...item.data()}));
+
+  // Repair active schedule assignments from their current source batch.
+  // This also fixes older schedules after a coach was reassigned.
+  let scheduleRepairFailed=false;
+  const schedulesToRepair=schedules.filter(schedule=>{
+   const batch=batchesById.get(schedule.batchId);
+   const status=String(schedule.status||"scheduled").toLowerCase();
+   return batch&&batch.coachId&&
+    !["cancelled","canceled","inactive","deleted"].includes(status)&&
+    (schedule.coachId!==batch.coachId||
+     schedule.coachName!==(batch.coachName||"")||
+     schedule.batchName!==(batch.batchName||"")||
+     schedule.sport!==(batch.sport||"")||
+     schedule.locationId!==(batch.locationId||"")||
+     schedule.locationName!==(batch.locationName||""));
+  });
+  await Promise.all(schedulesToRepair.map(async schedule=>{
+   const batch=batchesById.get(schedule.batchId);
+   const updatedFields={
+    coachId:batch.coachId,coachName:batch.coachName||"",
+    batchName:batch.batchName||"",sport:batch.sport||"",
+    locationId:batch.locationId||"",locationName:batch.locationName||"",
+    updatedAt:serverTimestamp()
+   };
+   Object.assign(schedule,updatedFields);
+   try{
+    await updateDoc(doc(db,"schedules",schedule.id),updatedFields);
+   }catch(repairError){
+    scheduleRepairFailed=true;
+    console.error("Could not repair schedule assignment:",schedule.id,repairError);
+   }
+  }));
   document.getElementById("scheduleTotalCount").textContent=schedules.length;
   document.getElementById("scheduleRecurringCount").textContent=schedules.filter(s=>s.scheduleType==="recurring").length;
   document.getElementById("scheduleSpecificCount").textContent=schedules.filter(s=>s.scheduleType==="date-specific").length;
@@ -1961,8 +1997,14 @@ async function loadSchedules(){
    row.appendChild(actionCell);
    body.appendChild(row);
   });
-  message.style.display="none";wrap.style.display="block";
- }catch(error){message.textContent="Could not load schedules: "+error.message}
+  wrap.style.display="block";
+  if(scheduleRepairFailed){
+   message.style.display="block";
+   message.textContent="Schedules are displayed, but some coach assignments could not be synchronized. Please check Firebase permissions.";
+  }else{
+   message.style.display="none";
+  }
+ }catch(error){message.style.display="block";message.textContent="Could not load schedules: "+error.message}
 }
 
 async function loadTodayScheduleOverview(){
