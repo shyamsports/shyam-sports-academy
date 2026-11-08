@@ -994,7 +994,8 @@ async function loadAttendanceForCorrection() {
 
     const pendingQuery = query(
       collection(db, "correctionRequests"),
-      where("attendanceId", "==", attendanceId)
+      where("attendanceId", "==", attendanceId),
+      where("coachUid", "==", auth.currentUser.uid)
     );
     const pendingSnap = await getDocs(pendingQuery);
     const pendingRequest = pendingSnap.docs.find(item => item.data().status === "pending");
@@ -1080,7 +1081,8 @@ async function submitAttendanceCorrectionRequest() {
   try {
     const duplicateQuery = query(
       collection(db, "correctionRequests"),
-      where("attendanceId", "==", loadedCorrectionAttendance.id)
+      where("attendanceId", "==", loadedCorrectionAttendance.id),
+      where("coachUid", "==", user.uid)
     );
     const duplicateSnap = await getDocs(duplicateQuery);
     if (duplicateSnap.docs.some(item => item.data().status === "pending")) {
