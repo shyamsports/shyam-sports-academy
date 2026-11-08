@@ -738,7 +738,14 @@ function correctionFormatDate(value) {
 function correctionStudentSummary(items) {
  return (Array.isArray(items)?items:[]).map(item=>
   safeText(item.studentName)+" — "+(item.status==="present"?"Present":"Absent")
- ).join("\\n");
+ ).join("\n");
+}
+function correctionStudentFingerprint(items) {
+ return JSON.stringify((Array.isArray(items)?items:[]).map(item=>({
+  studentId:safeText(item.studentId),
+  studentName:safeText(item.studentName),
+  status:safeText(item.status)
+ })));
 }
 async function loadCorrectionRequests(){
  const message=document.getElementById("correctionPendingMessage");
@@ -825,7 +832,7 @@ async function reviewCorrectionRequest(requestId,decision,rejectionReason){
     if(!attendanceSnap.exists())throw new Error("The original attendance record no longer exists.");
     currentAttendance=attendanceSnap.data();
     if(currentAttendance.coachUid!==request.coachUid)throw new Error("Coach ownership check failed. No changes were made.");
-    if(JSON.stringify(currentAttendance.students||[])!==JSON.stringify(request.originalStudents||[])){
+    if(correctionStudentFingerprint(currentAttendance.students)!==correctionStudentFingerprint(request.originalStudents)){
      throw new Error("The attendance record has changed since this request was submitted. Refresh and ask the coach to submit a new request.");
     }
     const nextStudents=request.proposedStudents||[];
