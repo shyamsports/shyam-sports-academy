@@ -76,6 +76,52 @@
       const holder = button.querySelector("span");
       if (config && holder) paint(holder, config[0], config[1]);
     });
+    const headingRules = [
+      ["dashboard overview", "layout-dashboard", "blue"],
+      ["coach management", "user-round-cog", "green"],
+      ["student management", "graduation-cap", "blue"],
+      ["sports management", "trophy", "orange"],
+      ["location management", "map-pin", "orange"],
+      ["batch", "layers", "purple"],
+      ["schedule", "calendar-days", "purple"],
+      ["attendance", "clipboard-check", "green"],
+      ["gps", "map-pinned", "orange"],
+      ["reports", "chart-no-axes-combined", "blue"],
+      ["correction", "clipboard-pen-line", "red"],
+      ["settings", "settings", "slate"],
+      ["parent group messages", "messages-square", "orange"],
+      ["daily work summary", "chart-no-axes-combined", "purple"],
+      ["student attendance", "clipboard-check", "green"],
+      ["class progress", "chart-no-axes-combined", "blue"],
+      ["my assigned batches", "layers", "purple"]
+    ];
+    document.querySelectorAll(".page-heading h1,.section-heading h3").forEach((heading) => {
+      if (heading.querySelector("[data-lucide]")) return;
+      const label = (heading.textContent || "").trim().toLowerCase();
+      const rule = headingRules.find((item) => label.includes(item[0]));
+      if (!rule) return;
+      const mark = document.createElement("span");
+      mark.className = "section-heading-icon";
+      paint(mark, rule[1], rule[2]);
+      heading.prepend(mark);
+    });
+    document.querySelectorAll(".login-card h1").forEach((heading) => {
+      if (heading.querySelector("[data-lucide]")) return;
+      const label = heading.textContent.toLowerCase();
+      const mark = document.createElement("span");
+      mark.className = "form-heading-icon";
+      paint(mark, label.includes("admin") ? "shield-check" : label.includes("registration") ? "user-round-plus" : "user-round", label.includes("registration") ? "green" : "blue");
+      heading.prepend(mark);
+    });
+    document.querySelectorAll(".contact-actions a,.contact-grid a").forEach((link) => {
+      if (link.querySelector("[data-lucide]")) return;
+      const href = (link.getAttribute("href") || "").toLowerCase();
+      const name = href.startsWith("tel:") ? "phone" : href.startsWith("sms:") ? "message-square" : "message-circle";
+      const mark = document.createElement("span");
+      mark.className = "contact-icon";
+      paint(mark, name, href.startsWith("tel:") ? "green" : "blue");
+      link.prepend(mark);
+    });
     document.querySelectorAll(".portal-card").forEach((card) => {
       const heading = card.querySelector("h3");
       if (!heading || heading.querySelector("[data-lucide]")) return;
