@@ -518,3 +518,85 @@ button.danger,.btn-danger,.btn-reject,.danger button{
 @media(prefers-reduced-motion:reduce){
   .status,.badge,.status-badge,button,.btn{transition:none!important}
 }
+
+
+/* Admin dashboard contrast correction — light glass content, readable navy text */
+body:not(:has(#adminLoginScreen)) .layout,
+body:not(:has(#adminLoginScreen)) .main,
+body:not(:has(#adminLoginScreen)) .content,
+body:not(:has(#adminLoginScreen)) .page{
+  background:transparent!important;
+}
+body:not(:has(#adminLoginScreen)) .topbar{
+  background:rgba(247,252,255,.96)!important;
+  color:#173b5c!important;
+  border:1px solid rgba(185,216,238,.75)!important;
+  box-shadow:0 8px 24px rgba(38,94,139,.09),inset 0 1px 0 #fff!important;
+}
+body:not(:has(#adminLoginScreen)) .topbar h2,
+body:not(:has(#adminLoginScreen)) .topbar strong,
+body:not(:has(#adminLoginScreen)) .topbar .profile strong{
+  color:#123a5d!important;
+  text-shadow:none!important;
+}
+body:not(:has(#adminLoginScreen)) .topbar small,
+body:not(:has(#adminLoginScreen)) .page-heading p,
+body:not(:has(#adminLoginScreen)) .stat-label,
+body:not(:has(#adminLoginScreen)) .stat-note,
+body:not(:has(#adminLoginScreen)) .panel-heading p,
+body:not(:has(#adminLoginScreen)) .quick small{
+  color:#58758e!important;
+  text-shadow:none!important;
+}
+body:not(:has(#adminLoginScreen)) .page-heading h1,
+body:not(:has(#adminLoginScreen)) .panel-heading h3,
+body:not(:has(#adminLoginScreen)) .stat-value,
+body:not(:has(#adminLoginScreen)) .quick strong,
+body:not(:has(#adminLoginScreen)) .section-title{
+  color:#123e63!important;
+  text-shadow:none!important;
+}
+body:not(:has(#adminLoginScreen)) .stat-card,
+body:not(:has(#adminLoginScreen)) .panel,
+body:not(:has(#adminLoginScreen)) .quick,
+body:not(:has(#adminLoginScreen)) .table-wrap{
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(239,248,255,.96))!important;
+  border:1px solid rgba(171,207,232,.72)!important;
+  box-shadow:0 12px 30px rgba(39,97,143,.09),inset 0 1px 0 #fff!important;
+}
+body:not(:has(#adminLoginScreen)) .quick{
+  color:#234d6b!important;
+}
+body:not(:has(#adminLoginScreen)) .quick span{
+  color:#176eaa!important;
+  text-shadow:none!important;
+}
+body:not(:has(#adminLoginScreen)) .stat-icon{
+  color:#176eaa!important;
+  background:linear-gradient(145deg,#e8f5ff,#d5ebfb)!important;
+  border:1px solid rgba(121,181,220,.38)!important;
+  box-shadow:0 5px 14px rgba(35,112,168,.12),inset 0 1px 0 #fff!important;
+}
+body:not(:has(#adminLoginScreen)) .info-box{
+  background:linear-gradient(145deg,#f0f8ff,#e4f2fc)!important;
+  color:#426985!important;
+  border:1px solid #cfe5f5!important;
+}
+body:not(:has(#adminLoginScreen)) .status.active{
+  color:#087342!important;
+  background:rgba(20,184,105,.13)!important;
+  border:1px solid rgba(15,166,91,.28)!important;
+  box-shadow:0 0 14px rgba(15,166,91,.12)!important;
+}
+body:not(:has(#adminLoginScreen)) td,
+body:not(:has(#adminLoginScreen)) td strong{
+  color:#294b65!important;
+}
+body:not(:has(#adminLoginScreen)) .sidebar{
+  background:linear-gradient(155deg,#0b4777 0%,#0b6098 58%,#147db2 100%)!important;
+}
+body:not(:has(#adminLoginScreen)) .sidebar .nav-label,
+body:not(:has(#adminLoginScreen)) .sidebar .brand small,
+body:not(:has(#adminLoginScreen)) .sidebar .sidebar-bottom{
+  color:rgba(244,250,255,.78)!important;
+}
