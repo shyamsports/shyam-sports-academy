@@ -514,16 +514,25 @@ body.auth-locked .layout{display:none}
 
 <section class="page" id="reports">
   <div class="page-heading"><div><h1>Reports & Analytics</h1><p>Review daily, monthly and yearly academy performance.</p></div></div>
+  <div class="info-box">Reports are generated from existing Firebase records. This section only reads data and does not change academy records.</div>
   <div class="panel">
     <div class="form-grid">
-      <div class="field"><label>Report Type</label><select><option>Coach Performance</option><option>Student Attendance</option><option>Batch Performance</option><option>Location Summary</option><option>Class History</option><option>GPS History</option></select></div>
-      <div class="field"><label>Report Period</label><select><option>Daily</option><option>Monthly</option><option>Yearly</option><option>Custom Date Range</option></select></div>
-      <div class="field"><label>Start Date</label><input type="date"></div>
-      <div class="field"><label>End Date</label><input type="date"></div>
+      <div class="field"><label for="reportType">Report Type</label><select id="reportType"><option value="coach">Coach Performance</option><option value="student">Student Attendance</option><option value="batch">Batch Performance</option><option value="location">Location Summary</option><option value="class">Class History</option><option value="gps">GPS History</option></select></div>
+      <div class="field"><label for="reportPeriod">Report Period</label><select id="reportPeriod"><option value="daily">Daily</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="custom">Custom Date Range</option></select></div>
+      <div class="field"><label for="reportStartDate">Start Date</label><input type="date" id="reportStartDate"></div>
+      <div class="field"><label for="reportEndDate">End Date</label><input type="date" id="reportEndDate"></div>
     </div>
-    <div class="form-actions"><button class="btn" type="button" onclick="demo('Generate Report')">Generate Report</button></div>
+    <div class="form-actions"><button class="btn" type="button" id="generateReportButton">Generate Report</button><button class="btn light" type="button" id="downloadReportCsvButton" disabled>Download CSV</button></div>
+    <p id="reportStatus" class="empty-note" aria-live="polite">Select a report type and period, then choose Generate Report.</p>
   </div>
-  <div class="panel"><div class="panel-heading"><h3>Report Results</h3></div><div class="empty-note">Reports will appear here after reporting functionality is connected.</div></div>
+  <div class="stats" id="reportSummaryCards" style="display:none"></div>
+  <div class="panel">
+    <div class="panel-heading"><div><h3>Report Results</h3><p id="reportResultsSubtitle">Generated report details will appear here.</p></div></div>
+    <div id="reportResultsMessage" class="empty-note">No report generated yet.</div>
+    <div class="table-wrap" id="reportResultsTableWrap" style="display:none;max-height:620px;overflow:auto">
+      <table><thead id="reportResultsHead"></thead><tbody id="reportResultsBody"></tbody></table>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="corrections">
@@ -3315,6 +3324,180 @@ onAuthStateChanged(excelAuth,user=>{
   excelEl("excelBatchStatus").textContent="Sign in with the authorized Admin account to load export records.";
   excelEl("excelBatchGrid").replaceChildren();
  }
+});
+</script>
+
+
+<script type="module">
+import {initializeApp,getApps} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {getAuth,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+const REPORT_ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
+const REPORT_FIREBASE_CONFIG={
+ apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",
+ authDomain:"shyam-sports-academy.firebaseapp.com",
+ projectId:"shyam-sports-academy",
+ storageBucket:"shyam-sports-academy.firebasestorage.app",
+ messagingSenderId:"204237173149",
+ appId:"1:204237173149:web:84f0e36a4981e6adbf3f74",
+ measurementId:"G-548JZ1L682"
+};
+const reportApp=getApps().find(app=>app.name==="reportsAnalytics")||initializeApp(REPORT_FIREBASE_CONFIG,"reportsAnalytics");
+const reportAuth=getAuth(reportApp);
+const reportDb=getFirestore(reportApp);
+const reportEl=id=>document.getElementById(id);
+let reportRows=[];
+let reportHeaders=[];
+
+function reportLocalDate(date){
+ const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");
+ return y+"-"+m+"-"+d;
+}
+function reportDateValue(value){
+ if(!value)return "";
+ if(typeof value==="string")return value.slice(0,10);
+ if(value.toDate&&typeof value.toDate==="function")return reportLocalDate(value.toDate());
+ if(value instanceof Date)return reportLocalDate(value);
+ if(typeof value==="number")return reportLocalDate(new Date(value));
+ return "";
+}
+function reportDateTime(value){
+ if(!value)return "";
+ const date=value.toDate&&typeof value.toDate==="function"?value.toDate():value instanceof Date?value:null;
+ return date?date.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}):String(value);
+}
+function reportText(value){return value==null?"":String(value)}
+function reportSetPeriodDates(){
+ const period=reportEl("reportPeriod").value,now=new Date();
+ let start=new Date(now.getFullYear(),now.getMonth(),now.getDate()),end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ if(period==="monthly"){start=new Date(now.getFullYear(),now.getMonth(),1);end=new Date(now.getFullYear(),now.getMonth()+1,0);}
+ if(period==="yearly"){start=new Date(now.getFullYear(),0,1);end=new Date(now.getFullYear(),11,31);}
+ if(period==="custom")return;
+ reportEl("reportStartDate").value=reportLocalDate(start);
+ reportEl("reportEndDate").value=reportLocalDate(end);
+}
+function reportInRange(value,start,end){
+ const day=reportDateValue(value);
+ return Boolean(day)&&day>=start&&day<=end;
+}
+function reportMakeRow(headers,values){
+ const row=document.createElement("tr");
+ headers.forEach((header,index)=>{
+  const cell=document.createElement("td");
+  cell.textContent=reportText(values[index])||"—";
+  row.appendChild(cell);
+ });
+ return row;
+}
+function reportRender(title,headers,rows,summary){
+ reportHeaders=headers;reportRows=rows;
+ const cards=reportEl("reportSummaryCards");
+ cards.replaceChildren();
+ summary.forEach(item=>{
+  const card=document.createElement("div");card.className="stat-card";
+  const label=document.createElement("div");label.className="stat-label";label.textContent=item.label;
+  const value=document.createElement("div");value.className="stat-value";value.textContent=String(item.value);
+  card.append(label,value);cards.appendChild(card);
+ });
+ cards.style.display=summary.length?"grid":"none";
+ reportEl("reportResultsSubtitle").textContent=title+" · "+rows.length+" record(s)";
+ const head=reportEl("reportResultsHead");head.replaceChildren();
+ const hr=document.createElement("tr");
+ headers.forEach(label=>{const th=document.createElement("th");th.textContent=label;hr.appendChild(th);});
+ head.appendChild(hr);
+ const body=reportEl("reportResultsBody");body.replaceChildren();
+ rows.forEach(values=>body.appendChild(reportMakeRow(headers,values)));
+ reportEl("reportResultsTableWrap").style.display=rows.length?"block":"none";
+ reportEl("reportResultsMessage").style.display=rows.length?"none":"block";
+ reportEl("reportResultsMessage").textContent=rows.length?"":"No records were found for this report and date range. Check whether the selected period contains submitted records.";
+ reportEl("downloadReportCsvButton").disabled=!rows.length;
+}
+async function generateAcademyReport(){
+ const button=reportEl("generateReportButton"),status=reportEl("reportStatus");
+ if(!reportAuth.currentUser||reportAuth.currentUser.uid!==REPORT_ADMIN_UID){status.textContent="Admin authorization required.";return;}
+ const start=reportEl("reportStartDate").value,end=reportEl("reportEndDate").value;
+ if(!start||!end){status.textContent="Please select both Start Date and End Date.";return;}
+ if(start>end){status.textContent="Start Date cannot be later than End Date.";return;}
+ button.disabled=true;button.textContent="Generating...";status.textContent="Reading Firebase records...";
+ try{
+  const names=["batches","students","studentAttendance","coachActivity","locations","schedules","users"];
+  const snaps=await Promise.all(names.map(name=>getDocs(collection(reportDb,name))));
+  const data={};
+  names.forEach((name,index)=>data[name]=snaps[index].docs.map(d=>({id:d.id,...d.data()})));
+  const attendance=data.studentAttendance.filter(r=>reportInRange(r.date,start,end));
+  const gps=data.coachActivity.filter(r=>reportInRange(r.recordedAt,start,end));
+  const type=reportEl("reportType").value;
+  let headers=[],rows=[],summary=[];
+  if(type==="student"){
+   headers=["Date","Batch","Sport","Coach","Student Name","Student ID","Status"];
+   attendance.forEach(r=>(Array.isArray(r.students)?r.students:[]).forEach(st=>rows.push([r.date,r.batchName,r.sport,r.coachName,st.studentName,st.studentId,st.status])));
+   summary=[{label:"Attendance Records",value:attendance.length},{label:"Student Entries",value:rows.length},{label:"Present",value:rows.filter(r=>String(r[6]).toLowerCase()==="present").length},{label:"Absent",value:rows.filter(r=>String(r[6]).toLowerCase()==="absent").length}];
+  }else if(type==="gps"){
+   headers=["Date & Time","Coach","Event","Latitude","Longitude","Accuracy (m)","Location"];
+   gps.forEach(r=>rows.push([reportDateTime(r.recordedAt),r.coachName,r.eventType,r.latitude,r.longitude,r.accuracy,r.locationName||r.address]));
+   summary=[{label:"GPS Events",value:gps.length},{label:"Arrivals",value:gps.filter(r=>r.eventType==="arrival").length},{label:"Departures",value:gps.filter(r=>r.eventType==="departure").length}];
+  }else if(type==="coach"){
+   headers=["Coach","Arrival Events","Departure Events","Attendance Classes","Students Present","Students Absent","Total GPS Events"];
+   const map=new Map();
+   const entry=name=>{const key=reportText(name)||"Unknown Coach";if(!map.has(key))map.set(key,{arrival:0,departure:0,classes:0,present:0,absent:0,gps:0});return map.get(key);};
+   gps.forEach(r=>{const x=entry(r.coachName);x.gps++;if(r.eventType==="arrival")x.arrival++;if(r.eventType==="departure")x.departure++;});
+   attendance.forEach(r=>{const x=entry(r.coachName);x.classes++;x.present+=Number(r.presentCount)||0;x.absent+=Number(r.absentCount)||0;});
+   rows=[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([name,x])=>[name,x.arrival,x.departure,x.classes,x.present,x.absent,x.gps]);
+   summary=[{label:"Coaches in Report",value:rows.length},{label:"GPS Events",value:gps.length},{label:"Classes with Attendance",value:attendance.length},{label:"Students Present",value:attendance.reduce((n,r)=>n+(Number(r.presentCount)||0),0)}];
+  }else if(type==="batch"){
+   headers=["Batch","Sport","Location","Coach","Active Students","Attendance Classes","Present","Absent","Attendance Rate"];
+   rows=data.batches.map(b=>{
+    const students=data.students.filter(s=>(s.batchId===b.id||s.batchId===b.batchId)&&s.status==="active").length;
+    const records=attendance.filter(a=>a.batchId===b.id||a.batchId===b.batchId);
+    const present=records.reduce((n,r)=>n+(Number(r.presentCount)||0),0),absent=records.reduce((n,r)=>n+(Number(r.absentCount)||0),0),total=present+absent;
+    return [b.batchName,b.sport,b.locationName,b.coachName,students,records.length,present,absent,total?((present/total)*100).toFixed(1)+"%":"—"];
+   });
+   summary=[{label:"Batches",value:rows.length},{label:"Attendance Classes",value:attendance.length},{label:"Present",value:attendance.reduce((n,r)=>n+(Number(r.presentCount)||0),0)},{label:"Absent",value:attendance.reduce((n,r)=>n+(Number(r.absentCount)||0),0)}];
+  }else if(type==="location"){
+   headers=["Location","Address","Batches","Active Students","GPS Events","Arrivals","Departures"];
+   rows=data.locations.map(loc=>{
+    const batches=data.batches.filter(b=>b.locationId===loc.id||b.locationName===loc.name);
+    const batchIds=new Set(batches.flatMap(b=>[b.id,b.batchId]));
+    const students=data.students.filter(s=>batchIds.has(s.batchId)&&s.status==="active").length;
+    const events=gps.filter(g=>g.locationId===loc.id||g.locationName===loc.name||batches.some(b=>b.locationName&&b.locationName===g.locationName));
+    return [loc.name,loc.address,batches.length,students,events.length,events.filter(g=>g.eventType==="arrival").length,events.filter(g=>g.eventType==="departure").length];
+   });
+   summary=[{label:"Locations",value:rows.length},{label:"Batches",value:data.batches.length},{label:"GPS Events",value:gps.length}];
+  }else{
+   headers=["Date","Batch","Sport","Coach","Total Students","Present","Absent","Record Type"];
+   attendance.forEach(r=>rows.push([r.date,r.batchName,r.sport,r.coachName,r.totalStudents,r.presentCount,r.absentCount,"Attendance Submitted"]));
+   summary=[{label:"Class Records",value:attendance.length},{label:"Students Present",value:attendance.reduce((n,r)=>n+(Number(r.presentCount)||0),0)},{label:"Students Absent",value:attendance.reduce((n,r)=>n+(Number(r.absentCount)||0),0)}];
+  }
+  reportRender(reportEl("reportType").selectedOptions[0].text+" ("+start+" to "+end+")",headers,rows,summary);
+  status.textContent="Report generated successfully from Firebase. No Firebase records were changed.";
+ }catch(error){
+  console.error("Reports generation error:",error);
+  status.textContent="Could not generate report: "+error.message;
+  reportEl("reportResultsMessage").style.display="block";
+  reportEl("reportResultsMessage").textContent="Report failed. Check the message above and try again.";
+  reportEl("reportResultsTableWrap").style.display="none";
+  reportEl("downloadReportCsvButton").disabled=true;
+ }finally{button.disabled=false;button.textContent="Generate Report";}
+}
+function downloadReportCsv(){
+ if(!reportRows.length)return;
+ const escape=value=>'"'+reportText(value).replace(/"/g,'""')+'"';
+ const csv=[reportHeaders,...reportRows].map(row=>row.map(escape).join(",")).join("\r\n");
+ const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),link=document.createElement("a");
+ link.href=url;link.download="Shyam_Sports_Academy_Report_"+reportEl("reportType").value+".csv";
+ document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+}
+reportEl("reportPeriod").addEventListener("change",reportSetPeriodDates);
+reportEl("generateReportButton").addEventListener("click",generateAcademyReport);
+reportEl("downloadReportCsvButton").addEventListener("click",downloadReportCsv);
+reportSetPeriodDates();
+onAuthStateChanged(reportAuth,user=>{
+ if(!user||user.uid!==REPORT_ADMIN_UID){
+  reportEl("reportStatus").textContent="Sign in with the authorized Admin account to generate reports.";
+  reportEl("generateReportButton").disabled=true;
+ }else reportEl("generateReportButton").disabled=false;
 });
 </script>
 
