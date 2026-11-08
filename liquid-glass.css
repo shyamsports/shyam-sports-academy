@@ -807,3 +807,37 @@ small,.muted,.stat-note,.quick small,.activity small,.page-heading p,
     background:rgba(255,255,255,.97)!important;
   }
 }
+
+
+/* FINAL CALM SKY-BLUE BALANCE — lighter navigation, softer hero, clear white labels */
+:root{
+  --ssa-ink:#173d5c;
+  --ssa-shadow:0 14px 36px rgba(55,119,160,.10),0 0 18px rgba(255,255,255,.58),inset 0 1px 0 rgba(255,255,255,.98);
+}
+.hero{
+  background:linear-gradient(125deg,#78cdec 0%,#50add9 56%,#368fc4 100%)!important;
+  box-shadow:0 18px 44px rgba(49,132,180,.16),0 0 24px rgba(255,255,255,.56),inset 0 1px 0 rgba(255,255,255,.7)!important;
+}
+.sidebar{
+  background:linear-gradient(155deg,#419fce 0%,#348dc1 58%,#287bb1 100%)!important;
+  border-right:1px solid rgba(255,255,255,.62)!important;
+  box-shadow:7px 0 28px rgba(40,112,157,.13),0 0 18px rgba(255,255,255,.28)!important;
+}
+.sidebar .nav-link{
+  color:rgba(255,255,255,.98)!important;
+  background:transparent!important;
+}
+.sidebar .nav-link.active,.sidebar .nav-link:hover{
+  color:#fff!important;
+  background:linear-gradient(110deg,rgba(255,255,255,.27),rgba(255,255,255,.11))!important;
+  border-color:rgba(255,255,255,.4)!important;
+  box-shadow:0 0 16px rgba(255,255,255,.19),inset 0 1px 0 rgba(255,255,255,.42)!important;
+}
+.sidebar .nav-icon,.sidebar .nav-link *{color:#fff!important}
+.btn-primary,.btn-primary:visited,.nav-button,.portal-link,.contact.primary{
+  background:linear-gradient(145deg,#79d0ef 0%,#43a5d5 55%,#2d83bc 100%)!important;
+  box-shadow:0 4px 0 #246fa5,0 0 18px rgba(255,255,255,.62),0 10px 22px rgba(37,126,181,.17),inset 0 1px 0 rgba(255,255,255,.82)!important;
+}
+.btn-primary:hover,.nav-button:hover,.portal-link:hover,.contact.primary:hover{
+  box-shadow:0 4px 0 #246fa5,0 0 24px rgba(255,255,255,.82),0 13px 26px rgba(37,126,181,.2),inset 0 1px 0 #fff!important;
+}
