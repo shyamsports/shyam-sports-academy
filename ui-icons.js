@@ -9,7 +9,7 @@
     sports: ["trophy", "orange"],
     locations: ["map-pin", "orange"],
     batches: ["layers", "blue"],
-    schedule: ["calendar-days", "purple"],
+    schedule: ["calendar-days", "blue"],
     groups: ["messages-square", "green"],
     templates: ["message-square-text", "blue"],
     attendance: ["clipboard-check", "green"],
@@ -22,7 +22,7 @@
   const sportIcons = {
     "skating": ["person-standing", "blue"],
     "badminton": ["trophy", "green"],
-    "chess": ["brain", "purple"],
+    "chess": ["brain", "blue"],
     "rubik's cube": ["blocks", "orange"],
     "robotics": ["bot", "blue"]
   };
@@ -33,7 +33,7 @@
     "rejected accounts": ["user-round-x", "red"],
     "removed coaches": ["user-round-minus", "slate"],
     "total students": ["graduation-cap", "blue"],
-    "active batches": ["layers", "purple"],
+    "active batches": ["layers", "blue"],
     "today's gps events": ["map-pin", "orange"]
   };
   function iconMarkup(name) {
@@ -71,7 +71,7 @@
     });
     document.querySelectorAll(".nav-item[data-section]").forEach((button) => {
       const section = button.dataset.section;
-      const names = {home:["house","blue"],attendance:["clipboard-check","green"],messages:["messages-square","orange"],summary:["chart-no-axes-combined","purple"]};
+      const names = {home:["house","blue"],attendance:["clipboard-check","green"],messages:["messages-square","orange"],summary:["chart-no-axes-combined","blue"]};
       const config = names[section];
       const holder = button.querySelector("span");
       if (config && holder) paint(holder, config[0], config[1]);
@@ -82,18 +82,24 @@
       ["student management", "graduation-cap", "blue"],
       ["sports management", "trophy", "orange"],
       ["location management", "map-pin", "orange"],
-      ["batch", "layers", "purple"],
-      ["schedule", "calendar-days", "purple"],
+      ["batch", "layers", "blue"],
+      ["schedule", "calendar-days", "blue"],
       ["attendance", "clipboard-check", "green"],
       ["gps", "map-pinned", "orange"],
       ["reports", "chart-no-axes-combined", "blue"],
       ["correction", "clipboard-pen-line", "red"],
       ["settings", "settings", "slate"],
       ["parent group messages", "messages-square", "orange"],
-      ["daily work summary", "chart-no-axes-combined", "purple"],
+      ["daily work summary", "chart-no-axes-combined", "blue"],
+      ["whatsapp group", "messages-square", "green"],
+      ["message template", "message-square-text", "blue"],
+      ["excel management", "file-spreadsheet", "green"],
+      ["sports management", "trophy", "orange"],
+      ["gps monitoring", "map-pinned", "orange"],
+      ["dashboard overview", "layout-dashboard", "blue"],
       ["student attendance", "clipboard-check", "green"],
       ["class progress", "chart-no-axes-combined", "blue"],
-      ["my assigned batches", "layers", "purple"]
+      ["my assigned batches", "layers", "blue"]
     ];
     document.querySelectorAll(".page-heading h1,.section-heading h3").forEach((heading) => {
       if (heading.querySelector("[data-lucide]")) return;
@@ -103,6 +109,16 @@
       const mark = document.createElement("span");
       mark.className = "section-heading-icon";
       paint(mark, rule[1], rule[2]);
+      heading.prepend(mark);
+    });
+    document.querySelectorAll(".sport-name").forEach((heading) => {
+      if (heading.querySelector("[data-lucide]")) return;
+      const label = (heading.textContent || "").trim().toLowerCase();
+      const config = Object.entries(sportIcons).find(([key]) => label.includes(key));
+      if (!config) return;
+      const mark = document.createElement("span");
+      mark.className = "section-heading-icon";
+      paint(mark, config[1][0], config[1][1]);
       heading.prepend(mark);
     });
     document.querySelectorAll(".login-card h1").forEach((heading) => {
