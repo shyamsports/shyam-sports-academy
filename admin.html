@@ -856,6 +856,13 @@ async function reviewCorrectionRequest(requestId,decision,rejectionReason){
     rejectionReason:decision==="rejected"?rejectionReason:"",
     updatedAt:serverTimestamp()
    });
+   const approvedAttendanceSnapshot=decision==="approved"?{
+    ...currentAttendance,
+    students:request.proposedStudents||[],
+    totalStudents:(request.proposedStudents||[]).length,
+    presentCount:(request.proposedStudents||[]).filter(item=>item.status==="present").length,
+    absentCount:(request.proposedStudents||[]).filter(item=>item.status==="absent").length
+   }:null;
    transaction.set(auditRef,{
     requestId,
     requestType:"studentAttendance",
@@ -870,6 +877,8 @@ async function reviewCorrectionRequest(requestId,decision,rejectionReason){
     rejectionReason:decision==="rejected"?rejectionReason:"",
     originalStudents:request.originalStudents||[],
     proposedStudents:request.proposedStudents||[],
+    originalAttendanceSnapshot:request.originalAttendanceSnapshot||null,
+    approvedAttendanceSnapshot,
     reviewedByUid:currentAdmin.uid,
     reviewedByName:currentAdmin.email||"Administrator",
     reviewedAt:serverTimestamp()
