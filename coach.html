@@ -1101,6 +1101,19 @@ async function submitAttendanceCorrectionRequest() {
       date: loadedCorrectionAttendance.date,
       originalStudents,
       proposedStudents,
+      originalAttendanceSnapshot: {
+        attendanceId: loadedCorrectionAttendance.id,
+        coachUid: loadedCorrectionAttendance.data.coachUid,
+        coachName: loadedCorrectionAttendance.data.coachName || "",
+        batchId: loadedCorrectionAttendance.data.batchId || "",
+        batchName: loadedCorrectionAttendance.data.batchName || "",
+        sport: loadedCorrectionAttendance.data.sport || "",
+        date: loadedCorrectionAttendance.data.date || "",
+        students: originalStudents,
+        totalStudents: loadedCorrectionAttendance.data.totalStudents || originalStudents.length,
+        presentCount: loadedCorrectionAttendance.data.presentCount || 0,
+        absentCount: loadedCorrectionAttendance.data.absentCount || 0
+      },
       reason,
       status: "pending",
       createdAt: serverTimestamp()
