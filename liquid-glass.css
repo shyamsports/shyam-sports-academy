@@ -221,3 +221,21 @@ body:has(.profile) .profile{max-width:760px;margin-left:auto;margin-right:auto}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Touch ripple + moving glass highlight */
+button,.btn,.nav-button,.portal-link,.contact,.quick,.nav-link,.btn-primary,.btn-secondary,.btn-light,.btn-whatsapp{
+  position:relative;overflow:hidden;isolation:isolate;
+}
+button:after,.btn:after,.nav-button:after,.portal-link:after,.contact:after,.quick:after,.nav-link:after{
+  content:"";position:absolute;z-index:-1;left:50%;top:50%;
+  width:18px;height:18px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.7) 0%,rgba(145,222,255,.38) 38%,rgba(255,255,255,0) 72%);
+  opacity:0;transform:translate(-50%,-50%) scale(.2);
+}
+button:active:after,.btn:active:after,.nav-button:active:after,.portal-link:active:after,.contact:active:after,.quick:active:after,.nav-link:active:after{
+  animation:ssa-water-ripple .55s ease-out;
+}
+@keyframes ssa-water-ripple{
+  0%{opacity:.85;transform:translate(-50%,-50%) scale(.2)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(15)}
+}
