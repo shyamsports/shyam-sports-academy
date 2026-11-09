@@ -1,0 +1,138 @@
+/* Shyam Sports Academy — Apple-inspired Sky Blue design system
+   Visual layer only. Does not change application logic or Firebase behavior. */
+:root{
+  color-scheme:light;
+  --apple-sky:#65bff3;
+  --apple-sky-strong:#36a9e9;
+  --apple-sky-soft:#eaf7ff;
+  --apple-ink:#111111;
+  --apple-muted:#111111;
+  --apple-surface:#ffffff;
+  --apple-line:#dceef8;
+  --apple-shadow:0 12px 30px rgba(39,142,198,.10),inset 0 1px 0 rgba(255,255,255,.96);
+  --apple-button-shadow:0 5px 0 #2494d2,0 10px 20px rgba(45,153,211,.20),inset 0 1px 0 rgba(255,255,255,.72);
+}
+html{background:#f7fcff;scroll-behavior:smooth}
+body{
+  color:var(--apple-ink)!important;
+  background:linear-gradient(145deg,#fff 0%,#f0f9ff 52%,#fff 100%)!important;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Arial,sans-serif!important;
+  -webkit-font-smoothing:antialiased;
+}
+body:before,body:after{pointer-events:none}
+h1,h2,h3,h4,h5,h6,p,span,label,small,strong,b,th,td,li,dt,dd,
+.page-heading,.page-heading p,.topbar h2,.topbar small,.brand h1,.brand h2,
+.brand-name,.section-heading h2,.section-heading p,.stat-label,.stat-value,
+.welcome h2,.welcome p,.login-card h1,.login-card p,.login-card label,
+.profile strong,.profile small,.details,.role,.number,.sub,.login{
+  color:var(--apple-ink)!important;
+}
+.sidebar,.sidebar *{color:var(--apple-ink)!important}
+.sidebar{
+  background:linear-gradient(180deg,#eaf7ff 0%,#dff2ff 100%)!important;
+  border-right:1px solid #cce9f9!important;
+  box-shadow:8px 0 28px rgba(43,145,198,.08)!important;
+}
+.sidebar .nav-link{background:transparent!important;border:1px solid transparent!important;box-shadow:none!important}
+.sidebar .nav-link.active,.sidebar .nav-link:hover{
+  background:linear-gradient(145deg,#bfe8ff,#e8f7ff)!important;
+  border-color:#a8dcf7!important;
+  box-shadow:inset 0 1px 0 #fff,0 4px 12px rgba(52,155,211,.10)!important;
+}
+.sidebar .nav-label,.sidebar .brand small,.sidebar .sidebar-bottom{color:#111!important}
+header,.topbar,.app>.header,.coach .header,.navbar{
+  background:rgba(255,255,255,.88)!important;
+  border-color:#e5f2f9!important;
+  box-shadow:0 6px 24px rgba(34,126,179,.07)!important;
+  backdrop-filter:blur(18px) saturate(150%);
+}
+.hero{
+  background:linear-gradient(135deg,#eaf8ff 0%,#cceeff 58%,#a9e0fb 100%)!important;
+  border:1px solid #c4e9fb!important;
+  border-radius:28px!important;
+  box-shadow:0 18px 44px rgba(51,153,207,.14),inset 0 1px 0 #fff!important;
+}
+.hero h1,.hero h1 span,.hero p,.hero .eyebrow{color:#111!important}
+.eyebrow,.tag{
+  background:#d9f1ff!important;color:#111!important;border:1px solid #b7e5fb!important;
+}
+.sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,.profile,
+.profile-card,.panel,.stat-card,.quick,.section,.summary-card,.date-box,.notice,
+.message-box,.table-wrap,.contact{
+  background:rgba(255,255,255,.94)!important;
+  color:#111!important;
+  border:1px solid #e1f0f8!important;
+  border-radius:20px!important;
+  box-shadow:var(--apple-shadow)!important;
+}
+.sport-card:hover,.feature-card:hover,.portal-card:hover,.developer-card:hover,
+.stat-card:hover,.quick:hover,.class-grid .card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 18px 38px rgba(39,142,198,.14),inset 0 1px 0 #fff!important;
+}
+button,.btn,.nav-button,.portal-link,.contact,.quick,.nav-link,
+.btn-primary,.btn-secondary,.btn-light,.btn-whatsapp,input[type=submit],input[type=button]{
+  -webkit-tap-highlight-color:transparent;
+  border-radius:14px!important;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important;
+}
+button,.btn-primary,.nav-button,.portal-link,.btn.blue,.login-card button,
+#registerForm button,.contact.primary{
+  background:linear-gradient(145deg,#9cddfb 0%,#65bff3 52%,#42abe8 100%)!important;
+  color:#111!important;
+  border:1px solid #a9e0fa!important;
+  box-shadow:var(--apple-button-shadow)!important;
+  font-weight:750!important;
+}
+.btn-secondary,.btn.light,.btn-light,.contact:not(.primary){
+  background:linear-gradient(145deg,#fff,#edf8ff)!important;
+  color:#111!important;border:1px solid #d5ebf8!important;
+  box-shadow:0 4px 0 #d5eaf6,0 8px 16px rgba(45,153,211,.09),inset 0 1px 0 #fff!important;
+}
+.btn.green{background:linear-gradient(145deg,#b9f0d0,#70d69d)!important;color:#111!important;box-shadow:0 4px 0 #54b77f,0 8px 16px rgba(30,150,85,.12)!important}
+.btn.red{background:linear-gradient(145deg,#ffd5d5,#ff9e9e)!important;color:#111!important;box-shadow:0 4px 0 #e77e7e,0 8px 16px rgba(200,50,50,.10)!important}
+button:hover,.btn:hover,.nav-button:hover,.portal-link:hover,.contact:hover{filter:brightness(1.025);transform:translateY(-2px)}
+button:active,.btn:active,.nav-button:active,.portal-link:active,.contact:active{
+  transform:translateY(3px) scale(.99)!important;
+  box-shadow:0 1px 0 #2494d2,0 3px 8px rgba(45,153,211,.12),inset 0 2px 5px rgba(0,0,0,.08)!important;
+}
+button:disabled,.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+input,select,textarea,.field-select{
+  color:#111!important;background:#fff!important;border:1px solid #cfe7f5!important;
+  border-radius:12px!important;box-shadow:inset 0 1px 3px rgba(35,115,160,.04)!important;
+}
+input::placeholder,textarea::placeholder{color:#555!important;opacity:.72}
+input:focus,select:focus,textarea:focus,.field-select:focus{
+  outline:none!important;border-color:#65bff3!important;
+  box-shadow:0 0 0 4px rgba(101,191,243,.20)!important;
+}
+label,.field label,.login-card label{color:#111!important}
+.stat-icon,.sport-icon,.avatar,.logo,.brand-icon,.developer-avatar{
+  background:linear-gradient(145deg,#dff4ff,#9bdcff)!important;color:#111!important;
+  border:1px solid #c1e9fb!important;box-shadow:0 5px 14px rgba(48,148,202,.12)!important;
+}
+.status.success,.status.approved,.status.present,.status.done,.success,.approved,.present,.completed,
+#loginMessage.success{
+  background:#e4f8ec!important;color:#111!important;border:1px solid #b8e8ca!important;
+}
+.status.error,.status.rejected,.status.absent,.error,.rejected,.absent,#loginMessage.error{
+  background:#fff0f0!important;color:#111!important;border:1px solid #f5cccc!important;
+}
+.status.warning,.warning{background:#fff7df!important;color:#111!important;border:1px solid #f2e0a8!important}
+th{background:#e4f5ff!important;color:#111!important}
+td,th{border-bottom:1px solid #e6f1f7!important}
+tbody tr:hover td{background:#f2faff!important}
+footer{background:#eaf7ff!important;color:#111!important;border-top:1px solid #d9edf8!important}
+footer p,footer a{color:#111!important}
+a{color:#111}
+a:hover{color:#168fcf}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid rgba(54,169,233,.38)!important;outline-offset:3px;
+}
+@media(max-width:900px){.sidebar{box-shadow:8px 0 28px rgba(43,145,198,.13)!important}}
+@media(max-width:640px){
+  .hero{border-radius:22px!important}
+  .sport-card,.feature-card,.portal-card,.developer-card,.card,.login-card,.profile,.panel,.stat-card,.quick,.section,.summary-card,.notice,.message-box,.table-wrap{border-radius:17px!important}
+  button,.btn,.nav-button,.portal-link,.btn-primary,.btn-secondary,.btn-light,.btn-whatsapp{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
