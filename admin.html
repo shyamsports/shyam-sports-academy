@@ -204,6 +204,7 @@ body.auth-locked .layout{display:none}
   <div class="profile">
     <div class="avatar">SA</div>
     <div class="profile-info"><strong>Administrator</strong><small>Authorized Admin</small></div>
+    <button class="btn light" id="adminLogoutButton" type="button">Log Out</button>
   </div>
 </header>
 
@@ -628,6 +629,7 @@ const requestsBody=document.getElementById("coachRequestsBody");
 
 let currentAdmin=null;
 let verificationPromise=null;
+let logoutNotice=false;
 
 function safeText(value){return value==null?"":String(value)}
 
@@ -702,6 +704,25 @@ async function safeVerify(user){
  finally{verificationPromise=null}
 }
 
+document.getElementById("adminLogoutButton").addEventListener("click",async()=>{
+ if(!auth.currentUser)return;
+ if(!confirm("Are you sure you want to sign out of the Admin Dashboard?"))return;
+ const button=document.getElementById("adminLogoutButton");
+ button.disabled=true;
+ button.textContent="Signing Out...";
+ logoutNotice=true;
+ try{
+  await signOut(auth);
+  loginForm.reset();
+ }catch(error){
+  logoutNotice=false;
+  showLogin("Could not sign out: "+(error.message||"Please try again."));
+ }finally{
+  button.disabled=false;
+  button.textContent="Log Out";
+ }
+});
+
 loginForm.addEventListener("submit",async event=>{
  event.preventDefault();
  loginButton.disabled=true;
@@ -722,7 +743,11 @@ loginForm.addEventListener("submit",async event=>{
 });
 
 onAuthStateChanged(auth,async user=>{
- if(!user){showLogin();return}
+ if(!user){
+  showLogin(logoutNotice?"You have been logged out.":"");
+  logoutNotice=false;
+  return;
+ }
  try{await safeVerify(user)}
  catch(error){
   try{await signOut(auth)}catch(_){}
@@ -3289,8 +3314,8 @@ async function reloadBatchDirectory(){
     const editButton=locationButton("Edit","light",()=>openBatchEditor(batch));
     editButton.style.marginRight="6px";
     const statusButton=batch.status==="active"
-      ?locationButton("Deactivate","danger",()=>toggleBatchStatus(batch))
-      :locationButton("Activate","success",()=>toggleBatchStatus(batch));
+      ?locationButton("Deactivate","red",()=>toggleBatchStatus(batch))
+      :locationButton("Activate","green",()=>toggleBatchStatus(batch));
     statusButton.style.marginRight="0";
     actionsCell.append(editButton,statusButton);
     row.appendChild(actionsCell);
@@ -3431,6 +3456,11 @@ function excelDownload(workbook,fileName){
  if(!window.XLSX)throw new Error("Excel library could not load. Refresh the page and try again.");
  XLSX.writeFile(workbook,fileName,{compression:true});
 }
+function excelDateCell(value){
+ if(value&&typeof value.toDate==="function")return value.toDate();
+ if(value instanceof Date)return value;
+ return value??"";
+}
 function excelAttendanceRows(records){
  const summary=[];
  const details=[];
@@ -3446,7 +3476,7 @@ function excelAttendanceRows(records){
    Total_Students:Number(record.totalStudents)||people.length||0,
    Present:Number(record.presentCount)||0,
    Absent:Number(record.absentCount)||0,
-   Submitted_At:record.submittedAt||record.createdAt||""
+   Submitted_At:excelDateCell(record.submittedAt||record.createdAt)
   });
   people.forEach(person=>details.push({
    Date:record.date||"",
@@ -3558,7 +3588,7 @@ function downloadAllStudentsExcel(){
    Batch_ID:s.batchId||"",
    Location:s.locationName||"",
    Status:s.status||"",
-   Created_At:s.createdAt||""
+   Created_At:excelDateCell(s.createdAt)
   }));
   excelMakeSheet(workbook,rows,"All Students",["Student_ID","Student_Name","Age","Parent_Phone","Sport","Batch","Batch_ID","Location","Status","Created_At"]);
   excelDownload(workbook,"Shyam_Sports_Academy_All_Students.xlsx");
