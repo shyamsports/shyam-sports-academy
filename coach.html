@@ -825,7 +825,51 @@ function renderBatches() {
       if (element) element.textContent = "Unavailable";
     });
   });
+  refreshBatchActionButtons();
 }
+
+function refreshBatchActionButtons() {
+  const nowMinutes = currentISTMinutes();
+
+  assignedBatches.forEach(batch => {
+    const card = document.querySelector(`[data-batch-card="${CSS.escape(batch.id)}"]`);
+    if (!card) return;
+
+    const arrivalButton = card.querySelector('[data-action="arrival"]');
+    const completeButton = card.querySelector('[data-action="complete"]');
+    const status = document.getElementById("gps-" + batch.id);
+    if (!arrivalButton || !completeButton) return;
+
+    const slot = getScheduleForBatchToday(batch.id);
+    const arrivalWindow = getArrivalWindowState(batch.id);
+    const arrivalDone = arrivalRecords.has(batch.id);
+    const completed = completedRecords.has(batch.id);
+    const attendanceDone = attendanceRecords.has(batch.id);
+
+    const arrivalEnabled = Boolean(slot && arrivalWindow.allowed && !arrivalDone && !completed);
+    const completionEnabled = Boolean(
+      slot && arrivalDone && attendanceDone && nowMinutes >= slot.end && !completed
+    );
+
+    arrivalButton.disabled = !arrivalEnabled;
+    arrivalButton.textContent = arrivalDone
+      ? "✓ Arrival Recorded"
+      : arrivalEnabled
+        ? "◎ I'm Here"
+        : slot && nowMinutes < slot.start - 10
+          ? `Opens at ${formatMinutesAsTime(slot.start - 10)}`
+          : "◎ I'm Here";
+
+    completeButton.disabled = !completionEnabled || completed;
+    completeButton.textContent = completed ? "✓ Class Completed" : "✓ Class Completed";
+
+    if (status && !completed && !arrivalDone && !slot) {
+      status.textContent = "No valid class schedule is assigned for today. Actions are locked.";
+    }
+  });
+}
+
+setInterval(refreshBatchActionButtons, 15000);
 
 async function loadStudentCount(batch) {
   const studentQuery = query(
@@ -1057,6 +1101,7 @@ async function submitAttendance() {
       present: presentCount,
       absent: absentCount
     });
+    refreshBatchActionButtons();
 
     if (statusElement) {
       statusElement.textContent =
