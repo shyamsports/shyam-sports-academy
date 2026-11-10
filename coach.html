@@ -791,7 +791,8 @@ async function loadTodayCoachActivityState() {
     if (data.date !== today || !assignedIds.has(data.batchId)) continue;
     attendanceRecords.set(data.batchId, {
       present: Number(data.presentCount || 0),
-      absent: Number(data.absentCount || 0)
+      absent: Number(data.absentCount || 0),
+      students: Array.isArray(data.students) ? data.students : []
     });
   }
 }
@@ -1058,7 +1059,13 @@ async function loadStudentsForAttendance(batchId) {
         String(a.name || "").localeCompare(String(b.name || ""))
       );
 
+    const savedAttendance = attendanceRecords.get(batchId);
     attendanceState = {};
+    if (savedAttendance?.students?.length) {
+      savedAttendance.students.forEach(record => {
+        attendanceState[record.studentId] = record.status === "present";
+      });
+    }
 
     if (!selectedBatchStudents.length) {
       panel.innerHTML =
@@ -1078,6 +1085,7 @@ function renderAttendanceStudents(batchId) {
   const panel = document.getElementById("attendancePanel");
   const batch = assignedBatches.find(item => item.id === batchId);
 
+  const submitted = attendanceRecords.has(batchId);
   const rows = selectedBatchStudents.map(student => {
     const studentId = escapeHTML(student.id);
     const name = escapeHTML(student.name || "Unnamed Student");
@@ -1091,9 +1099,9 @@ function renderAttendanceStudents(batchId) {
         </div>
         <div class="attendance-toggle">
           <button type="button" class="present ${value === true ? "selected" : ""}"
-            data-attendance="present" data-student="${studentId}">Present</button>
+            data-attendance="present" data-student="${studentId}" ${submitted ? "disabled" : ""}>Present</button>
           <button type="button" class="absent ${value === false ? "selected" : ""}"
-            data-attendance="absent" data-student="${studentId}">Absent</button>
+            data-attendance="absent" data-student="${studentId}" ${submitted ? "disabled" : ""}>Absent</button>
         </div>
       </div>
     `;
@@ -1105,13 +1113,12 @@ function renderAttendanceStudents(batchId) {
         <h3>${escapeHTML(batch?.batchName || batch?.sport || "Selected Batch")}</h3>
         <small>${selectedBatchStudents.length} Students</small>
       </div>
-      <div class="notice">Choose Present or Absent for each student. Any student left unselected will be marked Absent when you submit.</div>
+      <div class="notice">${submitted ? "Attendance has been submitted and locked for today. Contact Admin if a correction is needed." : "Choose Present or Absent for each student. Any student left unselected will be marked Absent when you submit."}</div>
       ${rows}
       <div class="attendance-actions">
-        <button class="btn btn-light" type="button" id="resetAttendanceBtn">Reset</button>
-        <button class="btn btn-primary" type="button" id="submitAttendanceBtn">Submit Attendance</button>
+        <button class="btn ${submitted ? "btn-whatsapp" : "btn-primary"}" type="button" id="submitAttendanceBtn" ${submitted ? "disabled" : ""}>${submitted ? "✓ Attendance Submitted" : "Submit Attendance"}</button>
       </div>
-      <p class="info" id="attendanceStatus">Attendance has not been submitted for this selection.</p>
+      <p class="info" id="attendanceStatus">${submitted ? "Attendance is submitted and cannot be reset or changed by the coach." : "Attendance has not been submitted for this selection."}</p>
     </div>
   `;
 }
@@ -1164,6 +1171,12 @@ async function submitAttendance() {
 
   const batch = assignedBatches.find(item => item.id === batchId);
   if (!batch) return;
+
+  if (attendanceRecords.has(batchId)) {
+    if (statusElement) statusElement.textContent = "Attendance has already been submitted for this batch today and is locked.";
+    renderAttendanceStudents(batchId);
+    return;
+  }
 
   if (!arrivalRecords.has(batchId)) {
     if (statusElement) statusElement.textContent = "Attendance is locked. Record your GPS arrival first.";
@@ -1231,14 +1244,21 @@ async function submitAttendance() {
 
     attendanceRecords.set(batchId, {
       present: presentCount,
-      absent: absentCount
+      absent: absentCount,
+      students: records
     });
+    attendanceState = {};
+    records.forEach(record => {
+      attendanceState[record.studentId] = record.status === "present";
+    });
+    renderAttendanceStudents(batchId);
     refreshBatchActionButtons();
 
-    if (statusElement) {
-      statusElement.textContent =
-        "Attendance saved successfully: " + presentCount +
-        " Present, " + absentCount + " Absent.";
+    const submittedStatus = document.getElementById("attendanceStatus");
+    if (submittedStatus) {
+      submittedStatus.textContent =
+        "✓ Attendance submitted successfully: " + presentCount +
+        " Present, " + absentCount + " Absent. This record is now locked.";
     }
 
     updateSummary();
@@ -1251,9 +1271,10 @@ async function submitAttendance() {
     }
   } finally {
     attendanceSaving = false;
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = "Submit Attendance";
+    const currentSubmitButton = document.getElementById("submitAttendanceBtn");
+    if (currentSubmitButton && !attendanceRecords.has(batchId)) {
+      currentSubmitButton.disabled = false;
+      currentSubmitButton.textContent = "Submit Attendance";
     }
   }
 }
