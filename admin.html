@@ -356,7 +356,7 @@ body.auth-locked .layout{display:none}
 
 <section class="page" id="schedule">
   <div class="page-heading"><div><h1>Schedule Management</h1><p>Manage weekly recurring schedules and date-specific class changes.</p></div><button class="btn" id="addScheduleButton" type="button">+ Create Schedule</button></div>
-  <div class="info-box">Create schedules for active batches. Each schedule is assigned to the coach already linked with that batch.</div>
+  <div class="info-box">Create schedules for active batches. Each schedule is assigned to the coach already linked with that batch. Times are saved in 24-hour format: 1:19 PM = 13:19 and 2:19 PM = 14:19. Select PM carefully in the time picker.</div>
   <div class="panel" id="scheduleFormPanel" style="display:none">
     <div class="panel-heading"><h3>Create New Schedule</h3></div>
     <form id="scheduleForm">
@@ -1939,6 +1939,18 @@ function toggleScheduleTypeFields(){
  document.getElementById("scheduleDateInput").required=!recurring;
 }
 
+async function formatScheduleClock(value){
+ const match=String(value||"").trim().match(/^(\d{1,2}):(\d{2})$/);
+ if(!match)return value||"—";
+ const hours=Number(match[1]),minutes=Number(match[2]);
+ if(hours>23||minutes>59)return value;
+ const suffix=hours>=12?"PM":"AM";
+ return (hours%12||12)+":"+String(minutes).padStart(2,"0")+" "+suffix;
+}
+function formatScheduleRange(schedule){
+ return formatScheduleClock(schedule.startTime)+" - "+formatScheduleClock(schedule.endTime);
+}
+
 async function loadSchedules(){
  if(!currentAdmin||currentAdmin.uid!==ADMIN_UID)return;
  const message=document.getElementById("schedulesMessage");
@@ -2000,7 +2012,7 @@ async function loadSchedules(){
    row.appendChild(makeCell((schedule.batchName||"—")+" ("+(schedule.sport||"—")+")"));
    row.appendChild(makeCell(schedule.coachName||"—"));
    row.appendChild(makeCell(schedule.scheduleType==="recurring"?(Array.isArray(schedule.daysOfWeek)?schedule.daysOfWeek.join(", "):"—"):(schedule.classDate||"—")));
-   row.appendChild(makeCell((schedule.startTime||"—")+" - "+(schedule.endTime||"—")));
+   row.appendChild(makeCell(formatScheduleRange(schedule)));
 
    const statusCell=document.createElement("td");
    const badge=makeStatusBadge(schedule.status==="scheduled"?"active":"inactive");
@@ -2039,8 +2051,10 @@ async function loadTodayScheduleOverview(){
  try{
   const snap=await getDocs(collection(db,"schedules"));
   const today=new Date();
-  const todayName=today.toLocaleDateString("en-US",{weekday:"long"});
-  const todayDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
+  const todayName=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Kolkata",weekday:"long"}).format(today);
+  const dateParts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(today);
+  const dateValues=Object.fromEntries(dateParts.map(part=>[part.type,part.value]));
+  const todayDate=dateValues.year+"-"+dateValues.month+"-"+dateValues.day;
 
   const todays=snap.docs.map(item=>({id:item.id,...item.data()})).filter(schedule=>{
    if(schedule.status!=="scheduled")return false;
@@ -2063,7 +2077,7 @@ async function loadTodayScheduleOverview(){
   todays.sort((a,b)=>safeText(a.startTime).localeCompare(safeText(b.startTime)));
   todays.forEach(schedule=>{
    const row=document.createElement("tr");
-   row.append(makeCell(schedule.batchName),makeCell(schedule.coachName),makeCell(schedule.sport),makeCell((schedule.startTime||"—")+" - "+(schedule.endTime||"—")));
+   row.append(makeCell(schedule.batchName),makeCell(schedule.coachName),makeCell(schedule.sport),makeCell(formatScheduleRange(schedule)));
    tbody.appendChild(row);
   });
   table.appendChild(tbody);list.appendChild(table);message.appendChild(list);
@@ -2151,7 +2165,10 @@ document.getElementById("scheduleForm").addEventListener("submit",async event=>{
  const button=document.getElementById("saveScheduleButton");
 
  if(!batchSelect.value||!selected?.dataset.coachId){message.textContent="Please select an active batch with an assigned coach.";return}
- if(!startTime||!endTime||endTime<=startTime){message.textContent="Please enter a valid start time and an end time after it.";return}
+ if(!/^\d{2}:\d{2}$/.test(startTime)||!/^\d{2}:\d{2}$/.test(endTime)){
+  message.textContent="Please select valid start and end times using the time picker.";return;
+ }
+ if(endTime<=startTime){message.textContent="End time must be later than start time. For example, 1:19 PM to 2:19 PM is 13:19 to 14:19.";return}
  if(type==="recurring"&&!daysOfWeek.length){message.textContent="Please select at least one class day.";return}
  if(type==="date-specific"&&!classDate){message.textContent="Please select the class date.";return}
 
