@@ -696,8 +696,14 @@ async function verifyAdmin(user){
   loadOverviewStats,loadGroupMappings,loadMessageTemplateForAdmin,
   loadAttendanceRecords,loadCorrectionRequests,loadCorrectionAuditHistory
  ];
- const results=await Promise.allSettled(loaders.map(load=>Promise.resolve().then(load)));
- const failed=results.filter(result=>result.status==="rejected").length;
+ let failed=0;
+ for(const load of loaders){
+  try{await load()}
+  catch(error){
+   failed++;
+   console.error("Admin dashboard section failed to load:",error);
+  }
+ }
  const notice=document.getElementById("adminLoadNotice");
  if(notice){
   notice.style.display=failed?"block":"none";
