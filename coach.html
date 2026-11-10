@@ -754,10 +754,10 @@ function renderBatches() {
     const completed = completedRecords.has(batch.id);
     const attendanceDone = attendanceRecords.has(batch.id);
     const arrivalEnabled = Boolean(timing && arrivalWindow.allowed && !arrivalDone && !completed);
-    const completionEnabled = Boolean(
-      timing && arrivalDone && attendanceDone && nowMinutes >= timing.end && !completed
-    );
     const completionWindow = getCompletionWindowState(batch.id);
+    const completionEnabled = Boolean(
+      timing && arrivalDone && attendanceDone && completionWindow.allowed && !completed
+    );
     const arrivalLabel = arrivalDone
       ? "✓ Arrival Recorded"
       : arrivalEnabled
