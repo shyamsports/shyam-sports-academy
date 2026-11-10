@@ -117,6 +117,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </style>
   <link rel="stylesheet" href="liquid-glass.css">
   <link rel="stylesheet" href="apple-sky-theme.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body>
@@ -251,16 +254,40 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </section>
 
   <section class="section" id="summary">
-    <div class="section-heading"><h3>Daily Work Summary</h3></div>
+    <div class="section-heading"><h3>Daily & Monthly Work Summary</h3></div>
     <div class="card">
-      <div class="student-row"><span class="student-name">Assigned Batches</span><strong id="sumBatches">0</strong></div>
-      <div class="student-row"><span class="student-name">Arrival Recorded</span><strong id="sumArrival">0</strong></div>
-      <div class="student-row"><span class="student-name">Completed Classes</span><strong id="sumCompleted">0</strong></div>
-      <div class="student-row"><span class="student-name">Attendance Submitted</span><strong id="sumAttendance">0</strong></div>
-      <div class="student-row"><span class="student-name">Students Marked Present</span><strong id="sumPresent">0</strong></div>
-      <div class="student-row"><span class="student-name">Students Marked Absent</span><strong id="sumAbsent">0</strong></div>
+      <div class="student-row"><span class="student-name">Assigned Batches Today</span><strong id="sumBatches">0</strong></div>
+      <div class="student-row"><span class="student-name">Arrival Recorded Today</span><strong id="sumArrival">0</strong></div>
+      <div class="student-row"><span class="student-name">Completed Classes Today</span><strong id="sumCompleted">0</strong></div>
+      <div class="student-row"><span class="student-name">Attendance Submitted Today</span><strong id="sumAttendance">0</strong></div>
+      <div class="student-row"><span class="student-name">Students Marked Present Today</span><strong id="sumPresent">0</strong></div>
+      <div class="student-row"><span class="student-name">Students Marked Absent Today</span><strong id="sumAbsent">0</strong></div>
     </div>
-    <div class="notice">This summary shows records saved during the current dashboard session. Monthly and yearly reports will be connected after the Admin reporting system is completed.</div>
+    <div class="card">
+      <div class="section-heading" style="margin-top:0"><h3>Download Work Report</h3></div>
+      <p class="info">Choose a month or any date range. Your report includes daily classes, batch names, locations, GPS arrival/departure times, completed classes, and each student's Present/Absent status.</p>
+      <label class="field-label" for="reportMonth">Report Month</label>
+      <input class="field-select" id="reportMonth" type="month" style="margin-bottom:10px">
+      <div class="details" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="field-label" for="reportFrom">From Date</label><input class="field-select" id="reportFrom" type="date"></div>
+        <div><label class="field-label" for="reportTo">To Date</label><input class="field-select" id="reportTo" type="date"></div>
+      </div>
+      <button class="btn btn-primary" id="loadCoachReportBtn" type="button" style="width:100%;margin-top:12px">Load Report</button>
+      <div class="summary" style="margin-top:14px">
+        <div class="summary-card"><small>Work Days</small><strong id="reportWorkDays">0</strong></div>
+        <div class="summary-card"><small>Completed Classes</small><strong id="reportClasses">0</strong></div>
+        <div class="summary-card"><small>Students Present</small><strong id="reportPresent">0</strong></div>
+      </div>
+      <div class="student-row"><span class="student-name">Students Absent</span><strong id="reportAbsent">0</strong></div>
+      <div class="student-row"><span class="student-name">Attendance Records</span><strong id="reportAttendanceCount">0</strong></div>
+      <div class="student-row"><span class="student-name">Total Batch Sessions</span><strong id="reportBatchSessions">0</strong></div>
+      <div id="coachReportStatus" class="info" aria-live="polite">Select a month or date range, then load your report.</div>
+      <div id="coachReportPreview" style="overflow-x:auto;margin-top:12px"></div>
+      <div class="attendance-actions">
+        <button class="btn btn-whatsapp" id="downloadCoachExcelBtn" type="button" disabled>Download Excel</button>
+        <button class="btn btn-primary" id="downloadCoachPdfBtn" type="button" disabled>Download PDF</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -544,6 +571,9 @@ function showSection(sectionId, button) {
   if (sectionId === "messages") {
     autoSelectActiveMessageBatch();
   }
+  if (sectionId === "summary" && auth.currentUser) {
+    loadCoachReport();
+  }
 }
 
 document.querySelectorAll(".nav-item").forEach(button => {
@@ -602,6 +632,243 @@ function updateSummary() {
   document.getElementById("progressText").textContent = progress + "%";
   document.getElementById("progressBar").style.width = progress + "%";
 }
+
+
+/* Coach historical work reports: all dates are read from the signed-in coach's own Firebase records. */
+let loadedCoachReport = null;
+
+function initializeCoachReportDates() {
+  const today = todayKey();
+  const monthValue = today.slice(0, 7);
+  const monthInput = document.getElementById("reportMonth");
+  if (!monthInput) return;
+  monthInput.value = monthValue;
+  setCoachReportMonthDates();
+}
+function setCoachReportMonthDates() {
+  const monthValue = document.getElementById("reportMonth")?.value;
+  if (!monthValue) return;
+  const parts = monthValue.split("-").map(Number);
+  const lastDay = new Date(parts[0], parts[1], 0).getDate();
+  document.getElementById("reportFrom").value = monthValue + "-01";
+  document.getElementById("reportTo").value = monthValue + "-" + String(lastDay).padStart(2, "0");
+}
+function reportTimestamp(value) {
+  if (value?.toDate) return value.toDate();
+  return value instanceof Date ? value : null;
+}
+function reportDateKey(value) {
+  const date = reportTimestamp(value);
+  if (!date) return "";
+  const p = getISTParts(date);
+  return p.year + "-" + p.month + "-" + p.day;
+}
+function reportTime(value) {
+  const date = reportTimestamp(value);
+  if (!date) return "";
+  const p = getISTParts(date);
+  const hour = Number(p.hour);
+  return formatMinutesAsTime(hour * 60 + Number(p.minute));
+}
+function reportRowKey(date, batchId) {
+  return date + "__" + batchId;
+}
+function createCoachReportRow(date, batchId) {
+  const schedule = assignedSchedules.find(item => item.id === batchId);
+  return {
+    date, batchId, batchName: "Batch", sport: "", location: "",
+    arrival: "", departure: "", arrivalRecorded: false, departureRecorded: false,
+    attendanceSubmitted: false, present: 0, absent: 0, students: [],
+    scheduleTime: ""
+  };
+}
+async function loadCoachReport() {
+  const status = document.getElementById("coachReportStatus");
+  const preview = document.getElementById("coachReportPreview");
+  const button = document.getElementById("loadCoachReportBtn");
+  const from = document.getElementById("reportFrom")?.value;
+  const to = document.getElementById("reportTo")?.value;
+  if (!auth.currentUser) return;
+  if (!from || !to || from > to) {
+    status.textContent = "Please select a valid date range. From Date must not be after To Date.";
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Loading Report...";
+  status.textContent = "Loading your saved class, GPS and attendance records from Firebase...";
+  preview.innerHTML = "";
+  document.getElementById("downloadCoachExcelBtn").disabled = true;
+  document.getElementById("downloadCoachPdfBtn").disabled = true;
+  loadedCoachReport = null;
+  try {
+    const userId = auth.currentUser.uid;
+    const [activitySnap, attendanceSnap] = await Promise.all([
+      getDocs(query(collection(db, "coachActivity"), where("coachUid", "==", userId))),
+      getDocs(query(collection(db, "studentAttendance"), where("coachUid", "==", userId)))
+    ]);
+    const rows = new Map();
+    const getRow = (date, batchId) => {
+      const key = reportRowKey(date, batchId || "unknown");
+      if (!rows.has(key)) rows.set(key, createCoachReportRow(date, batchId || "unknown"));
+      return rows.get(key);
+    };
+    activitySnap.docs.forEach(snapshot => {
+      const item = snapshot.data();
+      const stamp = item.recordedAt || item.createdAt;
+      const date = reportDateKey(stamp);
+      if (!date || date < from || date > to) return;
+      const row = getRow(date, item.batchId);
+      row.batchName = item.batchName || row.batchName;
+      row.sport = item.sport || row.sport;
+      row.location = item.locationName || row.location;
+      const event = String(item.eventType || "").toLowerCase();
+      if (event === "arrival") {
+        row.arrivalRecorded = true;
+        row.arrival = row.arrival || reportTime(stamp);
+      } else if (event === "departure") {
+        row.departureRecorded = true;
+        row.departure = reportTime(stamp);
+      }
+    });
+    attendanceSnap.docs.forEach(snapshot => {
+      const item = snapshot.data();
+      const date = String(item.date || "");
+      if (!date || date < from || date > to) return;
+      const row = getRow(date, item.batchId);
+      row.batchName = item.batchName || row.batchName;
+      row.sport = item.sport || row.sport;
+      row.attendanceSubmitted = true;
+      row.present = Number(item.presentCount || 0);
+      row.absent = Number(item.absentCount || 0);
+      row.students = Array.isArray(item.students) ? item.students : [];
+    });
+    const reportRows = Array.from(rows.values()).sort((a,b) =>
+      a.date.localeCompare(b.date) || a.batchName.localeCompare(b.batchName)
+    );
+    const dailyMap = new Map();
+    reportRows.forEach(row => {
+      if (!dailyMap.has(row.date)) dailyMap.set(row.date, {
+        date: row.date, sessions: 0, arrivals: 0, completed: 0,
+        attendance: 0, present: 0, absent: 0
+      });
+      const day = dailyMap.get(row.date);
+      day.sessions += 1;
+      if (row.arrivalRecorded) day.arrivals += 1;
+      if (row.departureRecorded) day.completed += 1;
+      if (row.attendanceSubmitted) day.attendance += 1;
+      day.present += row.present;
+      day.absent += row.absent;
+    });
+    const dailyRows = Array.from(dailyMap.values()).sort((a,b)=>a.date.localeCompare(b.date));
+    const workDays = dailyRows.filter(day => day.arrivals || day.completed || day.attendance).length;
+    const completedClasses = reportRows.filter(row => row.departureRecorded).length;
+    const presentTotal = reportRows.reduce((sum,row)=>sum+row.present,0);
+    const absentTotal = reportRows.reduce((sum,row)=>sum+row.absent,0);
+    const attendanceTotal = reportRows.filter(row=>row.attendanceSubmitted).length;
+    loadedCoachReport = {from,to,rows:reportRows,dailyRows,workDays,completedClasses,presentTotal,absentTotal,attendanceTotal};
+    document.getElementById("reportWorkDays").textContent = workDays;
+    document.getElementById("reportClasses").textContent = completedClasses;
+    document.getElementById("reportPresent").textContent = presentTotal;
+    document.getElementById("reportAbsent").textContent = absentTotal;
+    document.getElementById("reportAttendanceCount").textContent = attendanceTotal;
+    document.getElementById("reportBatchSessions").textContent = reportRows.length;
+    if (!reportRows.length) {
+      status.textContent = "No saved class, GPS or attendance records were found for this date range.";
+      return;
+    }
+    const previewRows = reportRows.slice(0, 12).map(row => {
+      const presentNames = row.students.filter(s=>s.status==="present").map(s=>s.studentName).join(", ");
+      const absentNames = row.students.filter(s=>s.status!=="present").map(s=>s.studentName).join(", ");
+      return "<tr><td>"+escapeHTML(row.date)+"</td><td>"+escapeHTML(row.batchName)+"<br><small>"+escapeHTML(row.sport)+"</small></td><td>"+escapeHTML(row.location||"—")+"</td><td>"+escapeHTML(row.arrival||"—")+" / "+escapeHTML(row.departure||"—")+"</td><td>"+row.present+" / "+row.absent+"</td></tr>";
+    }).join("");
+    preview.innerHTML = "<table style='width:100%;border-collapse:collapse;font-size:11px'><thead><tr><th style='text-align:left;padding:8px'>Date</th><th style='text-align:left;padding:8px'>Batch / Sport</th><th style='text-align:left;padding:8px'>Location</th><th style='text-align:left;padding:8px'>Arrival / Departure</th><th style='text-align:left;padding:8px'>Present / Absent</th></tr></thead><tbody>"+previewRows+"</tbody></table>"+(reportRows.length>12?"<p class='info'>Showing first 12 of "+reportRows.length+" sessions. The downloads include every record.</p>":"");
+    status.textContent = "Report ready: "+workDays+" work days, "+completedClasses+" completed classes, "+presentTotal+" Present and "+absentTotal+" Absent.";
+    document.getElementById("downloadCoachExcelBtn").disabled = false;
+    document.getElementById("downloadCoachPdfBtn").disabled = false;
+  } catch (error) {
+    console.error("Coach report load error:", error);
+    status.textContent = "Could not load report: " + getFriendlyError(error);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Load Report";
+  }
+}
+function coachReportExportRows() {
+  if (!loadedCoachReport) return null;
+  const detail = loadedCoachReport.rows.map(row => ({
+    Date: row.date, "Batch Name": row.batchName, Sport: row.sport,
+    Location: row.location, "GPS Arrival": row.arrival, "GPS Departure": row.departure,
+    "Arrival Recorded": row.arrivalRecorded ? "Yes" : "No",
+    "Class Completed": row.departureRecorded ? "Yes" : "No",
+    "Attendance Submitted": row.attendanceSubmitted ? "Yes" : "No",
+    Present: row.present, Absent: row.absent,
+    "Present Students": row.students.filter(s=>s.status==="present").map(s=>s.studentName).join(", "),
+    "Absent Students": row.students.filter(s=>s.status!=="present").map(s=>s.studentName).join(", ")
+  }));
+  const students = [];
+  loadedCoachReport.rows.forEach(row => row.students.forEach(student => students.push({
+    Date: row.date, "Batch Name": row.batchName, Sport: row.sport,
+    "Student Name": student.studentName || "Unnamed Student",
+    Status: student.status === "present" ? "Present" : "Absent"
+  })));
+  return {detail,students};
+}
+function downloadCoachExcel() {
+  if (!loadedCoachReport) return;
+  if (!window.XLSX) {
+    document.getElementById("coachReportStatus").textContent = "Excel library could not load. Please refresh the page and try again.";
+    return;
+  }
+  const data = coachReportExportRows();
+  const report = loadedCoachReport;
+  const workbook = XLSX.utils.book_new();
+  const summary = [
+    ["Coach Monthly / Date Range Work Report"],
+    ["Period", report.from + " to " + report.to],
+    ["Work Days", report.workDays],
+    ["Completed Classes", report.completedClasses],
+    ["Batch Sessions", report.rows.length],
+    ["Attendance Records", report.attendanceTotal],
+    ["Students Present", report.presentTotal],
+    ["Students Absent", report.absentTotal]
+  ];
+  XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet(summary),"Summary");
+  XLSX.utils.book_append_sheet(workbook,XLSX.utils.json_to_sheet(report.dailyRows.map(day=>({
+    Date:day.date,"Batch Sessions":day.sessions,Arrivals:day.arrivals,
+    "Completed Classes":day.completed,"Attendance Records":day.attendance,
+    Present:day.present,Absent:day.absent
+  }))),"Daily Summary");
+  XLSX.utils.book_append_sheet(workbook,XLSX.utils.json_to_sheet(data.detail),"Class Details");
+  XLSX.utils.book_append_sheet(workbook,XLSX.utils.json_to_sheet(data.students.length?data.students:[{"Info":"No student attendance records"}]),"Student Attendance");
+  XLSX.writeFile(workbook,"Coach_Work_Report_"+report.from+"_to_"+report.to+".xlsx");
+}
+function downloadCoachPdf() {
+  if (!loadedCoachReport) return;
+  const JsPDF = window.jspdf?.jsPDF;
+  if (!JsPDF) {
+    document.getElementById("coachReportStatus").textContent = "PDF library could not load. Please refresh the page and try again.";
+    return;
+  }
+  const report = loadedCoachReport;
+  const data = coachReportExportRows();
+  const pdf = new JsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+  pdf.setFontSize(16);
+  pdf.text("Shyam Sports Academy - Coach Work Report",40,38);
+  pdf.setFontSize(9);
+  pdf.text("Period: "+report.from+" to "+report.to,40,55);
+  pdf.text("Work Days: "+report.workDays+" | Completed Classes: "+report.completedClasses+" | Batch Sessions: "+report.rows.length+" | Present: "+report.presentTotal+" | Absent: "+report.absentTotal,40,70);
+  pdf.autoTable({startY:84,head:[["Date","Batch Sessions","Arrivals","Completed","Attendance","Present","Absent"]],body:report.dailyRows.map(day=>[day.date,day.sessions,day.arrivals,day.completed,day.attendance,day.present,day.absent]),styles:{fontSize:8,cellPadding:4}});
+  pdf.autoTable({startY:pdf.lastAutoTable.finalY+18,head:[["Date","Batch","Sport","Location","Arrival","Departure","Done","Present","Absent"]],body:report.rows.map(row=>[row.date,row.batchName,row.sport,row.location,row.arrival,row.departure,row.departureRecorded?"Yes":"No",row.present,row.absent]),styles:{fontSize:7,cellPadding:3},didDrawPage:()=>{}});
+  pdf.addPage();
+  pdf.setFontSize(13);
+  pdf.text("Student Attendance Details",40,38);
+  pdf.autoTable({startY:52,head:[["Date","Batch","Sport","Student Name","Status"]],body:data.students.map(student=>[student.Date,student["Batch Name"],student.Sport,student["Student Name"],student.Status]),styles:{fontSize:8,cellPadding:4}});
+  pdf.save("Coach_Work_Report_"+report.from+"_to_"+report.to+".pdf");
+}
+document.getElementById("reportMonth")?.addEventListener("change",setCoachReportMonthDates);
+document.getElementById("loadCoachReportBtn")?.addEventListener("click",loadCoachReport);
+document.getElementById("downloadCoachExcelBtn")?.addEventListener("click",downloadCoachExcel);
+document.getElementById("downloadCoachPdfBtn")?.addEventListener("click",downloadCoachPdf);
 
 /* Load schedules assigned to the currently logged-in coach. */
 async function loadAssignedSchedules() {
@@ -1760,6 +2027,7 @@ document.querySelectorAll("[data-whatsapp]").forEach(button => {
 
 async function loadCoachDashboard() {
   updateDateLabels();
+  initializeCoachReportDates();
 
   await loadAssignedBatches();
 
