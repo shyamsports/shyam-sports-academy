@@ -133,6 +133,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
       <button type="submit" id="loginBtn">Login</button>
     </form>
     <div id="loginMessage" role="status" aria-live="polite"></div>
+    <button type="button" id="retryCoachVerification" style="display:none;width:100%;padding:12px;border:0;border-radius:9px;background:#e8f1fb;color:#174e80;font-weight:800;margin-top:10px">Retry Account Verification</button>
     <p style="margin-top:16px;text-align:center;font-size:13px;color:#8492a3">New coach? <a href="coach-register.html" style="color:#247ac1;font-weight:700">Register here</a></p>
   </div>
 </div>
@@ -281,7 +282,9 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
   getFirestore,
@@ -308,6 +311,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
+const authPersistenceReady = setPersistence(auth, browserLocalPersistence);
 const db = getFirestore(firebaseApp);
 
 const loginForm = document.getElementById("loginForm");
@@ -1727,6 +1731,7 @@ loginForm.addEventListener("submit", async event => {
   loginBtn.textContent = "Signing In...";
 
   try {
+    await authPersistenceReady;
     await signInWithEmailAndPassword(auth, email, password);
     showLoginMessage("Login successful. Checking your coach approval...", "info");
   } catch (error) {
@@ -1776,20 +1781,49 @@ onAuthStateChanged(auth, async user => {
     }
   } catch (error) {
     console.error("Coach account verification error:", error);
-    if (error.code === "coach/unauthorized") {
-      try {
-        await signOut(auth);
-      } catch (signOutError) {
-        console.error("Sign out error:", signOutError);
-      }
+    const retryVerification = document.getElementById("retryCoachVerification");
+    if (error.code === "coach/unauthorized" || error.code === "coach/not-approved") {
+      try { await signOut(auth); } catch (signOutError) { console.error("Sign out error:", signOutError); }
+      if (retryVerification) retryVerification.style.display = "none";
+      showLogin();
+      showLoginMessage(getFriendlyError(error), "error");
+    } else {
+      showLogin();
+      showLoginMessage("Your Firebase session is still active, but the coach profile could not be verified from Firestore. You do not need to enter your password again. Check the connection and retry account verification.", "info");
+      if (retryVerification) retryVerification.style.display = "block";
     }
-    showLogin();
-    showLoginMessage(getFriendlyError(error) + (error.code === "coach/profile-unavailable" ? " Your login is still active. Refresh this page to retry verification." : ""), "error");
   } finally {
     authCheckInProgress = false;
     loginBtn.disabled = false;
     loginBtn.textContent = "Login";
   }
+});
+
+document.getElementById("retryCoachVerification")?.addEventListener("click",async()=>{
+  if(!auth.currentUser)return;
+  const button=document.getElementById("retryCoachVerification");
+  button.disabled=true;button.textContent="Checking...";
+  loginBtn.disabled=true;
+  try{
+    currentProfile=await verifyCoach(auth.currentUser);
+    button.style.display="none";
+    clearLoginMessage();
+    showDashboard(currentProfile.name);
+    const notice=document.getElementById("coachLoadNotice");
+    if(notice)notice.style.display="none";
+    try{await loadCoachDashboard();}
+    catch(error){
+      console.error("Coach dashboard data loading error:",error);
+      if(notice){notice.style.display="block";notice.textContent="Some dashboard data could not load. Your login is still active. Check your connection and tap Retry."}
+    }
+  }catch(error){
+    if(error.code==="coach/unauthorized"||error.code==="coach/not-approved"){
+      try{await signOut(auth)}catch(signOutError){console.error("Sign out error:",signOutError)}
+      button.style.display="none";showLogin();showLoginMessage(getFriendlyError(error),"error");
+    }else{
+      showLoginMessage("Firestore is still unavailable. Your Firebase session remains active; retry when the connection is stable.","info");
+    }
+  }finally{button.disabled=false;button.textContent="Retry Account Verification";loginBtn.disabled=false;}
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
