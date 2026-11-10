@@ -1715,7 +1715,7 @@ onAuthStateChanged(auth, async user => {
       }
     }
     showLogin();
-    showLoginMessage(getFriendlyError(error) + (error.code === "coach/profile-unavailable" ? " Your login is محفوظ. Refresh this page to retry verification." : ""), "error");
+    showLoginMessage(getFriendlyError(error) + (error.code === "coach/profile-unavailable" ? " Your login is still active. Refresh this page to retry verification." : ""), "error");
   } finally {
     authCheckInProgress = false;
     loginBtn.disabled = false;
