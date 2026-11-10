@@ -726,6 +726,72 @@ function renderScheduleDetails(batchId) {
   }).join("");
 }
 
+/* Restore today's GPS and attendance state from Firestore after login/refresh. */
+async function loadTodayCoachActivityState() {
+  arrivalRecords.clear();
+  completedRecords.clear();
+  arrivalScheduleByBatch.clear();
+  attendanceRecords.clear();
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const today = todayKey();
+  const assignedIds = new Set(assignedBatches.map(batch => batch.id));
+
+  const activityQuery = query(
+    collection(db, "coachActivity"),
+    where("coachUid", "==", user.uid)
+  );
+  const attendanceQuery = query(
+    collection(db, "studentAttendance"),
+    where("coachUid", "==", user.uid)
+  );
+
+  const [activitySnapshot, attendanceSnapshot] = await Promise.all([
+    getDocs(activityQuery),
+    getDocs(attendanceQuery)
+  ]);
+
+  const activityItems = activitySnapshot.docs
+    .map(item => ({ id: item.id, ...item.data() }))
+    .filter(item => {
+      if (!assignedIds.has(item.batchId)) return false;
+      const stamp = item.recordedAt?.toDate?.() || item.createdAt?.toDate?.();
+      return stamp && getISTParts(stamp).year + "-" +
+        getISTParts(stamp).month + "-" + getISTParts(stamp).day === today;
+    })
+    .sort((a, b) => {
+      const ta = (a.recordedAt?.toDate?.() || a.createdAt?.toDate?.())?.getTime?.() || 0;
+      const tb = (b.recordedAt?.toDate?.() || b.createdAt?.toDate?.())?.getTime?.() || 0;
+      return ta - tb;
+    });
+
+  for (const item of activityItems) {
+    const slot = getScheduleForBatchToday(item.batchId);
+    if (!slot) continue;
+    const eventType = String(item.eventType || "").toLowerCase();
+    if (eventType === "arrival") {
+      arrivalRecords.add(item.batchId);
+      if (item.scheduleId) arrivalScheduleByBatch.set(item.batchId, item.scheduleId);
+      else arrivalScheduleByBatch.set(item.batchId, slot.schedule.id);
+    } else if (eventType === "departure") {
+      completedRecords.add(item.batchId);
+      if (item.scheduleId) arrivalScheduleByBatch.set(item.batchId, item.scheduleId);
+      else arrivalScheduleByBatch.set(item.batchId, slot.schedule.id);
+    }
+  }
+
+  for (const item of attendanceSnapshot.docs) {
+    const data = item.data();
+    if (data.date !== today || !assignedIds.has(data.batchId)) continue;
+    attendanceRecords.set(data.batchId, {
+      present: Number(data.presentCount || 0),
+      absent: Number(data.absentCount || 0)
+    });
+  }
+}
+
 /* Load batches assigned to the currently logged-in coach. */
 async function loadAssignedBatches() {
   const batchList = document.getElementById("batchList");
@@ -746,6 +812,7 @@ async function loadAssignedBatches() {
     );
 
   await loadAssignedSchedules();
+  await loadTodayCoachActivityState();
 
   renderBatches();
   populateAttendanceBatchSelect();
@@ -1147,6 +1214,7 @@ async function submitAttendance() {
         batchName: batch.batchName || "",
         sport: batch.sport || "",
         date: date,
+        scheduleId: slot.schedule.id,
         students: records,
         totalStudents: records.length,
         presentCount: presentCount,
@@ -1409,6 +1477,7 @@ async function saveCoachActivity(eventType, position, batch) {
     coachName: profile.name || user.displayName || "Coach",
     coachEmail: user.email || "",
     eventType: eventType,
+    scheduleId: getScheduleForBatchToday(batch.id)?.schedule?.id || "",
     batchId: batch.id,
     batchName: batch.batchName || "",
     sport: batch.sport || "",
