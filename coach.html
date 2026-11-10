@@ -320,6 +320,7 @@ let selectedBatchStudents = [];
 let attendanceState = {};
 let arrivalRecords = new Set();
 let completedRecords = new Set();
+let arrivalScheduleByBatch = new Map();
 let attendanceRecords = new Map();
 let attendanceSaving = false;
 let loadedCorrectionAttendance = null;
@@ -380,12 +381,89 @@ async function verifyCoach(user) {
   return data;
 }
 
+function getISTParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    weekday: "long", hour: "2-digit", minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map(part => [part.type, part.value]));
+}
+
 function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const parts = getISTParts();
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function currentISTMinutes() {
+  const parts = getISTParts();
+  return Number(parts.hour) * 60 + Number(parts.minute);
+}
+
+function parseScheduleMinutes(value) {
+  const match = String(value || "").trim().match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function formatMinutesAsTime(totalMinutes) {
+  if (!Number.isFinite(totalMinutes)) return "";
+  const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}
+
+function scheduleAppliesToday(schedule) {
+  const today = getISTParts();
+  if (schedule.classDate) return String(schedule.classDate) === todayKey();
+  const days = Array.isArray(schedule.daysOfWeek) ? schedule.daysOfWeek : [];
+  return days.some(day => String(day).trim().toLowerCase() === today.weekday.toLowerCase());
+}
+
+function getScheduleForBatchToday(batchId) {
+  const schedules = assignedSchedules
+    .filter(schedule => schedule.batchId === batchId && scheduleAppliesToday(schedule))
+    .map(schedule => ({
+      schedule,
+      start: parseScheduleMinutes(schedule.startTime),
+      end: parseScheduleMinutes(schedule.endTime)
+    }))
+    .filter(item => item.start !== null && item.end !== null && item.end > item.start)
+    .sort((a, b) => a.start - b.start);
+
+  if (!schedules.length) return null;
+
+  const savedArrivalScheduleId = arrivalScheduleByBatch.get(batchId);
+  if (savedArrivalScheduleId) {
+    const saved = schedules.find(item => item.schedule.id === savedArrivalScheduleId);
+    if (saved) return saved;
+  }
+
+  const now = currentISTMinutes();
+  return schedules.find(item => now >= item.start - 10 && now < item.end)
+    || schedules.find(item => now < item.start - 10)
+    || schedules.filter(item => now >= item.end).slice(-1)[0]
+    || schedules[0];
+}
+
+function getArrivalWindowState(batchId) {
+  const slot = getScheduleForBatchToday(batchId);
+  if (!slot) return { slot: null, allowed: false, reason: "No valid class schedule is assigned for today." };
+  const now = currentISTMinutes();
+  if (now < slot.start - 10) {
+    return { slot, allowed: false, reason: `Arrival opens at ${formatMinutesAsTime(slot.start - 10)}.` };
+  }
+  if (now >= slot.end) {
+    return { slot, allowed: false, reason: "The scheduled class has already ended. Arrival is closed." };
+  }
+  return { slot, allowed: true, reason: "Arrival is available." };
 }
 
 function escapeHTML(value) {
@@ -508,23 +586,8 @@ async function loadAssignedSchedules() {
 }
 
 function formatClockTime(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-  if (!match) return raw;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) return raw;
-
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return date.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
+  const minutes = parseScheduleMinutes(String(value || "").slice(0, 5));
+  return minutes === null ? String(value || "") : formatMinutesAsTime(minutes);
 }
 
 function formatScheduleTime(schedule) {
@@ -664,12 +727,27 @@ function renderBatches() {
   }
 
   container.innerHTML = assignedBatches.map(batch => {
+    const timing = getScheduleForBatchToday(batch.id);
+    const arrivalWindow = getArrivalWindowState(batch.id);
+    const nowMinutes = currentISTMinutes();
     const batchId = escapeHTML(batch.id);
     const batchName = escapeHTML(batch.batchName || "Unnamed Batch");
     const sport = escapeHTML(batch.sport || "Sport not specified");
     const location = escapeHTML(batch.locationName || "Location not specified");
     const arrivalDone = arrivalRecords.has(batch.id);
     const completed = completedRecords.has(batch.id);
+    const attendanceDone = attendanceRecords.has(batch.id);
+    const arrivalEnabled = Boolean(timing && arrivalWindow.allowed && !arrivalDone && !completed);
+    const completionEnabled = Boolean(
+      timing && arrivalDone && attendanceDone && nowMinutes >= timing.end && !completed
+    );
+    const arrivalLabel = arrivalDone
+      ? "✓ Arrival Recorded"
+      : arrivalEnabled
+        ? "◎ I'm Here"
+        : timing && nowMinutes < timing.start - 10
+          ? `Opens at ${formatMinutesAsTime(timing.start - 10)}`
+          : "◎ I'm Here";
 
     let statusText = "Assigned Batch";
     let statusClass = "status";
@@ -712,19 +790,29 @@ function renderBatches() {
         <div class="class-actions">
           <button class="btn btn-arrival" type="button"
             data-action="arrival" data-batch="${batchId}"
-            ${arrivalDone || completed ? "disabled" : ""}>
-            ${arrivalDone ? "✓ Arrival Recorded" : "◎ I'm Here"}
+            ${arrivalEnabled ? "" : "disabled"}>
+            ${arrivalLabel}
           </button>
 
           <button class="btn btn-complete" type="button"
             data-action="complete" data-batch="${batchId}"
-            ${!arrivalDone || completed ? "disabled" : ""}>
+            ${completionEnabled ? "" : "disabled"}>
             ${completed ? "✓ Class Completed" : "✓ Class Completed"}
           </button>
         </div>
 
         <p class="info" id="gps-${batchId}">
-          GPS is requested only when you press an arrival or completion button.
+          ${completed
+            ? "Class and departure GPS have been recorded."
+            : !timing
+              ? "No valid class schedule is assigned for today. Actions are locked."
+              : !arrivalDone
+                ? arrivalWindow.reason
+                : !attendanceDone
+                  ? "Submit attendance during the scheduled class before completing it."
+                  : nowMinutes < timing.end
+                    ? `Class completion opens after ${formatMinutesAsTime(timing.end)}.`
+                    : "Class completion is available. GPS will be requested on confirmation."}
         </p>
       </div>
     `;
@@ -907,6 +995,22 @@ async function submitAttendance() {
 
   const batch = assignedBatches.find(item => item.id === batchId);
   if (!batch) return;
+
+  if (!arrivalRecords.has(batchId)) {
+    if (statusElement) statusElement.textContent = "Attendance is locked. Record your GPS arrival first.";
+    return;
+  }
+
+  const slot = getScheduleForBatchToday(batchId);
+  const nowMinutes = currentISTMinutes();
+  if (!slot || nowMinutes < slot.start || nowMinutes >= slot.end) {
+    if (statusElement) {
+      statusElement.textContent = slot
+        ? `Attendance can only be submitted between ${formatMinutesAsTime(slot.start)} and ${formatMinutesAsTime(slot.end)} (IST).`
+        : "Attendance is locked because no valid class schedule is assigned for today.";
+    }
+    return;
+  }
 
   const records = selectedBatchStudents.map(student => ({
     studentId: student.id,
@@ -1217,17 +1321,37 @@ async function recordBatchAction(action, batchId, button) {
   if (!batch || !auth.currentUser) return;
 
   const isArrival = action === "arrival";
+  const timingState = getArrivalWindowState(batchId);
+  const slot = timingState.slot;
 
-  if (isArrival && (arrivalRecords.has(batchId) || completedRecords.has(batchId))) {
+  if (!slot) {
+    alert("No valid class schedule is assigned for today. Please contact Admin.");
     return;
   }
 
-  if (!isArrival && !arrivalRecords.has(batchId)) {
-    alert("Please record your arrival first.");
-    return;
+  if (isArrival) {
+    if (arrivalRecords.has(batchId) || completedRecords.has(batchId)) return;
+    if (!timingState.allowed) {
+      alert(timingState.reason);
+      renderBatches();
+      return;
+    }
+  } else {
+    if (!arrivalRecords.has(batchId)) {
+      alert("Please record your GPS arrival first.");
+      return;
+    }
+    if (completedRecords.has(batchId)) return;
+    if (!attendanceRecords.has(batchId)) {
+      alert("Please submit attendance before completing the class.");
+      return;
+    }
+    if (currentISTMinutes() < slot.end) {
+      alert(`Class completion is available only after ${formatMinutesAsTime(slot.end)} (IST).`);
+      renderBatches();
+      return;
+    }
   }
-
-  if (!isArrival && completedRecords.has(batchId)) return;
 
   const card = document.querySelector(`[data-batch-card="${CSS.escape(batchId)}"]`);
   const status = document.getElementById("gps-" + batchId);
@@ -1247,6 +1371,7 @@ async function recordBatchAction(action, batchId, button) {
 
     if (isArrival) {
       arrivalRecords.add(batchId);
+      arrivalScheduleByBatch.set(batchId, slot.schedule.id);
       status.textContent =
         "Arrival GPS record saved successfully for the Admin. No WhatsApp message was sent.";
     } else {
@@ -1432,6 +1557,7 @@ onAuthStateChanged(auth, async user => {
     assignedSchedules = [];
     arrivalRecords.clear();
     completedRecords.clear();
+    arrivalScheduleByBatch.clear();
     attendanceRecords.clear();
     showLogin();
     return;
