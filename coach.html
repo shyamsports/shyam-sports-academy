@@ -323,6 +323,7 @@ let completedRecords = new Set();
 let arrivalScheduleByBatch = new Map();
 let attendanceRecords = new Map();
 let attendanceSaving = false;
+const inFlightBatchActions = new Set();
 let loadedCorrectionAttendance = null;
 let correctionSubmitting = false;
 
@@ -458,12 +459,27 @@ function getArrivalWindowState(batchId) {
   if (!slot) return { slot: null, allowed: false, reason: "No valid class schedule is assigned for today." };
   const now = currentISTMinutes();
   if (now < slot.start - 10) {
-    return { slot, allowed: false, reason: `Arrival opens at ${formatMinutesAsTime(slot.start - 10)}.` };
+    return { slot, allowed: false, reason: `🔒 Class locked. Arrival opens at ${formatMinutesAsTime(slot.start - 10)}.` };
   }
   if (now >= slot.end) {
-    return { slot, allowed: false, reason: "The scheduled class has already ended. Arrival is closed." };
+    return { slot, allowed: false, reason: "🔒 The scheduled class has ended. Arrival is closed." };
   }
   return { slot, allowed: true, reason: "Arrival is available." };
+}
+
+/* Departure can only be recorded during the 10 minutes immediately after
+   the scheduled end time. This prevents closing an old class hours later. */
+function getCompletionWindowState(batchId) {
+  const slot = getScheduleForBatchToday(batchId);
+  if (!slot) return { slot: null, allowed: false, reason: "No valid class schedule is assigned for today." };
+  const now = currentISTMinutes();
+  if (now < slot.end) {
+    return { slot, allowed: false, reason: `🔒 Class completion opens at ${formatMinutesAsTime(slot.end)}.` };
+  }
+  if (now >= slot.end + 10) {
+    return { slot, allowed: false, reason: "🔒 The 10-minute close-out window has ended. Please contact Admin if a correction is needed." };
+  }
+  return { slot, allowed: true, reason: "Class completion is available. Record departure GPS now." };
 }
 
 function escapeHTML(value) {
@@ -741,13 +757,16 @@ function renderBatches() {
     const completionEnabled = Boolean(
       timing && arrivalDone && attendanceDone && nowMinutes >= timing.end && !completed
     );
+    const completionWindow = getCompletionWindowState(batch.id);
     const arrivalLabel = arrivalDone
       ? "✓ Arrival Recorded"
       : arrivalEnabled
         ? "◎ I'm Here"
         : timing && nowMinutes < timing.start - 10
-          ? `Opens at ${formatMinutesAsTime(timing.start - 10)}`
-          : "◎ I'm Here";
+          ? `🔒 Opens at ${formatMinutesAsTime(timing.start - 10)}`
+          : timing && nowMinutes >= timing.end
+            ? "🔒 Arrival Closed"
+            : "🔒 I'm Here";
 
     let statusText = "Assigned Batch";
     let statusClass = "status";
@@ -757,6 +776,9 @@ function renderBatches() {
       statusClass = "status done";
     } else if (arrivalDone) {
       statusText = "Arrival Recorded";
+      statusClass = "status wait";
+    } else if (timing && !arrivalWindow.allowed) {
+      statusText = "🔒 Locked";
       statusClass = "status wait";
     }
 
@@ -797,7 +819,7 @@ function renderBatches() {
           <button class="btn btn-complete" type="button"
             data-action="complete" data-batch="${batchId}"
             ${completionEnabled ? "" : "disabled"}>
-            ${completed ? "✓ Class Completed" : "✓ Class Completed"}
+${completed ? "✓ Class Completed" : completionEnabled ? "✓ Class Completed" : timing && nowMinutes < timing.end ? `🔒 Available at ${formatMinutesAsTime(timing.end)}` : "🔒 Class Completed"}
           </button>
         </div>
 
@@ -810,9 +832,7 @@ function renderBatches() {
                 ? arrivalWindow.reason
                 : !attendanceDone
                   ? "Submit attendance during the scheduled class before completing it."
-                  : nowMinutes < timing.end
-                    ? `Class completion opens after ${formatMinutesAsTime(timing.end)}.`
-                    : "Class completion is available. GPS will be requested on confirmation."}
+                  : completionWindow.reason}
         </p>
       </div>
     `;
@@ -842,13 +862,14 @@ function refreshBatchActionButtons() {
 
     const slot = getScheduleForBatchToday(batch.id);
     const arrivalWindow = getArrivalWindowState(batch.id);
+    const completionWindow = getCompletionWindowState(batch.id);
     const arrivalDone = arrivalRecords.has(batch.id);
     const completed = completedRecords.has(batch.id);
     const attendanceDone = attendanceRecords.has(batch.id);
 
     const arrivalEnabled = Boolean(slot && arrivalWindow.allowed && !arrivalDone && !completed);
     const completionEnabled = Boolean(
-      slot && arrivalDone && attendanceDone && nowMinutes >= slot.end && !completed
+      slot && arrivalDone && attendanceDone && completionWindow.allowed && !completed
     );
 
     arrivalButton.disabled = !arrivalEnabled;
@@ -857,19 +878,32 @@ function refreshBatchActionButtons() {
       : arrivalEnabled
         ? "◎ I'm Here"
         : slot && nowMinutes < slot.start - 10
-          ? `Opens at ${formatMinutesAsTime(slot.start - 10)}`
-          : "◎ I'm Here";
+          ? `🔒 Opens at ${formatMinutesAsTime(slot.start - 10)}`
+          : slot && nowMinutes >= slot.end
+            ? "🔒 Arrival Closed"
+            : "🔒 I'm Here";
 
     completeButton.disabled = !completionEnabled || completed;
-    completeButton.textContent = completed ? "✓ Class Completed" : "✓ Class Completed";
+    completeButton.textContent = completed
+      ? "✓ Class Completed"
+      : completionEnabled
+        ? "✓ Class Completed"
+        : slot && nowMinutes < slot.end
+          ? `🔒 Available at ${formatMinutesAsTime(slot.end)}`
+          : slot && nowMinutes >= slot.end + 10
+            ? "🔒 Close-out Window Ended"
+            : "🔒 Class Completed";
 
-    if (status && !completed && !arrivalDone && !slot) {
-      status.textContent = "No valid class schedule is assigned for today. Actions are locked.";
+    if (status && !completed) {
+      if (!slot) status.textContent = "🔒 No valid class schedule is assigned for today. All actions are locked.";
+      else if (!arrivalDone) status.textContent = arrivalWindow.reason;
+      else if (!attendanceDone) status.textContent = "Submit attendance during the scheduled class before completing it.";
+      else status.textContent = completionWindow.reason;
     }
   });
 }
 
-setInterval(refreshBatchActionButtons, 15000);
+setInterval(refreshBatchActionButtons, 1000);
 
 async function loadStudentCount(batch) {
   const studentQuery = query(
@@ -1077,6 +1111,12 @@ async function submitAttendance() {
   if (statusElement) statusElement.textContent = "Saving attendance to Firebase...";
 
   try {
+    const latestSlot = getScheduleForBatchToday(batchId);
+    const latestNow = currentISTMinutes();
+    if (!latestSlot || latestSlot.schedule.id !== slot.schedule.id ||
+        latestNow < latestSlot.start || latestNow >= latestSlot.end) {
+      throw new Error("The scheduled attendance window has closed. Attendance was not saved.");
+    }
     await setDoc(
       doc(db, "studentAttendance", attendanceDocumentId),
       {
@@ -1369,6 +1409,7 @@ async function recordBatchAction(action, batchId, button) {
   const timingState = getArrivalWindowState(batchId);
   const slot = timingState.slot;
 
+  if (inFlightBatchActions.has(batchId)) return;
   if (!slot) {
     alert("No valid class schedule is assigned for today. Please contact Admin.");
     return;
@@ -1391,8 +1432,9 @@ async function recordBatchAction(action, batchId, button) {
       alert("Please submit attendance before completing the class.");
       return;
     }
-    if (currentISTMinutes() < slot.end) {
-      alert(`Class completion is available only after ${formatMinutesAsTime(slot.end)} (IST).`);
+    const completionWindow = getCompletionWindowState(batchId);
+    if (!completionWindow.allowed) {
+      alert(completionWindow.reason);
       renderBatches();
       return;
     }
@@ -1404,6 +1446,7 @@ async function recordBatchAction(action, batchId, button) {
   if (!card || !status) return;
 
   const actionButtons = card.querySelectorAll(".class-actions button");
+  inFlightBatchActions.add(batchId);
   actionButtons.forEach(item => item.disabled = true);
 
   button.textContent = isArrival ? "Checking GPS..." : "Saving Departure...";
@@ -1412,6 +1455,16 @@ async function recordBatchAction(action, batchId, button) {
 
   try {
     const position = await getCurrentGPS();
+    const freshSlot = getScheduleForBatchToday(batchId);
+    if (!freshSlot || freshSlot.schedule.id !== slot.schedule.id) {
+      throw new Error("The assigned class schedule changed. Refresh the dashboard and try again.");
+    }
+    if (isArrival && !getArrivalWindowState(batchId).allowed) {
+      throw new Error(getArrivalWindowState(batchId).reason);
+    }
+    if (!isArrival && !getCompletionWindowState(batchId).allowed) {
+      throw new Error(getCompletionWindowState(batchId).reason);
+    }
     await saveCoachActivity(isArrival ? "arrival" : "departure", position, batch);
 
     if (isArrival) {
@@ -1435,6 +1488,9 @@ async function recordBatchAction(action, batchId, button) {
     actionButtons.forEach(item => item.disabled = false);
     button.disabled = false;
     button.textContent = isArrival ? "◎ I'm Here" : "✓ Retry Class Completion";
+  } finally {
+    inFlightBatchActions.delete(batchId);
+    refreshBatchActionButtons();
   }
 }
 
