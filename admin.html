@@ -157,6 +157,7 @@ body.auth-locked .layout{display:none}
       <input id="adminPassword" type="password" placeholder="Enter password" autocomplete="current-password" required>
       <button class="btn" type="submit" id="loginButton">Login to Dashboard</button>
       <div id="loginMessage" role="alert"></div>
+      <button class="btn light" type="button" id="retryAdminVerification" style="display:none;margin-top:12px">Retry Account Verification</button>
     </form>
   </div>
 </div>
@@ -602,7 +603,7 @@ function demo(action){alert(action+" has not been connected yet.");}
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,collection,query,where,getDocs,updateDoc,setDoc,deleteDoc,serverTimestamp,runTransaction} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -618,6 +619,7 @@ const firebaseConfig={
 const ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
+const authPersistenceReady=setPersistence(auth,browserLocalPersistence);
 const db=getFirestore(app);
 
 const loginScreen=document.getElementById("adminLoginScreen");
@@ -664,6 +666,16 @@ function showLogin(message=""){
  document.body.classList.add("auth-locked");
  loginScreen.style.display="flex";
  loginMessage.textContent=message;
+ const retry=document.getElementById("retryAdminVerification");
+ if(retry)retry.style.display="none";
+}
+
+function showAdminVerificationRetry(message){
+ document.body.classList.add("auth-locked");
+ loginScreen.style.display="flex";
+ loginMessage.textContent=message;
+ const retry=document.getElementById("retryAdminVerification");
+ if(retry)retry.style.display=auth.currentUser?"block":"none";
 }
 
 /* ADMIN AUTHENTICATION */
@@ -687,6 +699,8 @@ async function verifyAdmin(user){
   throw error;
  }
  currentAdmin=user;
+ const retry=document.getElementById("retryAdminVerification");
+ if(retry)retry.style.display="none";
  loginScreen.style.display="none";
  document.body.classList.remove("auth-locked");
  const loaders=[
@@ -747,17 +761,36 @@ loginForm.addEventListener("submit",async event=>{
  const email=document.getElementById("adminEmail").value.trim();
  const password=document.getElementById("adminPassword").value;
  try{
+  await authPersistenceReady;
   const credential=await signInWithEmailAndPassword(auth,email,password);
   await safeVerify(credential.user);
  }catch(error){
   if(error.code==="admin/unauthorized"&&auth.currentUser){
    try{await signOut(auth)}catch(_){}
+   showLogin(error.message||"This account is not authorized.");
+  }else if(auth.currentUser&&auth.currentUser.uid===ADMIN_UID){
+   showAdminVerificationRetry("Your Firebase session is active, but the Admin profile could not be checked. You do not need to enter your password again. Check the connection and retry account verification.");
+  }else{
+   showLogin(error.message||"Login failed. Please try again.");
   }
-  showLogin(error.message||"Login failed. Please try again.");
  }finally{
   loginButton.disabled=false;
   loginButton.textContent="Login to Dashboard";
  }
+});
+
+document.getElementById("retryAdminVerification").addEventListener("click",async()=>{
+ const button=document.getElementById("retryAdminVerification");
+ if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)return;
+ button.disabled=true;button.textContent="Checking...";
+ try{await safeVerify(auth.currentUser)}
+ catch(error){
+  if(error.code==="admin/unauthorized"){
+   try{await signOut(auth)}catch(_){}
+   showLogin(error.message||"This account is not authorized.");
+  }else showAdminVerificationRetry("Firestore verification is still unavailable. Your Firebase session remains active; please retry when the connection is stable.");
+ }
+ finally{button.disabled=false;button.textContent="Retry Account Verification";}
 });
 
 onAuthStateChanged(auth,async user=>{
@@ -771,7 +804,11 @@ onAuthStateChanged(auth,async user=>{
   if(error.code==="admin/unauthorized"){
    try{await signOut(auth)}catch(_){}
   }
-  showLogin(error.message||"Could not verify your admin account. Please refresh and try again.");
+  if(auth.currentUser&&auth.currentUser.uid===ADMIN_UID){
+   showAdminVerificationRetry("Your Admin session is still active. Account verification could not reach Firestore. Retry without signing in again.");
+  }else{
+   showLogin(error.message||"Could not verify your admin account. Please try again.");
+  }
  }
 });
 
