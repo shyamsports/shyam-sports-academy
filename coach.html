@@ -540,6 +540,10 @@ function showSection(sectionId, button) {
   document.querySelectorAll(".nav-item").forEach(item => {
     item.classList.toggle("active", item === button);
   });
+
+  if (sectionId === "messages") {
+    autoSelectActiveMessageBatch();
+  }
 }
 
 document.querySelectorAll(".nav-item").forEach(button => {
@@ -1656,6 +1660,30 @@ async function loadCoachMessageTemplates(batchId){
   status.textContent="Could not load Admin templates: "+getFriendlyError(error);
  }
 }
+function getCurrentlyActiveMessageBatchId(){
+ const now=currentISTMinutes();
+ const activeSchedules=assignedSchedules
+  .filter(schedule=>scheduleAppliesToday(schedule))
+  .map(schedule=>({
+   batchId:schedule.batchId,
+   start:parseScheduleMinutes(schedule.startTime),
+   end:parseScheduleMinutes(schedule.endTime)
+  }))
+  .filter(item=>item.batchId&&item.start!==null&&item.end!==null&&item.end>item.start&&now>=item.start&&now<item.end)
+  .sort((a,b)=>a.start-b.start);
+ const activeBatch=activeSchedules.find(item=>assignedBatches.some(batch=>batch.id===item.batchId));
+ return activeBatch?.batchId||"";
+}
+function autoSelectActiveMessageBatch(){
+ const select=document.getElementById("messageBatchSelect");
+ if(!select||!assignedBatches.length)return;
+ const activeBatchId=getCurrentlyActiveMessageBatchId();
+ if(!activeBatchId||!Array.from(select.options).some(option=>option.value===activeBatchId))return;
+ if(select.value!==activeBatchId){
+  select.value=activeBatchId;
+  loadCoachMessageTemplates(activeBatchId);
+ }
+}
 function populateMessageBatchSelect(){
  const select=document.getElementById("messageBatchSelect");
  if(!select)return;
@@ -1664,8 +1692,10 @@ function populateMessageBatchSelect(){
   select.add(new Option((batch.batchName||"Batch")+" — "+(batch.sport||"Sport"),batch.id));
  });
  if(assignedBatches.length){
-  select.value=assignedBatches[0].id;
-  loadCoachMessageTemplates(assignedBatches[0].id);
+  const activeBatchId=getCurrentlyActiveMessageBatchId();
+  const initialBatchId=activeBatchId||assignedBatches[0].id;
+  select.value=initialBatchId;
+  loadCoachMessageTemplates(initialBatchId);
  }else{
   document.getElementById("messageTemplateLoadStatus").textContent="No active batches are assigned to your account.";
  }
@@ -1673,6 +1703,12 @@ function populateMessageBatchSelect(){
 document.getElementById("messageBatchSelect").addEventListener("change",event=>{
  loadCoachMessageTemplates(event.target.value);
 });
+
+/* Keep the active class selected automatically if its time begins while Messages is open. */
+setInterval(()=>{
+ const messagesSection=document.getElementById("messages");
+ if(messagesSection?.classList.contains("active"))autoSelectActiveMessageBatch();
+},30000);
 
 /* Parent messages are separate from GPS actions. */
 async function copyMessage(elementId) {
