@@ -161,6 +161,7 @@ body.auth-locked .layout{display:none}
   </div>
 </div>
 
+<div id="adminLoadNotice" role="status" aria-live="polite" style="display:none;position:relative;z-index:20;margin:12px 16px;padding:12px 14px;border:1px solid #e5b85c;border-radius:12px;background:#fff8e8;color:#4b3a16;font-size:13px"></div>
 <div class="mobile-overlay" id="overlay" onclick="closeMenu()"></div>
 
 <aside class="sidebar" id="sidebar">
@@ -669,32 +670,41 @@ function showLogin(message=""){
 
 async function verifyAdmin(user){
  if(!user||user.uid!==ADMIN_UID){
-  throw new Error("This account is not authorized to access the Admin Dashboard.");
+  const error=new Error("This account is not authorized to access the Admin Dashboard.");
+  error.code="admin/unauthorized";
+  throw error;
  }
- const adminSnapshot=await getDoc(doc(db,"users",user.uid));
+ let adminSnapshot;
+ try{
+  adminSnapshot=await getDoc(doc(db,"users",user.uid));
+ }catch(error){
+  error.code=error.code||"admin/profile-unavailable";
+  throw error;
+ }
  if(!adminSnapshot.exists()||adminSnapshot.data().role!=="admin"){
-  throw new Error("Admin permission could not be verified.");
+  const error=new Error("Admin permission could not be verified. Please contact the academy administrator.");
+  error.code="admin/unauthorized";
+  throw error;
  }
  currentAdmin=user;
  loginScreen.style.display="none";
  document.body.classList.remove("auth-locked");
- await loadCoachRequests();
- await loadCoachDirectory();
- await loadCoachActivity();
- await loadSports();
- await loadApprovedCoaches();
- await loadBatches();
- await loadScheduleBatchOptions();
- await loadSchedules();
- await loadTodayScheduleOverview();
- await loadStudentBatchOptions();
- await loadStudents();
- await loadOverviewStats();
- await loadGroupMappings();
- await loadMessageTemplateForAdmin();
- await loadAttendanceRecords();
- await loadCorrectionRequests();
- await loadCorrectionAuditHistory();
+ const loaders=[
+  loadCoachRequests,loadCoachDirectory,loadCoachActivity,loadSports,
+  loadApprovedCoaches,loadBatches,loadScheduleBatchOptions,loadSchedules,
+  loadTodayScheduleOverview,loadStudentBatchOptions,loadStudents,
+  loadOverviewStats,loadGroupMappings,loadMessageTemplateForAdmin,
+  loadAttendanceRecords,loadCorrectionRequests,loadCorrectionAuditHistory
+ ];
+ const results=await Promise.allSettled(loaders.map(load=>Promise.resolve().then(load)));
+ const failed=results.filter(result=>result.status==="rejected").length;
+ const notice=document.getElementById("adminLoadNotice");
+ if(notice){
+  notice.style.display=failed?"block":"none";
+  notice.textContent=failed
+   ? failed+" dashboard section(s) could not load. Your login is still active. Use the section Refresh button or reload this page to retry."
+   : "";
+ }
 }
 
 async function safeVerify(user){
@@ -734,7 +744,9 @@ loginForm.addEventListener("submit",async event=>{
   const credential=await signInWithEmailAndPassword(auth,email,password);
   await safeVerify(credential.user);
  }catch(error){
-  if(auth.currentUser){try{await signOut(auth)}catch(_){}}
+  if(error.code==="admin/unauthorized"&&auth.currentUser){
+   try{await signOut(auth)}catch(_){}
+  }
   showLogin(error.message||"Login failed. Please try again.");
  }finally{
   loginButton.disabled=false;
@@ -750,8 +762,10 @@ onAuthStateChanged(auth,async user=>{
  }
  try{await safeVerify(user)}
  catch(error){
-  try{await signOut(auth)}catch(_){}
-  showLogin(error.message);
+  if(error.code==="admin/unauthorized"){
+   try{await signOut(auth)}catch(_){}
+  }
+  showLogin(error.message||"Could not verify your admin account. Please refresh and try again.");
  }
 });
 
