@@ -150,6 +150,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </header>
 
 <main class="content">
+  <div id="coachLoadNotice" role="status" aria-live="polite" style="display:none;margin:0 0 14px;padding:12px 14px;border:1px solid #e5b85c;border-radius:12px;background:#fff8e8;color:#4b3a16;font-size:13px">
+    Some dashboard data could not load. Your login is still active.
+    <button type="button" id="retryCoachLoad" style="margin-left:8px">Retry</button>
+  </div>
   <div class="welcome">
     <div>
       <h2 id="welcomeName">Good Day, Coach!</h2>
@@ -355,28 +359,44 @@ function showDashboard(name) {
 
 async function verifyCoach(user) {
   const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  let userSnap;
+  try {
+    userSnap = await getDoc(userRef);
+  } catch (error) {
+    error.code = error.code || "coach/profile-unavailable";
+    throw error;
+  }
 
   if (!userSnap.exists()) {
-    throw new Error("Coach profile was not found. Please contact the academy admin.");
+    const error = new Error("Coach profile was not found. Please contact the academy admin.");
+    error.code = "coach/unauthorized";
+    throw error;
   }
 
   const data = userSnap.data();
 
   if (data.role !== "coach") {
-    throw new Error("This account is not registered as a coach.");
+    const error = new Error("This account is not registered as a coach.");
+    error.code = "coach/unauthorized";
+    throw error;
   }
 
   if (data.status === "pending") {
-    throw new Error("Your account is waiting for admin approval.");
+    const error = new Error("Your account is waiting for admin approval.");
+    error.code = "coach/not-approved";
+    throw error;
   }
 
   if (data.status === "rejected") {
-    throw new Error("Your coach registration has been rejected. Please contact the academy admin.");
+    const error = new Error("Your coach registration has been rejected. Please contact the academy admin.");
+    error.code = "coach/not-approved";
+    throw error;
   }
 
   if (data.status !== "approved") {
-    throw new Error("Your account status is not valid. Please contact the academy admin.");
+    const error = new Error("Your account status is not valid. Please contact the academy admin.");
+    error.code = "coach/not-approved";
+    throw error;
   }
 
   return data;
@@ -1673,19 +1693,29 @@ onAuthStateChanged(auth, async user => {
   try {
     currentProfile = await verifyCoach(user);
     showDashboard(currentProfile.name);
-
-    await loadCoachDashboard();
-  } catch (error) {
-    console.error("Coach dashboard loading error:", error);
+    const loadNotice = document.getElementById("coachLoadNotice");
+    if (loadNotice) loadNotice.style.display = "none";
 
     try {
-      await signOut(auth);
-    } catch (signOutError) {
-      console.error("Sign out error:", signOutError);
+      await loadCoachDashboard();
+    } catch (loadError) {
+      console.error("Coach dashboard data loading error:", loadError);
+      if (loadNotice) {
+        loadNotice.style.display = "block";
+        loadNotice.textContent = "Some dashboard data could not load. Your login is still active. Check your connection and tap Retry.";
+      }
     }
-
+  } catch (error) {
+    console.error("Coach account verification error:", error);
+    if (error.code === "coach/unauthorized") {
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error("Sign out error:", signOutError);
+      }
+    }
     showLogin();
-    showLoginMessage(getFriendlyError(error), "error");
+    showLoginMessage(getFriendlyError(error) + (error.code === "coach/profile-unavailable" ? " Your login is محفوظ. Refresh this page to retry verification." : ""), "error");
   } finally {
     authCheckInProgress = false;
     loginBtn.disabled = false;
@@ -1701,6 +1731,25 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
     showLoginMessage("You have been logged out.", "success");
   } catch (error) {
     showLoginMessage("Unable to log out. Please try again.", "error");
+  }
+});
+
+document.getElementById("retryCoachLoad")?.addEventListener("click", async () => {
+  const button = document.getElementById("retryCoachLoad");
+  const notice = document.getElementById("coachLoadNotice");
+  if (!auth.currentUser || !currentProfile) return;
+  button.disabled = true;
+  button.textContent = "Retrying...";
+  try {
+    await loadCoachDashboard();
+    notice.style.display = "none";
+  } catch (error) {
+    console.error("Coach dashboard retry failed:", error);
+    notice.style.display = "block";
+    notice.firstChild.textContent = "Dashboard data is still unavailable. Your login remains active. Please retry.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Retry";
   }
 });
 
