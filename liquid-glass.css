@@ -1208,3 +1208,80 @@ td,td *{color:var(--ssa-ink)!important}
     background:rgba(157,210,235,.88)!important;
   }
 }
+
+
+/* =========================================================
+   SEMANTIC COLOUR + ICON REFINEMENT
+   Shared visual layer only — application logic is untouched.
+   ========================================================= */
+:root{
+  --ssa-text:#111827;
+  --ssa-blue:#2878e8;
+  --ssa-blue-soft:#eaf2ff;
+  --ssa-green:#15965b;
+  --ssa-green-soft:#e8f7ef;
+  --ssa-red:#d94350;
+  --ssa-red-soft:#fff0f0;
+  --ssa-orange:#df8426;
+  --ssa-orange-soft:#fff3e6;
+  --ssa-purple:#7959d6;
+  --ssa-purple-soft:#f1edff;
+  --ssa-slate:#64748b;
+  --ssa-slate-soft:#eef2f6;
+}
+body{color:var(--ssa-text)!important}
+.content,.content p,.content small,.content label,.content th,.content td,
+.content strong,.page-heading h1,.page-heading p,.panel-heading h3,
+.stat-value,.stat-label,.stat-note,.section-title{color:var(--ssa-text)}
+.page-heading h1,.panel-heading h3,.topbar h2{color:#111827!important}
+.stat-value{font-weight:800;color:#111827!important;font-variant-numeric:tabular-nums}
+.nav-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 22px}
+.nav-icon svg,.quick span svg,.stat-icon svg,.sport-icon svg,
+.nav-item span svg,.portal-heading-icon svg{width:20px;height:20px;stroke-width:2.15}
+.quick span{display:inline-flex;align-items:center;justify-content:center;min-width:26px;min-height:26px}
+.stat-icon{display:grid;place-items:center}
+.sport-icon{display:grid!important;place-items:center}
+.portal-card h3{display:flex;align-items:center;gap:10px}
+.portal-heading-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;flex:0 0 38px}
+[data-icon-tone="blue"]{color:var(--ssa-blue)!important}
+[data-icon-tone="green"]{color:var(--ssa-green)!important}
+[data-icon-tone="red"]{color:var(--ssa-red)!important}
+[data-icon-tone="orange"]{color:var(--ssa-orange)!important}
+[data-icon-tone="purple"]{color:var(--ssa-purple)!important}
+[data-icon-tone="slate"]{color:var(--ssa-slate)!important}
+.stat-icon[data-icon-tone="blue"],.quick span[data-icon-tone="blue"],.sport-icon[data-icon-tone="blue"],.portal-heading-icon[data-icon-tone="blue"]{background:var(--ssa-blue-soft)!important}
+.stat-icon[data-icon-tone="green"],.quick span[data-icon-tone="green"],.sport-icon[data-icon-tone="green"],.portal-heading-icon[data-icon-tone="green"]{background:var(--ssa-green-soft)!important}
+.stat-icon[data-icon-tone="red"],.quick span[data-icon-tone="red"],.sport-icon[data-icon-tone="red"],.portal-heading-icon[data-icon-tone="red"]{background:var(--ssa-red-soft)!important}
+.stat-icon[data-icon-tone="orange"],.quick span[data-icon-tone="orange"],.sport-icon[data-icon-tone="orange"],.portal-heading-icon[data-icon-tone="orange"]{background:var(--ssa-orange-soft)!important}
+.stat-icon[data-icon-tone="purple"],.quick span[data-icon-tone="purple"],.sport-icon[data-icon-tone="purple"],.portal-heading-icon[data-icon-tone="purple"]{background:var(--ssa-purple-soft)!important}
+.stat-icon[data-icon-tone="slate"],.quick span[data-icon-tone="slate"],.sport-icon[data-icon-tone="slate"],.portal-heading-icon[data-icon-tone="slate"]{background:var(--ssa-slate-soft)!important}
+.sidebar .nav-icon[data-icon-tone="blue"]{color:#75baff!important}
+.sidebar .nav-icon[data-icon-tone="green"]{color:#61d69b!important}
+.sidebar .nav-icon[data-icon-tone="red"]{color:#ff8993!important}
+.sidebar .nav-icon[data-icon-tone="orange"]{color:#ffbd70!important}
+.sidebar .nav-icon[data-icon-tone="purple"]{color:#c1aaff!important}
+.sidebar .nav-icon[data-icon-tone="slate"]{color:#c3d0de!important}
+.btn{background:linear-gradient(145deg,#438eea,#2368c9)!important;color:#fff!important}
+.btn.blue,.btn-primary{background:linear-gradient(145deg,#438eea,#2368c9)!important;color:#fff!important}
+.btn.green{background:linear-gradient(145deg,#25b875,#128451)!important;color:#fff!important}
+.btn.red{background:linear-gradient(145deg,#ef6871,#c93645)!important;color:#fff!important}
+.btn.light{background:#edf3fa!important;color:#111827!important}
+.btn-whatsapp,.btn-success{background:linear-gradient(145deg,#25b875,#128451)!important;color:#fff!important}
+.status.active,.status.approved,.status.present,.status.success,.status.done,
+.status.completed{background:var(--ssa-green-soft)!important;color:#117346!important}
+.status.pending,.status.warning{background:var(--ssa-orange-soft)!important;color:#a65e0d!important}
+.status.flagged,.status.rejected,.status.absent,.status.error{background:var(--ssa-red-soft)!important;color:#bd2638!important}
+#loginMessage.error,#message.error{background:var(--ssa-red-soft)!important;color:#bd2638!important}
+#loginMessage.success,#message.success{background:var(--ssa-green-soft)!important;color:#117346!important}
+#loginMessage.info{background:var(--ssa-blue-soft)!important;color:#1f5fae!important}
+@media(max-width:700px){
+  .nav-icon svg{width:19px;height:19px}
+  .portal-heading-icon{width:34px;height:34px;flex-basis:34px}
+}
+
+.section-heading-icon,.form-heading-icon,.contact-icon{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-right:9px}
+.section-heading-icon svg,.form-heading-icon svg{width:22px;height:22px;stroke-width:2.1}
+.form-heading-icon{width:36px;height:36px;border-radius:11px;background:var(--ssa-blue-soft)}
+.form-heading-icon[data-icon-tone="green"]{background:var(--ssa-green-soft)}
+.contact-icon{margin-right:7px}
+.contact-icon svg{width:16px;height:16px;stroke-width:2.2}
