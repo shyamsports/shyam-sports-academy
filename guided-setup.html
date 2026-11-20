@@ -44,13 +44,14 @@ h2{font-size:18px;margin:0 0 6px;color:#153b60}.hint{font-size:12px;color:#75869
 <script type="module">
 import {initializeApp,getApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signOut,deleteUser} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,getDoc,getDocs,collection,query,where,writeBatch,serverTimestamp,increment,updateDoc} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,getDoc,getDocs,collection,query,where,writeBatch,serverTimestamp,increment,updateDoc,setDoc,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const config={apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",authDomain:"shyam-sports-academy.firebaseapp.com",projectId:"shyam-sports-academy",storageBucket:"shyam-sports-academy.firebasestorage.app",messagingSenderId:"204237173149",appId:"1:204237173149:web:84f0e36a4981e6adbf3f74",measurementId:"G-548JZ1L682"};
 const ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
 const app=getApp();
 const auth=getAuth(app);
 const db=getFirestore(app);
+let groupMappings=[];
 const $=id=>document.getElementById(id);
 const safe=v=>v==null?"":String(v);
 const slug=v=>safe(v).trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -74,12 +75,13 @@ function activeLocations(){return locations.filter(x=>x.status==="active")}
 function activeSports(){return sports.filter(x=>x.status==="active")}
 function approvedCoaches(){return coaches.filter(x=>x.status==="approved")}
 async function loadData(){
- const [l,s,b,u,sc]=await Promise.all(["locations","sports","batches","users","schedules"].map(n=>getDocs(collection(db,n))));
+ const [l,s,b,u,sc,g]=await Promise.all(["locations","sports","batches","users","schedules","whatsappGroups"].map(n=>getDocs(collection(db,n))));
  locations=l.docs.map(d=>({id:d.id,...d.data()}));
  sports=s.docs.map(d=>({id:d.id,...d.data()}));
  batches=b.docs.map(d=>({id:d.id,...d.data()}));
  coaches=u.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.role==="coach");
  schedules=sc.docs.map(d=>({id:d.id,...d.data()}));
+ groupMappings=g.docs.map(d=>({id:d.id,...d.data()}));
 }
 function currentLocationName(){return locations.find(x=>x.id===studentState.locationId)?.name||studentState.newLocationName}
 function currentSport(){return studentState.sport||studentState.newSport}
@@ -102,8 +104,8 @@ function renderStudent(){
   html+='<div class="field"><label for="stSchedule">Existing Schedule</label><select id="stSchedule">'+options(related,x=>x.id,x=>(x.daysOfWeek||[]).join(", ")+" "+x.startTime+"–"+x.endTime,"Select schedule")+'</select></div><div class="choice"><input type="checkbox" id="stSkipSchedule" '+(studentState.skipSchedule?"checked":"")+'><label for="stSkipSchedule">No schedule is required right now</label></div><h3 style="font-size:14px;margin:14px 0">Or create a new schedule</h3>'+scheduleFields("st",studentState);
  }else if(studentStep===4){
   const existing=studentState.batchId?schedules.filter(x=>x.batchId===studentState.batchId):[];
-  const group=studentState.batchId?null:null;
-  html='<h2>WhatsApp Group</h2><p class="hint">One group mapping is allowed per batch. Enter the group name or mark that it will be added later.</p>'+field("WhatsApp Group Name","stGroup",studentState.groupName)+'<div class="choice"><input type="checkbox" id="stSkipGroup" '+(studentState.skipGroup?"checked":"")+'><label for="stSkipGroup">WhatsApp group will be added later</label></div><p class="note">Existing group mappings are checked automatically before saving.</p>';
+  const existingGroup=groupMappings.find(x=>x.id===studentState.batchId||x.batchDocId===studentState.batchId);
+  html='<h2>WhatsApp Group</h2><p class="hint">One group mapping is allowed per batch. Keep its existing mapping, add a new one, or add it later.</p>'+(existingGroup?'<div class="choice"><input type="checkbox" id="stKeepGroup" '+(studentState.keepGroup!==false?"checked":"")+'><label for="stKeepGroup">Keep existing group: '+esc(existingGroup.groupName)+'</label></div>':"") +field("New WhatsApp Group Name","stGroup",studentState.groupName)+'<div class="choice"><input type="checkbox" id="stSkipGroup" '+(studentState.skipGroup?"checked":"")+'><label for="stSkipGroup">WhatsApp group will be added later</label></div>';
  }else{
   const b=getStudentBatch();
   const loc=locations.find(x=>x.id===studentState.locationId);
@@ -130,7 +132,7 @@ function captureStudent(){
  if(studentStep===1){studentState.locationId=$("stLocation")?.value||"";studentState.sport=$("stSport")?.value||"";studentState.newLocationName=$("stNewLocation")?.value.trim()||"";studentState.newLocationAddress=$("stNewAddress")?.value.trim()||"";studentState.newSport=$("stNewSport")?.value.trim()||""}
  if(studentStep===2){studentState.batchId=$("stBatch")?.value||"";studentState.newBatchName=$("stNewBatch")?.value.trim()||"";studentState.coachId=$("stCoach")?.value||""}
  if(studentStep===3){studentState.scheduleId=$("stSchedule")?.value||"";studentState.skipSchedule=$("stSkipSchedule")?.checked||false;studentState.scheduleType=$("stScheduleType")?.value||"recurring";studentState.startTime=$("stStart")?.value||"";studentState.endTime=$("stEnd")?.value||"";studentState.classDate=$("stDate")?.value||"";studentState.days=Array.from(document.querySelectorAll("#stDays input:checked")).map(x=>x.value)}
- if(studentStep===4){studentState.groupName=$("stGroup")?.value.trim()||"";studentState.skipGroup=$("stSkipGroup")?.checked||false}
+ if(studentStep===4){studentState.groupName=$("stGroup")?.value.trim()||"";studentState.skipGroup=$("stSkipGroup")?.checked||false;studentState.keepGroup=$("stKeepGroup")?.checked||false}
  localStorage.setItem("ssaStudentGuidedDraft",JSON.stringify(studentState));
 }
 function validateStudent(){
@@ -140,7 +142,8 @@ function validateStudent(){
   if(!studentState.sport&&!studentState.newSport)throw Error("Select an active sport or enter a new sport name.");
   const loc=locations.find(x=>x.id===studentState.locationId);
   if(loc&&studentState.sport&&!loc.sports?.includes(studentState.sport))throw Error("This location does not support the selected sport. Choose another location or sport.");
-  if(studentState.newLocationName&&studentState.newSport==="")throw Error("Select or enter the sport supported at this new location.");
+  if(studentState.sport&&studentState.newSport)throw Error("Choose an existing sport or enter a new sport, not both.");
+  if(studentState.locationId&&studentState.newLocationName)throw Error("Choose an existing location or enter a new location, not both.");
  }
  if(studentStep===2){
   if(!studentState.batchId&&!studentState.newBatchName)throw Error("Select an existing active batch or enter a new batch name.");
@@ -151,7 +154,7 @@ function validateStudent(){
   if(studentState.scheduleType==="recurring"&&!studentState.days.length)throw Error("Choose at least one class day.");
   if(studentState.scheduleType==="date-specific"&&!studentState.classDate)throw Error("Choose a class date.");
  }
- if(studentStep===4&&!studentState.skipGroup&&!studentState.groupName)throw Error("Enter the WhatsApp group name or select Add Later.");
+ if(studentStep===4&&!studentState.skipGroup&&!studentState.keepGroup&&!studentState.groupName)throw Error("Enter the WhatsApp group name, keep the existing mapping, or select Add Later.");
 }
 async function nextStudent(){
  clearMessage("student");captureStudent();
@@ -193,6 +196,10 @@ async function saveStudentWorkflow(){
   const sportRef=doc(collection(db,"sports"));
   wb.set(sportRef,{name:sport,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  }
+ if(studentState.locationId&&studentState.newSport){
+  const location=locations.find(x=>x.id===locationId);
+  wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});
+ }
  let batch=getStudentBatch(),batchId=studentState.batchId;
  if(!batch){
   const coach=coaches.find(x=>x.id===studentState.coachId&&x.status==="approved");
@@ -208,10 +215,10 @@ async function saveStudentWorkflow(){
  if(!studentState.skipSchedule&&!studentState.scheduleId){
   const scheduleRef=doc(collection(db,"schedules"));wb.set(scheduleRef,{...makeSchedulePayload(batchId,batch),scheduleId:scheduleRef.id});
  }
- if(!studentState.skipGroup&&studentState.groupName){
+ if(!studentState.skipGroup&&!studentState.keepGroup&&studentState.groupName){
   const groupRef=doc(db,"whatsappGroups",batchId);
   const existing=await getDoc(groupRef);
-  if(existing.exists())throw Error("A WhatsApp group is already mapped to this batch. Choose Add Later or edit the existing mapping.");
+  if(existing.exists())throw Error("A WhatsApp group is already mapped to this batch. Keep the existing mapping or add it later.");
   wb.set(groupRef,{batchDocId:batchId,batchId,batchName:batch.batchName,sport:batch.sport,groupName:studentState.groupName,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  }
  await wb.commit();
