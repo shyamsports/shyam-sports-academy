@@ -3882,5 +3882,105 @@ onAuthStateChanged(reportAuth,user=>{
 </script>
 
   <script src="ui-effects.js" defer></script>
+
+<style id="ssa-module-search-styles">
+/* SSA_MODULE_SEARCH_V1 */
+.module-search{display:flex;align-items:center;gap:10px;margin:-8px 0 18px;padding:12px 14px;background:#fff;border:1px solid #e3eaf2;border-radius:12px;box-shadow:0 3px 12px #183b6010}
+.module-search .module-search-icon{font-size:17px;color:#52718f;flex:0 0 auto}
+.module-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#172b45;font-size:13px;padding:3px}
+.module-search input::placeholder{color:#91a0b1}
+.module-search-count{font-size:10px;color:#718399;white-space:nowrap}
+.module-search-empty{display:none;padding:14px;margin:8px 0 14px;border:1px dashed #d5e0eb;border-radius:9px;color:#718399;background:#f9fbfd;font-size:12px}
+@media(max-width:600px){.module-search{padding:10px 12px}.module-search-count{font-size:9px}}
+</style>
+<script id="ssa-module-search-script">
+/* SSA_MODULE_SEARCH_V1 — client-side search; reads existing rendered Firebase records only. */
+(function(){
+ "use strict";
+ const searchablePages=[
+  ["coaches","Search coaches by name, email, coach ID or status..."],
+  ["students","Search students by name, student ID, sport, batch or location..."],
+  ["sports","Search sports by name or status..."],
+  ["locations","Search locations by name or address..."],
+  ["batches","Search batches by name, batch ID, sport, coach or location..."],
+  ["schedule","Search schedules by batch, coach, day, date or time..."],
+  ["groups","Search WhatsApp groups by group name, batch or sport..."],
+  ["templates","Search message templates by name or message..."],
+  ["attendance","Search attendance by student, batch, coach or date..."],
+  ["gps","Search GPS records by coach, batch, event or date..."],
+  ["excel","Search batch export cards by batch, sport or location..."],
+  ["reports","Search report results by student, batch, coach or date..."],
+  ["corrections","Search correction requests by student, coach, batch or status..."]
+ ];
+ const normalise=value=>String(value||"").toLocaleLowerCase().trim();
+ function install(){
+  searchablePages.forEach(([pageId,placeholder])=>{
+   const page=document.getElementById(pageId);
+   if(!page||page.querySelector(".module-search"))return;
+   const heading=page.querySelector(".page-heading");
+   if(!heading)return;
+   const wrapper=document.createElement("div");
+   wrapper.className="module-search";
+   wrapper.innerHTML='<span class="module-search-icon" aria-hidden="true">⌕</span><input type="search" autocomplete="off" spellcheck="false" aria-label="Search this section"><span class="module-search-count" aria-live="polite">All records</span>';
+   const input=wrapper.querySelector("input");
+   const count=wrapper.querySelector(".module-search-count");
+   const empty=document.createElement("div");
+   empty.className="module-search-empty";
+   empty.textContent="No matching records found. Try another name or keyword.";
+   heading.insertAdjacentElement("afterend",wrapper);
+   wrapper.insertAdjacentElement("afterend",empty);
+   input.placeholder=placeholder;
+   let scheduled=false;
+   function applySearch(){
+    scheduled=false;
+    const term=normalise(input.value);
+    let total=0,matched=0;
+    page.querySelectorAll("tbody").forEach(body=>{
+     const rows=Array.from(body.querySelectorAll(":scope > tr"));
+     rows.forEach((row,index)=>{
+      if(!row.hasAttribute("data-ssa-search-order"))row.setAttribute("data-ssa-search-order",String(index));
+     });
+     const ranked=rows.map(row=>({row,match:!term||normalise(row.textContent).includes(term),order:Number(row.getAttribute("data-ssa-search-order"))||0}));
+     total+=rows.length;
+     matched+=ranked.filter(item=>item.match).length;
+     ranked.forEach(item=>{item.row.hidden=!item.match;});
+     const desired=ranked.filter(item=>item.match).sort((a,b)=>a.order-b.order)
+      .concat(ranked.filter(item=>!item.match).sort((a,b)=>a.order-b.order)).map(item=>item.row);
+     const current=Array.from(body.children);
+     if(desired.length===current.length&&desired.some((row,index)=>row!==current[index])){
+      desired.forEach(row=>body.appendChild(row));
+     }
+    });
+    page.querySelectorAll(".excel-batch-card").forEach(card=>{
+     total++;
+     const match=!term||normalise(card.textContent).includes(term);
+     card.hidden=!match;
+     if(match)matched++;
+    });
+    count.textContent=term?(matched+" of "+total+" found"):(total+" records");
+    empty.style.display=term&&matched===0?"block":"none";
+   }
+   function scheduleSearch(){
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(applySearch);
+   }
+   input.addEventListener("input",scheduleSearch);
+   const observer=new MutationObserver(scheduleSearch);
+   observer.observe(page,{childList:true,subtree:true});
+   page.addEventListener("click",event=>{
+    const nav=event.target.closest("button");
+    if(nav&&nav.closest(".page-heading")===null&&nav.textContent.trim()==="Refresh"){
+     scheduleSearch();
+    }
+   });
+   applySearch();
+  });
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});
+ else install();
+})();
+</script>
+
 </body>
 </html>
