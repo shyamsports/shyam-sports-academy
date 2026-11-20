@@ -181,6 +181,7 @@ async function saveStudentWorkflow(){
  const name=studentState.name,age=Number(studentState.age);
  let locationId=studentState.locationId,locationName="",sport=studentState.sport||studentState.newSport;
  if(!locationId){
+  if(locations.some(x=>x.name.toLowerCase()===studentState.newLocationName.toLowerCase()))throw Error("That location name already exists. Select the existing location instead.");
   const base=slug(studentState.newLocationName)||"location";
   locationId=base;let i=1;while(locations.some(x=>x.id===locationId))locationId=base+"-"+i++;
   locationName=studentState.newLocationName;
