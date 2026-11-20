@@ -94,8 +94,8 @@ function renderStudent(){
  }else if(studentStep===1){
   html='<h2>Choose Location & Sport</h2><p class="hint">Select existing records or add new ones here. New master records are created together with the final setup.</p><div class="grid">'+selectField("Location","stLocation",activeLocations(),x=>x.id,x=>x.name,"Select location")+selectField("Sport / Program","stSport",activeSports(),x=>x.name,x=>x.name,"Select sport")+'</div><div class="grid" style="margin-top:14px">'+field("New Location Name","stNewLocation",studentState.newLocationName)+field("New Location Address","stNewAddress",studentState.newLocationAddress)+field("New Sport Name","stNewSport",studentState.newSport)+'</div><p class="note">Fill either an existing selection or the matching new-record field. New location requires an address.</p>';
  }else if(studentStep===2){
-  const matching=batches.filter(x=>x.status==="active"&&(!studentState.locationId&&!studentState.newLocationName||x.locationId===studentState.locationId)&&(!currentSport()||x.sport===currentSport()));
-  html='<h2>Choose or Create Batch</h2><p class="hint">Only active batches are available for new student assignments.</p>'+selectField("Existing Batch","stBatch",matching,x=>x.id,x=>x.batchName+" — "+x.sport,"Select existing batch")+'<div style="margin:12px 0;text-align:center;color:#91a0af;font-size:12px">OR CREATE A NEW BATCH</div>'+field("New Batch Name","stNewBatch",studentState.newBatchName)+'<div class="grid" style="margin-top:14px">'+selectField("Approved Coach","stCoach",approvedCoaches(),x=>x.id,x=>x.name||x.email,"Select approved coach")+'</div><p class="note">A new batch requires an approved coach. If you need to register a new coach, open Coach Setup in this same page; your student draft remains saved.</p><button class="btn" type="button" id="openCoachSetup">Open Coach Setup</button>';
+  const matching=batches.filter(x=>(!studentState.locationId&&!studentState.newLocationName||x.locationId===studentState.locationId)&&(!currentSport()||x.sport===currentSport()));
+  html='<h2>Choose or Create Batch</h2><p class="hint">Only active batches are available for new student assignments.</p>'+selectField("Existing Batch","stBatch",matching,x=>x.id,x=>x.batchName+" — "+x.sport+(x.status==="active"?"":" (Inactive — reactivate)"),"Select existing batch")+'<div style="margin:12px 0;text-align:center;color:#91a0af;font-size:12px">OR CREATE A NEW BATCH</div>'+field("New Batch Name","stNewBatch",studentState.newBatchName)+'<div class="grid" style="margin-top:14px">'+selectField("Approved Coach","stCoach",approvedCoaches(),x=>x.id,x=>x.name||x.email,"Select approved coach")+'</div><p class="note">A new batch requires an approved coach. If you need to register a new coach, open Coach Setup in this same page; your student draft remains saved.</p><button class="btn" type="button" id="openCoachSetup">Open Coach Setup</button>';
  }else if(studentStep===3){
   const batch=getStudentBatch();
   const related=schedules.filter(x=>x.batchId===studentState.batchId&&x.status!=="cancelled"&&x.status!=="inactive");
@@ -203,14 +203,14 @@ async function saveStudentWorkflow(){
  }
  let batch=getStudentBatch(),batchId=studentState.batchId;const isNewBatch=!batch;
  if(!batch){
-  if(batches.some(x=>x.status==="active"&&safe(x.batchName).toLowerCase()===studentState.newBatchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists. Select that batch instead.");
+  if(batches.some(x=>safe(x.batchName).toLowerCase()===studentState.newBatchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists. Select that batch instead.");
   const coach=coaches.find(x=>x.id===studentState.coachId&&x.status==="approved");
   if(!coach)throw Error("The selected coach is no longer approved. Refresh and select an approved coach.");
   const batchRef=doc(collection(db,"batches"));batchId=batchRef.id;
   batch={id:batchId,batchId,batchName:studentState.newBatchName,sport,locationId,locationName,coachId:coach.id,coachName:coach.name||coach.email,status:"active",studentCount:studentState.status==="active"?1:0};
   wb.set(batchRef,{...batch,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  }
- if(batch.status!=="active")throw Error("The selected batch is no longer active.");
+ if(batch.status!=="active"){if(batch.status!=="inactive")throw Error("The selected batch is not available.");if(!confirm("Reactivate this existing batch? Only the Batch status will change. Student and Coach statuses will remain exactly as they are."))throw Error("Batch reactivation cancelled.");wb.update(doc(db,"batches",batchId),{status:"active",updatedAt:serverTimestamp()});}
  const studentRef=doc(collection(db,"students"));
  wb.set(studentRef,{studentId:studentRef.id,name,age,parentPhone:studentState.phone,batchId,batchName:batch.batchName,sport:batch.sport,locationName:batch.locationName,status:studentState.status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  if(studentState.status==="active"&&!isNewBatch){const existingActive=await getDocs(query(collection(db,"students"),where("batchId","==",batchId),where("status","==","active")));wb.update(doc(db,"batches",batchId),{studentCount:existingActive.size+1,updatedAt:serverTimestamp()});}
@@ -308,7 +308,7 @@ async function nextCoach(){
   if(coachState.newSport&&sports.some(x=>safe(x.name).toLowerCase()===coachState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list.");
   const loc=locations.find(x=>x.id===locationId),coach=coaches.find(x=>x.id===coachState.uid)||{id:coachState.uid,name:coachState.name};
   if(loc&&(loc.status!=="active"||(!loc.sports?.includes(sport)&&!coachState.newSport)))throw Error("The selected location is not active or does not support this sport.");
-  if(batches.some(x=>x.status==="active"&&safe(x.batchName).toLowerCase()===coachState.batchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists.");
+  if(batches.some(x=>safe(x.batchName).toLowerCase()===coachState.batchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists.");
   const batchRef=doc(collection(db,"batches")),batchId=batchRef.id;
   const batchData={batchId,batchName:coachState.batchName,sport:sport,locationId:locationId,locationName:locationName,coachId:coach.uid||coach.id,coachName:coach.name||coachState.name,studentCount:0,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
   const wb=writeBatch(db);if(!coachState.locationId)wb.set(doc(db,"locations",locationId),{locationId,name:locationName,address:coachState.newLocationAddress,sports:[sport],status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});if(!coachState.sport){const sr=doc(collection(db,"sports"));wb.set(sr,{name:sport,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()})}if(coachState.locationId&&coachState.newSport)wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});wb.set(batchRef,batchData);
