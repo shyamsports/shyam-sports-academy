@@ -246,7 +246,7 @@ function renderCoach(){
  $("coachStepContent").innerHTML=html;
  if(coachStep===0){$("coExisting").value=coachState.selectedExistingId}
  if(coachStep===2){$("coLocation").value=coachState.locationId;$("coSport").value=coachState.sport}
- if(coachStep===1&&coachState.uid&&!coachState.approved)$("approveCoachNow").onclick=approveCoach;
+ if(coachStep===1&&coachState.uid&&!coachState.approved)$("approveCoachNow").onclick=()=>approveCoach().catch(error=>showMessage("coach","Could not approve coach: "+error.message,"error"));
  if(coachStep===3){$("coScheduleType").value=coachState.scheduleType;$("coSkipSchedule").checked=coachState.skipSchedule}
  $("coachBack").disabled=coachStep===0;
  $("coachNext").textContent=coachStep===5?"Create Batch":"Continue";
