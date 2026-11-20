@@ -105,7 +105,7 @@ function renderStudent(){
  }else if(studentStep===4){
   const existing=studentState.batchId?schedules.filter(x=>x.batchId===studentState.batchId):[];
   const existingGroup=groupMappings.find(x=>x.id===studentState.batchId||x.batchDocId===studentState.batchId);
-  html='<h2>WhatsApp Group</h2><p class="hint">One group mapping is allowed per batch. Keep its existing mapping, add a new one, or add it later.</p>'+(existingGroup?'<div class="choice"><input type="checkbox" id="stKeepGroup" '+(studentState.keepGroup!==false?"checked":"")+'><label for="stKeepGroup">Keep existing group: '+esc(existingGroup.groupName)+'</label></div>':"") +field("New WhatsApp Group Name","stGroup",studentState.groupName)+'<div class="choice"><input type="checkbox" id="stSkipGroup" '+(studentState.skipGroup?"checked":"")+'><label for="stSkipGroup">WhatsApp group will be added later</label></div>';
+  html='<h2>WhatsApp Group</h2><p class="hint">One group mapping is allowed per batch. Keep the existing mapping or add a new group for a batch that does not have one.</p>'+(existingGroup?'<div class="choice"><input type="checkbox" id="stKeepGroup" '+(studentState.keepGroup!==false?"checked":"")+'><label for="stKeepGroup">Keep existing group: '+esc(existingGroup.groupName)+'</label></div>':field("New WhatsApp Group Name","stGroup",studentState.groupName))+'<div class="choice"><input type="checkbox" id="stSkipGroup" '+(studentState.skipGroup?"checked":"")+'><label for="stSkipGroup">WhatsApp group will be added later</label></div>';
  }else{
   const b=getStudentBatch();
   const loc=locations.find(x=>x.id===studentState.locationId);
@@ -119,7 +119,7 @@ function renderStudent(){
  if(studentStep===0){$("stStatus").value=studentState.status}
  if(studentStep===1){$("stLocation").value=studentState.locationId;$("stSport").value=studentState.sport}
  if(studentStep===2){$("stBatch").value=studentState.batchId;$("stCoach").value=studentState.coachId}
- if(studentStep===3){$("stSchedule").value=studentState.scheduleId}
+ if(studentStep===3){$("stSchedule").value=studentState.scheduleId;$("stScheduleType").value=studentState.scheduleType;$("stSkipSchedule").checked=studentState.skipSchedule}
  $("studentBack").disabled=studentStep===0;
  $("studentNext").textContent=studentStep===5?"Save Student":"Continue";
  if(studentStep===2)$("openCoachSetup").onclick=()=>{captureStudent();setTabs("coach");showMessage("coach","Complete coach registration and approval, then return to Student Setup.");};
@@ -149,6 +149,7 @@ function validateStudent(){
   if(!studentState.batchId&&!studentState.newBatchName)throw Error("Select an existing active batch or enter a new batch name.");
   if(studentState.newBatchName&&!studentState.coachId)throw Error("Choose an approved coach for the new batch.");
  }
+ if(studentStep===3&&!studentState.skipSchedule&&studentState.scheduleId){const chosen=schedules.find(x=>x.id===studentState.scheduleId&&x.batchId===studentState.batchId&&x.status!=="cancelled"&&x.status!=="inactive");if(!chosen)throw Error("The selected schedule is no longer active. Refresh and choose another schedule.");}
  if(studentStep===3&&!studentState.skipSchedule&&!studentState.scheduleId){
   if(!studentState.startTime||!studentState.endTime||studentState.startTime>=studentState.endTime)throw Error("Enter a valid schedule start and end time.");
   if(studentState.scheduleType==="recurring"&&!studentState.days.length)throw Error("Choose at least one class day.");
@@ -181,13 +182,13 @@ async function saveStudentWorkflow(){
  const name=studentState.name,age=Number(studentState.age);
  let locationId=studentState.locationId,locationName="",sport=studentState.sport||studentState.newSport;
  if(!locationId){
-  if(locations.some(x=>x.name.toLowerCase()===studentState.newLocationName.toLowerCase()))throw Error("That location name already exists. Select the existing location instead.");
+  if(locations.some(x=>safe(x.name).toLowerCase()===studentState.newLocationName.toLowerCase()))throw Error("That location name already exists. Select the existing location instead.");
   const base=slug(studentState.newLocationName)||"location";
   locationId=base;let i=1;while(locations.some(x=>x.id===locationId))locationId=base+"-"+i++;
   locationName=studentState.newLocationName;
  }else locationName=locations.find(x=>x.id===locationId)?.name||"";
  if(!studentState.sport){
-  if(sports.some(x=>x.name.toLowerCase()===studentState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list instead.");
+  if(sports.some(x=>safe(x.name).toLowerCase()===studentState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list instead.");
  }
  const wb=writeBatch(db);
  if(!studentState.locationId){
@@ -202,7 +203,7 @@ async function saveStudentWorkflow(){
  }
  let batch=getStudentBatch(),batchId=studentState.batchId;const isNewBatch=!batch;
  if(!batch){
-  if(batches.some(x=>x.status==="active"&&x.batchName.toLowerCase()===studentState.newBatchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists. Select that batch instead.");
+  if(batches.some(x=>x.status==="active"&&safe(x.batchName).toLowerCase()===studentState.newBatchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists. Select that batch instead.");
   const coach=coaches.find(x=>x.id===studentState.coachId&&x.status==="approved");
   if(!coach)throw Error("The selected coach is no longer approved. Refresh and select an approved coach.");
   const batchRef=doc(collection(db,"batches"));batchId=batchRef.id;
@@ -302,11 +303,11 @@ async function nextCoach(){
   if(coachStep<5){coachStep++;renderCoach();return}
   $("coachNext").disabled=true;$("coachNext").textContent="Saving...";
   let locationId=coachState.locationId,locationName="",sport=coachState.sport||coachState.newSport;
-  if(!locationId){if(locations.some(x=>x.name.toLowerCase()===coachState.newLocationName.toLowerCase()))throw Error("That location name already exists. Select the existing location instead.");const base=slug(coachState.newLocationName)||"location";locationId=base;let i=1;while(locations.some(x=>x.id===locationId))locationId=base+"-"+i++;locationName=coachState.newLocationName}else locationName=locations.find(x=>x.id===locationId)?.name||"";
-  if(coachState.newSport&&sports.some(x=>x.name.toLowerCase()===coachState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list.");
+  if(!locationId){if(locations.some(x=>safe(x.name).toLowerCase()===coachState.newLocationName.toLowerCase()))throw Error("That location name already exists. Select the existing location instead.");const base=slug(coachState.newLocationName)||"location";locationId=base;let i=1;while(locations.some(x=>x.id===locationId))locationId=base+"-"+i++;locationName=coachState.newLocationName}else locationName=locations.find(x=>x.id===locationId)?.name||"";
+  if(coachState.newSport&&sports.some(x=>safe(x.name).toLowerCase()===coachState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list.");
   const loc=locations.find(x=>x.id===locationId),coach=coaches.find(x=>x.id===coachState.uid)||{id:coachState.uid,name:coachState.name};
   if(loc&&(loc.status!=="active"||(!loc.sports?.includes(sport)&&!coachState.newSport)))throw Error("The selected location is not active or does not support this sport.");
-  if(batches.some(x=>x.status==="active"&&x.batchName.toLowerCase()===coachState.batchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists.");
+  if(batches.some(x=>x.status==="active"&&safe(x.batchName).toLowerCase()===coachState.batchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists.");
   const batchRef=doc(collection(db,"batches")),batchId=batchRef.id;
   const batchData={batchId,batchName:coachState.batchName,sport:sport,locationId:locationId,locationName:locationName,coachId:coach.uid||coach.id,coachName:coach.name||coachState.name,studentCount:0,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
   const wb=writeBatch(db);if(!coachState.locationId)wb.set(doc(db,"locations",locationId),{locationId,name:locationName,address:coachState.newLocationAddress,sports:[sport],status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});if(!coachState.sport){const sr=doc(collection(db,"sports"));wb.set(sr,{name:sport,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()})}if(coachState.locationId&&coachState.newSport)wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});wb.set(batchRef,batchData);
