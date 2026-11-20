@@ -58,7 +58,7 @@ const slug=v=>safe(v).trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^
 let admin=null,locations=[],sports=[],batches=[],coaches=[],schedules=[];
 let studentStep=0,coachStep=0;
 const studentState={name:"",age:"",phone:"",status:"active",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchId:"",newBatchName:"",coachId:"",scheduleId:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",keepGroup:null,skipSchedule:false,skipGroup:false};
-const coachState={name:"",email:"",password:"",confirm:"",uid:"",approved:false,locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchName:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
+const coachState={name:"",email:"",password:"",confirm:"",uid:"",approved:false,selectedExistingId:"",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchName:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
 const studentLabels=["Student Details","Location & Sport","Batch & Coach","Schedule","WhatsApp Group","Review & Save"];
 const coachLabels=["Coach Details","Admin Approval","Batch Setup","Schedule","WhatsApp Group","Finish"];
 function showMessage(which,msg,type=""){const e=$(which+"Message");e.textContent=msg;e.className="message"+(type?" "+type:"");e.classList.remove("hidden")}
@@ -228,7 +228,7 @@ function renderCoach(){
  stepHeader(coachLabels,coachStep,"coach");
  let html="";
  if(coachStep===0){
-  html='<h2>Coach Registration Details</h2><p class="hint">Create a coach account. It will remain Pending until you explicitly approve it.</p><div class="grid">'+field("Coach Full Name","coName",coachState.name,"text",'required maxlength="100"')+field("Email Address","coEmail",coachState.email,"email",'required')+field("Password","coPass",coachState.password,"password",'required minlength="6"')+field("Confirm Password","coConfirm",coachState.confirm,"password",'required minlength="6"')+'</div>';
+  html='<h2>Coach Selection / Registration</h2><p class="hint">Choose an existing approved coach, or register a new coach. New registrations remain Pending until Admin approval.</p>'+selectField("Existing Approved Coach","coExisting",approvedCoaches(),x=>x.id,x=>(x.name||x.email)+" — "+x.email,"Register a new coach instead") + '<div class="grid" style="margin-top:14px">'+field("New Coach Full Name","coName",coachState.name,"text",'maxlength="100"')+field("New Coach Email","coEmail",coachState.email,"email")+field("Password","coPass",coachState.password,"password",'minlength="6"')+field("Confirm Password","coConfirm",coachState.confirm,"password",'minlength="6"')+'</div>';
  }else if(coachStep===1){
   html='<h2>Admin Approval</h2><p class="hint">Registration does not grant dashboard access. The coach must be approved by the authorized Admin.</p><div class="message '+(coachState.approved?"success":"")+'">'+(coachState.uid?"Coach account created. Status: "+(coachState.approved?"Approved":"Pending approval"):"Register the coach first.")+'</div>'+(coachState.uid&&!coachState.approved?'<button class="btn primary" id="approveCoachNow" type="button">Approve This Coach</button>':"");
  }else if(coachStep===2){
@@ -248,7 +248,7 @@ function renderCoach(){
  $("coachNext").textContent=coachStep===5?"Create Batch":"Continue";
 }
 function captureCoach(){
- if(coachStep===0){coachState.name=$("coName")?.value.trim()||"";coachState.email=$("coEmail")?.value.trim()||"";coachState.password=$("coPass")?.value||"";coachState.confirm=$("coConfirm")?.value||""}
+ if(coachStep===0){coachState.selectedExistingId=$("coExisting")?.value||"";coachState.name=$("coName")?.value.trim()||"";coachState.email=$("coEmail")?.value.trim()||"";coachState.password=$("coPass")?.value||"";coachState.confirm=$("coConfirm")?.value||""}
  if(coachStep===2){coachState.batchName=$("coBatch")?.value.trim()||"";coachState.locationId=$("coLocation")?.value||"";coachState.sport=$("coSport")?.value||"";coachState.newLocationName=$("coNewLocation")?.value.trim()||"";coachState.newLocationAddress=$("coNewAddress")?.value.trim()||"";coachState.newSport=$("coNewSport")?.value.trim()||""}
  if(coachStep===3){coachState.skipSchedule=$("coSkipSchedule")?.checked||false;coachState.scheduleType=$("coScheduleType")?.value||"recurring";coachState.startTime=$("coStart")?.value||"";coachState.endTime=$("coEnd")?.value||"";coachState.classDate=$("coDate")?.value||"";coachState.days=Array.from(document.querySelectorAll("#coDays input:checked")).map(x=>x.value)}
  if(coachStep===4){coachState.groupName=$("coGroup")?.value.trim()||"";coachState.skipGroup=$("coSkipGroup")?.checked||false}
@@ -282,8 +282,9 @@ async function nextCoach(){
  clearMessage("coach");captureCoach();
  try{
   if(coachStep===0){
-   if(!coachState.name||!coachState.email)throw Error("Enter coach name and email.");
-   if(coachState.uid){coachStep++;renderCoach();return}
+   if(coachState.selectedExistingId){const chosen=coaches.find(x=>x.id===coachState.selectedExistingId&&x.status==="approved");if(!chosen)throw Error("That coach is no longer approved. Refresh and choose again.");coachState.uid=chosen.id;coachState.name=chosen.name||chosen.email;coachState.email=chosen.email||"";coachState.approved=true;coachStep=2;renderCoach();return;}
+   if(!coachState.name||!coachState.email)throw Error("Enter coach name and email, or choose an existing approved coach.");
+   if(coachState.uid){coachStep=coachState.approved?2:1;renderCoach();return}
    $("coachNext").disabled=true;$("coachNext").textContent="Registering...";
    await createCoach();coachStep=1;renderCoach();showMessage("coach","Coach registration created with Pending status. Approve explicitly to continue.","success");return;
   }
@@ -310,7 +311,7 @@ async function nextCoach(){
   await wb.commit();
   showMessage("coach","Coach approved and batch setup completed successfully. Batch ID: "+batchId,"success");
   localStorage.removeItem("ssaCoachGuidedDraft");
-  coachStep=0;Object.assign(coachState,{name:"",email:"",password:"",confirm:"",uid:"",approved:false,batchName:"",locationId:"",sport:"",groupName:"",skipSchedule:false,skipGroup:false});
+  coachStep=0;Object.assign(coachState,{name:"",email:"",password:"",confirm:"",uid:"",approved:false,selectedExistingId:"",batchName:"",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",groupName:"",skipSchedule:false,skipGroup:false});
   await loadData();renderCoach();
  }catch(e){showMessage("coach",e.message,"error")}
  finally{$("coachNext").disabled=false;$("coachNext").textContent=coachStep===5?"Create Batch":"Continue"}
