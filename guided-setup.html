@@ -42,13 +42,13 @@ h2{font-size:18px;margin:0 0 6px;color:#153b60}.hint{font-size:12px;color:#75869
 </section>
 </main>
 <script type="module">
-import {initializeApp,getApp,deleteApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {initializeApp,deleteApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signOut,deleteUser} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,getDocs,collection,query,where,writeBatch,serverTimestamp,increment,updateDoc,setDoc,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const config={apiKey:"AIzaSyAtuegafB-LX-jzhJ_Dp0tEu1xUohNzX4U",authDomain:"shyam-sports-academy.firebaseapp.com",projectId:"shyam-sports-academy",storageBucket:"shyam-sports-academy.firebasestorage.app",messagingSenderId:"204237173149",appId:"1:204237173149:web:84f0e36a4981e6adbf3f74",measurementId:"G-548JZ1L682"};
 const ADMIN_UID="0CqaMJndttgUhrMyxEXgsD3FHYA2";
-const app=getApp();
+const app=initializeApp(config);
 const auth=getAuth(app);
 const db=getFirestore(app);
 let groupMappings=[];
