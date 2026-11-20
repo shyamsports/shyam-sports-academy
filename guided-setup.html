@@ -42,7 +42,7 @@ h2{font-size:18px;margin:0 0 6px;color:#153b60}.hint{font-size:12px;color:#75869
 </section>
 </main>
 <script type="module">
-import {initializeApp,getApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import {initializeApp,getApp,deleteApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signOut,deleteUser} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getFirestore,doc,getDoc,getDocs,collection,query,where,writeBatch,serverTimestamp,increment,updateDoc,setDoc,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
@@ -57,8 +57,8 @@ const safe=v=>v==null?"":String(v);
 const slug=v=>safe(v).trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 let admin=null,locations=[],sports=[],batches=[],coaches=[],schedules=[];
 let studentStep=0,coachStep=0;
-const studentState={name:"",age:"",phone:"",status:"active",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchId:"",newBatchName:"",coachId:"",scheduleId:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
-const coachState={name:"",email:"",password:"",confirm:"",uid:"",approved:false,locationId:"",sport:"",batchName:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
+const studentState={name:"",age:"",phone:"",status:"active",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchId:"",newBatchName:"",coachId:"",scheduleId:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",keepGroup:false,skipSchedule:false,skipGroup:false};
+const coachState={name:"",email:"",password:"",confirm:"",uid:"",approved:false,locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchName:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
 const studentLabels=["Student Details","Location & Sport","Batch & Coach","Schedule","WhatsApp Group","Review & Save"];
 const coachLabels=["Coach Details","Admin Approval","Batch Setup","Schedule","WhatsApp Group","Finish"];
 function showMessage(which,msg,type=""){const e=$(which+"Message");e.textContent=msg;e.className="message"+(type?" "+type:"");e.classList.remove("hidden")}
@@ -69,8 +69,8 @@ function field(label,id,value,type="text",extra=""){return '<div class="field"><
 function selectField(label,id,items,value,labeler,placeholder){return '<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+options(items,value,labeler,placeholder)+'</select></div>'}
 function stepHeader(labels,current,root){$(root+"Steps").innerHTML=labels.map((s,i)=>'<span class="step '+(i===current?"active":i<current?"done":"")+'">'+(i+1)+". "+s+'</span>').join("")}
 function setTabs(which){const student=which==="student";$("studentFlow").classList.toggle("hidden",!student);$("coachFlow").classList.toggle("hidden",student);$("studentTab").classList.toggle("active",student);$("coachTab").classList.toggle("active",!student);if(!student)renderCoach();else renderStudent()}
-$("studentTab").onclick=()=>setTabs("student");
-$("coachTab").onclick=()=>setTabs("coach");
+$("studentTab").onclick=()=>{try{captureCoach()}catch(_){};setTabs("student")};
+$("coachTab").onclick=()=>{try{captureStudent()}catch(_){};setTabs("coach")};
 function activeLocations(){return locations.filter(x=>x.status==="active")}
 function activeSports(){return sports.filter(x=>x.status==="active")}
 function approvedCoaches(){return coaches.filter(x=>x.status==="approved")}
@@ -112,7 +112,7 @@ function renderStudent(){
   html='<h2>Review Student Setup</h2><p class="hint">Check all details. Nothing is saved as a student until you confirm.</p><div class="review">'+[
    ["Student",studentState.name],["Age",studentState.age],["Parent Phone",studentState.phone||"—"],["Status",studentState.status],
    ["Location",loc?.name||studentState.newLocationName],["Sport",currentSport()],["Batch",b?.batchName||studentState.newBatchName],["Coach",b?.coachName||coaches.find(x=>x.id===studentState.coachId)?.name||"—"],
-   ["Schedule",studentState.skipSchedule?"Not required":studentState.scheduleId?"Existing schedule":"New schedule"],["WhatsApp",studentState.skipGroup?"Add later":studentState.groupName||"—"]
+   ["Schedule",studentState.skipSchedule?"Not required":studentState.scheduleId?"Existing schedule":"New schedule"],["WhatsApp",studentState.skipGroup?"Add later":studentState.keepGroup?"Existing group":studentState.groupName||"—"]
   ].map(x=>'<div>'+esc(x[0])+'</div><div>'+esc(x[1])+'</div>').join("")+'</div>';
  }
  c.innerHTML=html;
@@ -197,7 +197,6 @@ async function saveStudentWorkflow(){
   wb.set(sportRef,{name:sport,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  }
  if(studentState.locationId&&studentState.newSport){
-  const location=locations.find(x=>x.id===locationId);
   wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});
  }
  let batch=getStudentBatch(),batchId=studentState.batchId;
@@ -264,16 +263,13 @@ async function createCoach(){
  try{
   credential=await createUserWithEmailAndPassword(secondaryAuth,coachState.email,coachState.password);
   const uid=credential.user.uid;
-  await updateDoc; // placeholder removed below
-  await import("https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js").then(async mod=>{
-   await mod.setDoc(doc(db,"users",uid),{name:coachState.name,email:coachState.email,role:"coach",status:"pending",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-  });
+  await setDoc(doc(db,"users",uid),{name:coachState.name,email:coachState.email,role:"coach",status:"pending",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
   coachState.uid=uid;coachState.approved=false;coachState.password="";coachState.confirm="";
   localStorage.setItem("ssaCoachGuidedDraft",JSON.stringify({...coachState,password:"",confirm:""}));
  }catch(error){
   if(credential?.user){try{await deleteUser(credential.user)}catch(_){}}
   throw error;
- }finally{try{await signOut(secondaryAuth)}catch(_){}}
+ }finally{try{await signOut(secondaryAuth)}catch(_){};try{await deleteApp(secondary)}catch(_){}}
 }
 async function approveCoach(){
  if(!admin||!coachState.uid)throw Error("Coach account not found.");
