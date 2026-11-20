@@ -263,11 +263,12 @@ async function createCoach(){
  if(coachState.password.length<6)throw Error("Password must contain at least 6 characters.");
  const secondary=initializeApp(config,"coach-registration-"+Date.now());
  const secondaryAuth=getAuth(secondary);
+ const secondaryDb=getFirestore(secondary);
  let credential=null;
  try{
   credential=await createUserWithEmailAndPassword(secondaryAuth,coachState.email,coachState.password);
   const uid=credential.user.uid;
-  await setDoc(doc(db,"users",uid),{name:coachState.name,email:coachState.email,role:"coach",status:"pending",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  await setDoc(doc(secondaryDb,"users",uid),{name:coachState.name,email:coachState.email,role:"coach",status:"pending",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
   coachState.uid=uid;coachState.approved=false;coachState.password="";coachState.confirm="";
   localStorage.setItem("ssaCoachGuidedDraft",JSON.stringify({...coachState,password:"",confirm:""}));
  }catch(error){
