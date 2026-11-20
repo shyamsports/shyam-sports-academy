@@ -200,19 +200,19 @@ async function saveStudentWorkflow(){
  if(studentState.locationId&&studentState.newSport){
   wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});
  }
- let batch=getStudentBatch(),batchId=studentState.batchId;
+ let batch=getStudentBatch(),batchId=studentState.batchId;const isNewBatch=!batch;
  if(!batch){
   if(batches.some(x=>x.status==="active"&&x.batchName.toLowerCase()===studentState.newBatchName.toLowerCase()&&x.sport===sport&&x.locationId===locationId))throw Error("A batch with this name, sport and location already exists. Select that batch instead.");
   const coach=coaches.find(x=>x.id===studentState.coachId&&x.status==="approved");
   if(!coach)throw Error("The selected coach is no longer approved. Refresh and select an approved coach.");
   const batchRef=doc(collection(db,"batches"));batchId=batchRef.id;
-  batch={id:batchId,batchId,batchName:studentState.newBatchName,sport,locationId,locationName,coachId:coach.id,coachName:coach.name||coach.email,status:"active",studentCount:0};
+  batch={id:batchId,batchId,batchName:studentState.newBatchName,sport,locationId,locationName,coachId:coach.id,coachName:coach.name||coach.email,status:"active",studentCount:studentState.status==="active"?1:0};
   wb.set(batchRef,{...batch,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
  }
  if(batch.status!=="active")throw Error("The selected batch is no longer active.");
  const studentRef=doc(collection(db,"students"));
  wb.set(studentRef,{studentId:studentRef.id,name,age,parentPhone:studentState.phone,batchId,batchName:batch.batchName,sport:batch.sport,locationName:batch.locationName,status:studentState.status,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
- if(studentState.status==="active")wb.update(doc(db,"batches",batchId),{studentCount:increment(1),updatedAt:serverTimestamp()});
+ if(studentState.status==="active"&&!isNewBatch){const existingActive=await getDocs(query(collection(db,"students"),where("batchId","==",batchId),where("status","==","active")));wb.update(doc(db,"batches",batchId),{studentCount:existingActive.size+1,updatedAt:serverTimestamp()});}
  if(!studentState.skipSchedule&&!studentState.scheduleId){
   const scheduleRef=doc(collection(db,"schedules"));wb.set(scheduleRef,{...makeSchedulePayload(batchId,batch),scheduleId:scheduleRef.id});
  }
@@ -278,7 +278,7 @@ async function approveCoach(){
  if(!admin||!coachState.uid)throw Error("Coach account not found.");
  if(!confirm("Approve "+coachState.name+"? This will grant Coach Dashboard access."))return;
  await updateDoc(doc(db,"users",coachState.uid),{status:"approved",approvedAt:serverTimestamp(),updatedAt:serverTimestamp()});
- coachState.approved=true;renderCoach();showMessage("coach","Coach approved. You can now assign a batch.","success");
+ coachState.approved=true;localStorage.setItem("ssaCoachGuidedDraft",JSON.stringify({...coachState,password:"",confirm:""}));renderCoach();showMessage("coach","Coach approved. You can now assign a batch.","success");
  await loadData();
 }
 async function nextCoach(){
@@ -332,6 +332,7 @@ onAuthStateChanged(auth,async user=>{
   if(user.uid!==ADMIN_UID||!snap.exists()||snap.data().role!=="admin"){await signOut(auth);location.href="admin.html";return}
   admin=user;
   await loadData();
+  if(coachState.uid&&coaches.some(x=>x.id===coachState.uid&&x.status==="approved"))coachState.approved=true;
   const sd=localStorage.getItem("ssaStudentGuidedDraft");if(sd){try{Object.assign(studentState,JSON.parse(sd))}catch(_){}}
   const cd=localStorage.getItem("ssaCoachGuidedDraft");if(cd){try{Object.assign(coachState,JSON.parse(cd))}catch(_){}}
   renderStudent();renderCoach();
