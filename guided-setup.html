@@ -57,7 +57,7 @@ const safe=v=>v==null?"":String(v);
 const slug=v=>safe(v).trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 let admin=null,locations=[],sports=[],batches=[],coaches=[],schedules=[];
 let studentStep=0,coachStep=0;
-const studentState={name:"",age:"",phone:"",status:"active",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchId:"",newBatchName:"",coachId:"",scheduleId:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",keepGroup:false,skipSchedule:false,skipGroup:false};
+const studentState={name:"",age:"",phone:"",status:"active",locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchId:"",newBatchName:"",coachId:"",scheduleId:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",keepGroup:null,skipSchedule:false,skipGroup:false};
 const coachState={name:"",email:"",password:"",confirm:"",uid:"",approved:false,locationId:"",newLocationName:"",newLocationAddress:"",sport:"",newSport:"",batchName:"",scheduleType:"recurring",days:["Monday","Wednesday","Friday"],classDate:"",startTime:"16:00",endTime:"17:00",groupName:"",skipSchedule:false,skipGroup:false};
 const studentLabels=["Student Details","Location & Sport","Batch & Coach","Schedule","WhatsApp Group","Review & Save"];
 const coachLabels=["Coach Details","Admin Approval","Batch Setup","Schedule","WhatsApp Group","Finish"];
@@ -94,7 +94,7 @@ function renderStudent(){
  }else if(studentStep===1){
   html='<h2>Choose Location & Sport</h2><p class="hint">Select existing records or add new ones here. New master records are created together with the final setup.</p><div class="grid">'+selectField("Location","stLocation",activeLocations(),x=>x.id,x=>x.name,"Select location")+selectField("Sport / Program","stSport",activeSports(),x=>x.name,x=>x.name,"Select sport")+'</div><div class="grid" style="margin-top:14px">'+field("New Location Name","stNewLocation",studentState.newLocationName)+field("New Location Address","stNewAddress",studentState.newLocationAddress)+field("New Sport Name","stNewSport",studentState.newSport)+'</div><p class="note">Fill either an existing selection or the matching new-record field. New location requires an address.</p>';
  }else if(studentStep===2){
-  const matching=batches.filter(x=>x.status==="active"&&(!studentState.locationId||x.locationId===studentState.locationId)&&(!currentSport()||x.sport===currentSport()));
+  const matching=batches.filter(x=>x.status==="active"&&(!studentState.locationId&&!studentState.newLocationName||x.locationId===studentState.locationId)&&(!currentSport()||x.sport===currentSport()));
   html='<h2>Choose or Create Batch</h2><p class="hint">Only active batches are available for new student assignments.</p>'+selectField("Existing Batch","stBatch",matching,x=>x.id,x=>x.batchName+" — "+x.sport,"Select existing batch")+'<div style="margin:12px 0;text-align:center;color:#91a0af;font-size:12px">OR CREATE A NEW BATCH</div>'+field("New Batch Name","stNewBatch",studentState.newBatchName)+'<div class="grid" style="margin-top:14px">'+selectField("Approved Coach","stCoach",approvedCoaches(),x=>x.id,x=>x.name||x.email,"Select approved coach")+'</div><p class="note">A new batch requires an approved coach. If you need to register a new coach, open Coach Setup in this same page; your student draft remains saved.</p><button class="btn" type="button" id="openCoachSetup">Open Coach Setup</button>';
  }else if(studentStep===3){
   const batch=getStudentBatch();
@@ -130,7 +130,7 @@ function scheduleFields(prefix,state){
 function captureStudent(){
  if(studentStep===0){studentState.name=$("stName")?.value.trim()||"";studentState.age=$("stAge")?.value||"";studentState.phone=$("stPhone")?.value.trim()||"";studentState.status=$("stStatus")?.value||"active"}
  if(studentStep===1){studentState.locationId=$("stLocation")?.value||"";studentState.sport=$("stSport")?.value||"";studentState.newLocationName=$("stNewLocation")?.value.trim()||"";studentState.newLocationAddress=$("stNewAddress")?.value.trim()||"";studentState.newSport=$("stNewSport")?.value.trim()||""}
- if(studentStep===2){studentState.batchId=$("stBatch")?.value||"";studentState.newBatchName=$("stNewBatch")?.value.trim()||"";studentState.coachId=$("stCoach")?.value||""}
+ if(studentStep===2){const priorBatch=studentState.batchId;studentState.batchId=$("stBatch")?.value||"";studentState.newBatchName=$("stNewBatch")?.value.trim()||"";studentState.coachId=$("stCoach")?.value||"";if(priorBatch!==studentState.batchId)studentState.keepGroup=null}
  if(studentStep===3){studentState.scheduleId=$("stSchedule")?.value||"";studentState.skipSchedule=$("stSkipSchedule")?.checked||false;studentState.scheduleType=$("stScheduleType")?.value||"recurring";studentState.startTime=$("stStart")?.value||"";studentState.endTime=$("stEnd")?.value||"";studentState.classDate=$("stDate")?.value||"";studentState.days=Array.from(document.querySelectorAll("#stDays input:checked")).map(x=>x.value)}
  if(studentStep===4){studentState.groupName=$("stGroup")?.value.trim()||"";studentState.skipGroup=$("stSkipGroup")?.checked||false;studentState.keepGroup=$("stKeepGroup")?.checked||false}
  localStorage.setItem("ssaStudentGuidedDraft",JSON.stringify(studentState));
@@ -238,7 +238,7 @@ function renderCoach(){
  }else if(coachStep===4){
   html='<h2>WhatsApp Group</h2><p class="hint">Enter the parent group name or add it later.</p>'+field("WhatsApp Group Name","coGroup",coachState.groupName)+'<div class="choice"><input type="checkbox" id="coSkipGroup" '+(coachState.skipGroup?"checked":"")+'><label for="coSkipGroup">WhatsApp group will be added later</label></div>';
  }else{
-  html='<h2>Review Coach Setup</h2><p class="hint">Coach registration and explicit approval are complete. Confirm the new batch setup.</p><div class="review">'+[["Coach",coachState.name],["Email",coachState.email],["Approval",coachState.approved?"Approved":"Pending"],["Batch",coachState.batchName],["Location",locations.find(x=>x.id===coachState.locationId)?.name||"—"],["Sport",coachState.sport],["Schedule",coachState.skipSchedule?"Add later":"Create now"],["WhatsApp",coachState.skipGroup?"Add later":coachState.groupName||"—"]].map(x=>'<div>'+esc(x[0])+'</div><div>'+esc(x[1])+'</div>').join("")+'</div>';
+  html='<h2>Review Coach Setup</h2><p class="hint">Coach registration and explicit approval are complete. Confirm the new batch setup.</p><div class="review">'+[["Coach",coachState.name],["Email",coachState.email],["Approval",coachState.approved?"Approved":"Pending"],["Batch",coachState.batchName],["Location",locations.find(x=>x.id===coachState.locationId)?.name||coachState.newLocationName],["Sport",coachState.sport||coachState.newSport],["Schedule",coachState.skipSchedule?"Add later":"Create now"],["WhatsApp",coachState.skipGroup?"Add later":coachState.groupName||"—"]].map(x=>'<div>'+esc(x[0])+'</div><div>'+esc(x[1])+'</div>').join("")+'</div>';
  }
  $("coachStepContent").innerHTML=html;
  if(coachStep===2){$("coLocation").value=coachState.locationId;$("coSport").value=coachState.sport}
@@ -249,7 +249,7 @@ function renderCoach(){
 }
 function captureCoach(){
  if(coachStep===0){coachState.name=$("coName")?.value.trim()||"";coachState.email=$("coEmail")?.value.trim()||"";coachState.password=$("coPass")?.value||"";coachState.confirm=$("coConfirm")?.value||""}
- if(coachStep===2){coachState.batchName=$("coBatch")?.value.trim()||"";coachState.locationId=$("coLocation")?.value||"";coachState.sport=$("coSport")?.value||""}
+ if(coachStep===2){coachState.batchName=$("coBatch")?.value.trim()||"";coachState.locationId=$("coLocation")?.value||"";coachState.sport=$("coSport")?.value||"";coachState.newLocationName=$("coNewLocation")?.value.trim()||"";coachState.newLocationAddress=$("coNewAddress")?.value.trim()||"";coachState.newSport=$("coNewSport")?.value.trim()||""}
  if(coachStep===3){coachState.skipSchedule=$("coSkipSchedule")?.checked||false;coachState.scheduleType=$("coScheduleType")?.value||"recurring";coachState.startTime=$("coStart")?.value||"";coachState.endTime=$("coEnd")?.value||"";coachState.classDate=$("coDate")?.value||"";coachState.days=Array.from(document.querySelectorAll("#coDays input:checked")).map(x=>x.value)}
  if(coachStep===4){coachState.groupName=$("coGroup")?.value.trim()||"";coachState.skipGroup=$("coSkipGroup")?.checked||false}
  localStorage.setItem("ssaCoachGuidedDraft",JSON.stringify({...coachState,password:"",confirm:""}));
@@ -288,7 +288,7 @@ async function nextCoach(){
    await createCoach();coachStep=1;renderCoach();showMessage("coach","Coach registration created with Pending status. Approve explicitly to continue.","success");return;
   }
   if(coachStep===1){if(!coachState.uid||!coachState.approved)throw Error("The coach must be explicitly approved before continuing.");}
-  if(coachStep===2){if(!coachState.batchName||!coachState.locationId||!coachState.sport)throw Error("Enter a batch name and select an active location and sport.");}
+  if(coachStep===2){if(!coachState.batchName||(!coachState.locationId&&(!coachState.newLocationName||!coachState.newLocationAddress))||(!coachState.sport&&!coachState.newSport))throw Error("Enter a batch name and select or create its location and sport.");if(coachState.locationId&&coachState.newLocationName)throw Error("Choose an existing location or enter a new location, not both.");if(coachState.sport&&coachState.newSport)throw Error("Choose an existing sport or enter a new sport, not both.");}
   if(coachStep===3&&!coachState.skipSchedule){
    if(!coachState.startTime||!coachState.endTime||coachState.startTime>=coachState.endTime)throw Error("Enter a valid schedule time range.");
    if(coachState.scheduleType==="recurring"&&!coachState.days.length)throw Error("Choose at least one class day.");
@@ -297,11 +297,14 @@ async function nextCoach(){
   if(coachStep===4&&!coachState.skipGroup&&!coachState.groupName)throw Error("Enter a WhatsApp group name or select Add Later.");
   if(coachStep<5){coachStep++;renderCoach();return}
   $("coachNext").disabled=true;$("coachNext").textContent="Saving...";
-  const loc=locations.find(x=>x.id===coachState.locationId),coach=coaches.find(x=>x.id===coachState.uid)||{id:coachState.uid,name:coachState.name};
-  if(!loc||loc.status!=="active"||!loc.sports?.includes(coachState.sport))throw Error("The selected location is not active or does not support this sport.");
+  let locationId=coachState.locationId,locationName="",sport=coachState.sport||coachState.newSport;
+  if(!locationId){const base=slug(coachState.newLocationName)||"location";locationId=base;let i=1;while(locations.some(x=>x.id===locationId))locationId=base+"-"+i++;locationName=coachState.newLocationName}else locationName=locations.find(x=>x.id===locationId)?.name||"";
+  if(coachState.newSport&&sports.some(x=>x.name.toLowerCase()===coachState.newSport.toLowerCase()&&x.status==="active"))throw Error("That sport already exists. Select it from the list.");
+  const loc=locations.find(x=>x.id===locationId),coach=coaches.find(x=>x.id===coachState.uid)||{id:coachState.uid,name:coachState.name};
+  if(loc&&(loc.status!=="active"||(!loc.sports?.includes(sport)&&!coachState.newSport)))throw Error("The selected location is not active or does not support this sport.");
   const batchRef=doc(collection(db,"batches")),batchId=batchRef.id;
-  const batchData={batchId,batchName:coachState.batchName,sport:coachState.sport,locationId:loc.id,locationName:loc.name,coachId:coach.uid||coach.id,coachName:coach.name||coachState.name,studentCount:0,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
-  const wb=writeBatch(db);wb.set(batchRef,batchData);
+  const batchData={batchId,batchName:coachState.batchName,sport:sport,locationId:locationId,locationName:locationName,coachId:coach.uid||coach.id,coachName:coach.name||coachState.name,studentCount:0,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+  const wb=writeBatch(db);if(!coachState.locationId)wb.set(doc(db,"locations",locationId),{locationId,name:locationName,address:coachState.newLocationAddress,sports:[sport],status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});if(!coachState.sport){const sr=doc(collection(db,"sports"));wb.set(sr,{name:sport,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()})}if(coachState.locationId&&coachState.newSport)wb.update(doc(db,"locations",locationId),{sports:arrayUnion(sport),updatedAt:serverTimestamp()});wb.set(batchRef,batchData);
   if(!coachState.skipSchedule){const sref=doc(collection(db,"schedules"));wb.set(sref,{...makeCoachSchedule(batchId,batchData),scheduleId:sref.id})}
   if(!coachState.skipGroup){const gref=doc(db,"whatsappGroups",batchId);const existing=await getDoc(gref);if(existing.exists())throw Error("A WhatsApp group mapping already exists for this batch.");wb.set(gref,{batchDocId:batchId,batchId,batchName:batchData.batchName,sport:batchData.sport,groupName:coachState.groupName,status:"active",createdAt:serverTimestamp(),updatedAt:serverTimestamp()})}
   await wb.commit();
